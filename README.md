@@ -3,9 +3,11 @@
 
 ## What is Breep?
 
-Breep is a c++ bridged peer to peer library. What does that mean? It mean that even though
+Breep is a c++ bridged peer to peer library. What does that mean? It means that even though
 the network is constructed as a peer to peer one, there may be no direct connections between
-to dudes, if these connections are impossible (due to poorly configured ports, for example).
+two dudes, say A and B, if these connections are impossible (due to poorly configured ports, for example).
+In that case, Breep will attempt to use another peer C as a bridge between A and B.
+
 
 [more explanations to come]
 
