@@ -19,4 +19,5 @@ You may get a copy of this license in your language from the European Commission
 
 Extract of article 13 :
 
-    All linguistic versions of this Licence, approved by the European Commission, have identical value. Parties can take advantage of the linguistic version of their choice.
+    All linguistic versions of this Licence, approved by the European Commission, have identical value.
+    Parties can take advantage of the linguistic version of their choice.
