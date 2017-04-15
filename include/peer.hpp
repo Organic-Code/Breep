@@ -34,6 +34,8 @@ namespace breep {
 	class peer {
 	public:
 
+		static const peer bad_peer = peer(boost::uuids::nil_uuid(), boost::asio::ip::address());
+
 		/**
 	 	 * @since 0.1.0
 		 */
@@ -42,6 +44,25 @@ namespace breep {
 				, m_address(address)
 				, m_socket(socket)
 		{}
+
+		/**
+	 	 * @since 0.1.0
+		 */
+		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, std::shared_ptr<network_manager::socket_type>&& socket)
+				: m_id(id)
+				, m_address(address)
+				, m_socket(socket)
+		{}
+
+		/**
+	 	 * @since 0.1.0
+		 */
+		peer(const peer&) = delete;
+
+		/**
+		 * @since 0.1.0
+		 */
+		peer(const peer&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -54,6 +75,10 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		const boost::asio::ip::address& address() const noexcept;
+
+		const bool operator==(const peer& lhs) const;
+
+		const bool operator!=(const peer& lhs) const;
 
 	private:
 		const boost::uuids::uuid m_id;
