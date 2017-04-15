@@ -29,12 +29,14 @@ namespace breep {
 
 	typedef unsigned long listener_id;
 
+	class network_manager_base;
+
 	/**
 	 * @class network network.hpp
 	 * @brief                  This class is used to manage a peer to peer network.
 	 * @tparam network_manager Manager used to manage the network
-	 *                         To know which method you should define, refer to the UDP and
-	 *                         TCP reference implementations.
+	 *                         This class should inherit from \em breep::network_manager_base
+	 *                         see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
 	 *
 	 * @note A \em const \em network is a network with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
@@ -79,6 +81,22 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
+		network() noexcept
+				: m_peers{}
+				, m_co_listener{}
+				, m_data_r_listener{}
+				, m_dc_listener{}
+				, m_me{}
+				, m_manager{}
+				, m_id_count{0}
+		{
+			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			m_manager.owner(this);
+		}
+
+		/**
+		 * @since 0.1.0
+		 */
 		explicit network(const network_manager& manager) noexcept
 				: m_peers{}
 				, m_co_listener{}
@@ -87,7 +105,10 @@ namespace breep {
 				, m_me{}
 				, m_manager(manager)
 				, m_id_count{0}
-		{}
+		{
+			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			m_manager.owner(this);
+		}
 
 		/**
 		 * @since 0.1.0
@@ -100,7 +121,10 @@ namespace breep {
 				, m_me{}
 				, m_manager(manager)
 				, m_id_count{0}
-		{}
+		{
+			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			m_manager.owner(this);
+		}
 
 		/**
 		 * @brief Sends data to all members of the network
@@ -224,6 +248,8 @@ namespace breep {
 		 * @brief Removes a listener
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @since 0.1.0
 		 */
 		bool remove_connection_listener(listener_id id);
 
@@ -231,6 +257,8 @@ namespace breep {
 		 * @brief Removes a listener
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @since 0.1.0
 		 */
 		bool remove_data_listener(listener_id id);
 
