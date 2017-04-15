@@ -57,7 +57,15 @@ inline void breep::network<T>::connect(boost::asio::ip::address&& address) {
 template <typename T>
 inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& address) {
 	if (m_peers.empty()) {
-		return m_manager.connect(address);
+		peer new_peer(m_manager.connect(address, m_port));
+		if (new_peer != peer::bad_peer) {
+			m_peers.insert(std::make_pair(new_peer.id(), new_peer));
+			m_me.path_to_passing_by().insert(std::make_pair(new_peer.id(), new_peer));
+			m_me.bridging_from_to().insert(std::make_pair(new_peer.id(), new_peer));
+			return true;
+		} else {
+			return false;
+		}
 	} else {
 		throw invalid_state("Cannot connect to more than one network.");
 	}

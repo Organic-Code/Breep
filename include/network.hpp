@@ -52,6 +52,7 @@ namespace breep {
 	template <typename network_manager>
 	class network {
 	public:
+		static const unsigned short default_port = 3479;
 
 		/**
 		 * Type representing a connection listener
@@ -84,7 +85,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		network() noexcept
+		explicit network(unsigned short port = default_port) noexcept
 				: m_peers{}
 				, m_co_listener{}
 				, m_data_r_listener{}
@@ -92,6 +93,7 @@ namespace breep {
 				, m_me{}
 				, m_manager{}
 				, m_id_count{0}
+				, m_port{port}
 		{
 			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
@@ -100,7 +102,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(const network_manager& manager) noexcept
+		explicit network(const network_manager& manager, unsigned short port = default_port) noexcept
 				: m_peers{}
 				, m_co_listener{}
 				, m_data_r_listener{}
@@ -108,6 +110,7 @@ namespace breep {
 				, m_me{}
 				, m_manager(manager)
 				, m_id_count{0}
+				, m_port{port}
 		{
 			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
@@ -116,7 +119,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(network_manager&& manager) noexcept
+		explicit network(network_manager&& manager, unsigned short port = default_port) noexcept
 				: m_peers{}
 				, m_co_listener{}
 				, m_data_r_listener{}
@@ -124,6 +127,7 @@ namespace breep {
 				, m_me{}
 				, m_manager(manager)
 				, m_id_count{0}
+				, m_port{port}
 		{
 			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
@@ -152,7 +156,7 @@ namespace breep {
 		/**
 		 * Sends data to a specific member of the network
 		 * @tparam data_container Type representing data. Exact definition
-		 *                        is to be defined by \em network_manager::send_to
+		 *                        is to be defined by \em network_manager_base::send
 		 * @param p Target peer
 		 * @param data Data to be sent
 		 *
@@ -161,7 +165,7 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send_to(const peer& p, const data_container& data) const;
+		void send_to(const peer<network_manager>& p, const data_container& data) const;
 
 		/**
 		 * @copydoc network::send_to(const peer&, const data_container&) const;
@@ -315,6 +319,29 @@ namespace breep {
 			return m_peers;
 		}
 
+		/**
+		 * @return The port to which the object is currently mapped to.
+		 *
+		 * @since 0.1.0
+		 */
+		unsigned short port() const {
+			return m_port
+		}
+
+		/**
+		 * @brief Changes the port to which the object is mapped
+		 * @param port the new port
+		 * @attention If the port is changed while there are ongoing connections,
+		 *            the behavior is undefined and possibly depends on the underlying \em network_manager.
+		 */
+		void port(unsigned short port) {
+			m_port = port;
+		}
+
+		const local_peer<network_manager>& self() const {
+			return m_me;
+		}
+
 	private:
 
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
@@ -326,6 +353,8 @@ namespace breep {
 		network_manager m_manager;
 
 		listener_id m_id_count;
+
+		unsigned short m_port;
 	};
 }
 
