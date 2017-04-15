@@ -167,10 +167,14 @@ namespace breep {
 		void send_to(const peer& p, data_container&& data) const;
 
 		/**
-		 * @brief connects to a peer to peer network, given the ip of one peer
+		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer
 		 * @note  it is not possible to be connected to more than one network at the same time.
 		 *
 		 * @param address Address of a member
+		 *
+		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 *
+		 * @sa network::connect_sync(const boost::asio::ip::address&)
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -181,11 +185,39 @@ namespace breep {
 		void connect(boost::asio::ip::address&& address);
 
 		/**
-		 * @brief disconnects from the network
+		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until connected to the network
+		 * @return true if connection was successful, false otherwise
+		 *
+		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 *
+		 * @sa network::connect(const boost::asio::ip::address& address)
+		 *
+		 * @since 0.1.0
+		 */
+		bool connect_sync(const boost::asio::ip::address& address);
+
+		/**
+		 * @copydoc network::connect_sync(const boost::asio::ip::address&)
+		 */
+		bool connect_sync(boost::asio::ip::address&& address);
+
+		/**
+		 * @brief asynchronically disconnects from the network
+		 *
+		 * @sa network::disconnect_sync()
 		 *
 	 	 * @since 0.1.0
-		 */
+	 	 */
 		void disconnect();
+
+		/**
+		 * @brief same as disconnect, but blocks until disconnected from the network
+		 *
+		 * @sa network::disconnect()
+		 *
+		 * @since 0.1.0
+		 */
+		void disconnect_sync();
 
 		/**
 		 * @brief Adds a listener for incoming connections
@@ -266,8 +298,19 @@ namespace breep {
 		 * @brief Removes a listener
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @since 0.1.0
 		 */
 		bool remove_disconnection_listener(listener_id id);
+
+		/**
+		 * @return The list of connected peers
+		 *
+		 * @since 0.1.0
+		 */
+		const std::vector<peer>& peers() const {
+			return m_peers;
+		}
 
 	private:
 
@@ -281,8 +324,8 @@ namespace breep {
 
 		listener_id m_id_count;
 	};
-
-	#include "network.tpp"
 }
+
+#include "network.tpp"
 
 #endif //BREEP_NETWORK_HPP
