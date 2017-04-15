@@ -154,6 +154,14 @@ namespace breep {
 
 
 		/**
+		 * @brief Same as \em send_to_all(const data_container&), but with iterators
+		 * @tparam data_iterator Iterator type. what it musts respect exactly depends on the underlying \em networ_manager#send
+		 */
+		template <typename data_iterator>
+		void send_to_all(const data_iterator& begin, const data_iterator& end) const;
+
+
+		/**
 		 * Sends data to a specific member of the network
 		 * @tparam data_container Type representing data. Exact definition
 		 *                        is to be defined by \em network_manager_base::send
@@ -172,6 +180,14 @@ namespace breep {
 		 */
 		template <typename data_container>
 		void send_to(const peer<network_manager>& p, data_container&& data) const;
+
+
+		/**
+		 * @brief Same as \em send_to(const peer<network_manager>&, const data_container&), but with iterators
+		 * @tparam data_iterator Iterator type. what it musts respect exactly depends on the underlying \em networ_manager#send
+		 */
+		template <typename data_iterator>
+		void send_to(const peer<network_manager>& p, const data_iterator& begin, const data_iterator& end) const;
 
 		/**
 		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer

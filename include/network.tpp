@@ -31,6 +31,16 @@ inline void breep::network<T>::send_to_all(data_container&& data) const {
 	send_to_all(data);
 }
 
+template <typename T>
+template <typename data_iterator>
+void breep::network<T>::send_to_all(const data_iterator& begin, const data_iterator& end) const {
+	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+		const peer& p2 = m_me.path_to(pair.second);
+		if (pair.second == p2) {
+			m_manager.send(commands::send_to_all, begin, end, pair.second);
+		}
+	}
+}
 
 template <typename T>
 template <typename data_container>
@@ -42,6 +52,12 @@ template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to(const peer<T>& p, data_container&& data) const {
 	m_manager.send(commands::send_to, data, m_me.path_to(p));
+}
+
+template <typename T>
+template <typename data_iterator>
+inline void breep::network<T>::send_to(const peer<T>& p, const data_iterator& begin, const data_iterator& end) const {
+	m_manager.send(commands::send_to, begin, end, m_me.path_to(p));
 }
 
 template <typename T>
