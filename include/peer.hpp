@@ -20,6 +20,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 
+#include <memory>
+
 namespace breep {
 
 	/**
@@ -28,15 +30,17 @@ namespace breep {
 	 * @brief This class represents a network's member
 	 * @since 0.1.0
 	 */
+	template <typename network_manager>
 	class peer {
 	public:
 
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(boost::uuids::uuid id, boost::asio::ip::address address)
+		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, std::shared_ptr<network_manager::socket_type> socket = std::shared_ptr(nullptr))
 				: m_id(id)
 				, m_address(address)
+				, m_socket(socket)
 		{}
 
 		/**
@@ -54,7 +58,16 @@ namespace breep {
 	private:
 		const boost::uuids::uuid m_id;
 		const boost::asio::ip::address m_address;
+
+		/**
+		 * m_socket must be set by the \em network_manager class
+		 */
+		std::shared_ptr<network_manager::socket_type> m_socket;
+
+		friend network_manager;
 	};
+
+#include "peer.tpp"
 }
 
 

@@ -1,5 +1,3 @@
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
 // Copyright 2017 Lucas Lazare.                                                                  //
@@ -10,16 +8,18 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-#include "peer.hpp"
-
-using namespace breep;
-
-
 inline const boost::uuids::uuid& peer::id() const noexcept {
 	return m_id;
 }
 
 inline const boost::asio::ip::address& peer::address() const noexcept {
 	return m_address;
+}
+
+inline const bool peer::operator==(const peer& lhs) const {
+	return this->m_address == lhs.m_address && this->m_id == lhs.m_id;
+}
+
+inline const bool peer::operator!=(const peer& lhs) const {
+	return this->m_address != lhs.m_address || this->m_id != lhs.m_id;
 }

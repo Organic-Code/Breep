@@ -32,13 +32,14 @@ namespace breep {
 	 * @brief This class represent the user's client
 	 * @since 0.1.0
 	 */
-	class local_peer: public peer {
+	template <typename network_manager>
+	class local_peer: public peer<network_manager> {
 	public:
 
 		local_peer()
 				: peer(boost::uuids::random_generator{}(), boost::asio::ip::address::from_string("localhost"))
 				, m_bridging_from_to{}
-		        , m_path_to_passing_by{}
+				, m_path_to_passing_by{}
 		{}
 
 		/**
@@ -52,24 +53,36 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		peer& path_to(const peer& p);
+		peer<network_manager>& path_to(const peer& p);
 
 		/**
 		 * @copydoc local_peer::path_to(const peer&)
 		 */
-		const peer& path_to(const peer& p) const;
+		const peer<network_manager>& path_to(const peer& p) const;
+
+		/**
+		 * @return A reference to the private field m_path_to_passing_by
+		 *
+		 * @since 0.1.0
+		 */
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() noexcept;
+
+		/**
+		 * @copydoc local_peer::path_to_passing_by()
+		 */
+		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() const noexcept;
 
 		/**
 		 * @return A reference to the private field m_bridging_from_to
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid,peer, boost::hash<boost::uuids::uuid>>& path_to_passing_by() noexcept;
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() noexcept;
 
 		/**
-		 * @copydoc local_peer::path_to_passing_by()
+		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<boost::uuids::uuid,peer, boost::hash<boost::uuids::uuid>>& path_to_passing_by() const noexcept;
+		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() const noexcept;
 
 	private:
 		/**
@@ -92,13 +105,13 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
 
 
 		/**
 		 * @brief Map representing links.
 		 * @details Assuming you are peer \em a. If the link to a peer \em b
-		 *          passes through a peer \em c, then we have
+		 *          passes through peer \em c, then we have
 		 *          @code{.cpp}
 		 *          	m_path_to_passing_by.at(b) == c;
 		 *          @endcode
@@ -112,8 +125,10 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
 	};
+
+#include "local_peer.tpp"
 }
 
 

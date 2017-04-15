@@ -1,5 +1,3 @@
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
 // Copyright 2017 Lucas Lazare.                                                                  //
@@ -11,22 +9,32 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "local_peer.hpp"
-
-using namespace breep;
-
-inline peer& local_peer::path_to(const peer& p) {
+template <typename T>
+inline peer<T>& local_peer<T>::path_to(const peer<T>& p) {
 	return m_path_to_passing_by.at(p.id());
 }
 
-inline const peer& local_peer::path_to(const peer& p) const {
+template <typename T>
+inline const peer<T>& local_peer<T>::path_to(const peer<T>& p) const {
 	return m_path_to_passing_by.at(p.id());
 }
 
-inline std::unordered_map<boost::uuids::uuid, breep::peer, boost::hash<boost::uuids::uuid>>& local_peer::path_to_passing_by() noexcept {
+template <typename T>
+inline std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::path_to_passing_by() noexcept {
 	return m_path_to_passing_by;
 }
 
-inline const std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>& breep::local_peer::path_to_passing_by() const noexcept {
+template <typename T>
+inline const std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::path_to_passing_by() const noexcept {
 	return m_path_to_passing_by;
 }
+
+template <typename T>
+inline std::unordered_map<boost::uuids::uuid,peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::bridging_from_to() noexcept {
+	return m_bridging_from_to;
+};
+
+template <typename T>
+const std::unordered_map<boost::uuids::uuid,peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::bridging_from_to() const noexcept {
+	return m_bridging_from_to;
+};

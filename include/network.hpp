@@ -20,6 +20,8 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <boost/uuid/uuid.hpp>
+#include <boost/functional/hash.hpp>
 
 #include "commands.hpp"
 #include "peer.hpp"
@@ -37,6 +39,7 @@ namespace breep {
 	 * @tparam network_manager Manager used to manage the network
 	 *                         This class should inherit from \em breep::network_manager_base
 	 *                         see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
+	 *                         network_manager::socket_type must also be defined.
 	 *
 	 * @note A \em const \em network is a network with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
@@ -57,7 +60,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using connection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer& new_peer, unsigned short distance)>;
+		using connection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& new_peer, unsigned short distance)>;
 
 		/**
 		 * Type representing a data listener.
@@ -67,7 +70,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer& received_from, const std::vector<char>& data, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::vector<char>& data, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -76,7 +79,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using disconnection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer& disconnected_peer)>;
+		using disconnection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& disconnected_peer)>;
 
 		/**
 		 * @since 0.1.0
@@ -164,7 +167,7 @@ namespace breep {
 		 * @copydoc network::send_to(const peer&, const data_container&) const;
 		 */
 		template <typename data_container>
-		void send_to(const peer& p, data_container&& data) const;
+		void send_to(const peer<network_manager>& p, data_container&& data) const;
 
 		/**
 		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer
@@ -308,17 +311,17 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		const std::vector<peer>& peers() const {
+		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& peers() const {
 			return m_peers;
 		}
 
 	private:
 
-		std::vector<peer> m_peers;
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
-		local_peer m_me;
+		local_peer<network_manager> m_me;
 
 		network_manager m_manager;
 

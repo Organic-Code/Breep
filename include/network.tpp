@@ -17,10 +17,10 @@
 template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to_all(const data_container& data) const {
-	for (const peer& p : m_peers) {
-		const peer& p2 = m_me.path_to(p);
-		if (&p == &p2) {
-			m_manager.send(commands::send_to_all, data, p.address());
+	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+		const peer& p2 = m_me.path_to(pair.second);
+		if (pair.second == p2) {
+			m_manager.send(commands::send_to_all, data, pair.second);
 		}
 	}
 }
@@ -34,14 +34,14 @@ inline void breep::network<T>::send_to_all(data_container&& data) const {
 
 template <typename T>
 template <typename data_container>
-inline void breep::network<T>::send_to(const peer& p, const data_container& data) const {
-	m_manager.send(commands::send_to, data, m_me.path_to(p).address());
+inline void breep::network<T>::send_to(const peer<T>& p, const data_container& data) const {
+	m_manager.send(commands::send_to, data, m_me.path_to(p));
 }
 
 template <typename T>
 template <typename data_container>
-inline void breep::network<T>::send_to(const peer& p, data_container&& data) const {
-	m_manager.send(commands::send_to, data, m_me.path_to(p).address());
+inline void breep::network<T>::send_to(const peer<T>& p, data_container&& data) const {
+	m_manager.send(commands::send_to, data, m_me.path_to(p));
 }
 
 template <typename T>
@@ -75,15 +75,17 @@ void breep::network<T>::disconnect() {
 
 template <typename T>
 void breep::network<T>::disconnect_sync() {
-	for (const peer& p : m_peers) {
-		m_manager.disconnect(p.address());
+	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+		m_manager.disconnect(pair.second);
 	}
-	std::vector<peer>{}.swap(m_peers); // clear and shrink
+	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
+	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
+	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
 }
 
 template <typename T>
 inline listener_id breep::network<T>::add_listener(connection_listener listener) {
-	return add_listener(std::move(listener));
+		return add_listener(std::move(listener));
 }
 
 template <typename T>
