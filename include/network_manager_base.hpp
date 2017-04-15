@@ -29,6 +29,9 @@ namespace breep {
 	template <typename T>
 	class network<T>;
 
+	template <typename T>
+	class peer<T>;
+
 	/**
 	 * @class network_manager_base network_manager_base.hpp
 	 * @brief base class for network managers, used by \em network<typename network_manager>.
@@ -48,23 +51,42 @@ namespace breep {
 		/**
 		 * @brief Sends data to a peer
 		 *
-		 * @tparam data_container Any data container type you want to support.
+		 * @tparam data_container Any data container type you want to support. In the case of \em tcp_nmanager
+		 *                        and \em udp_nmanager, the data_container type should respect the \em Container concept
+		 *                        for \em uint8_t.
+		 *
 		 * @param command command of the packet (considered as data)
 		 * @param data data to be sent
-		 * @param address address of the peer to whom to send the data.
+		 * @param peer the peer to whom to send the data.
 		 */
 		template <typename data_container>
-		virtual void send(commands command, const data_container& data, const boost::asio::ip::address& address) = 0;
+		virtual void send(commands command, const data_container& data, const peer<network_manager>& peer) const = 0;
+
+		/**
+		 * @brief Sends data to a peer
+		 *
+		 * @tparam data_iterator Any data iterator type you want to support. In the case of \em tcp_nmanager
+		 *                        and \em udp_nmanager, the data_iterator type should respect the \em InputIterator concept
+		 *                        for \em uint8_t.
+		 *
+		 * @param command command of the packet (considered as data)
+		 * @param data data to be sent
+		 * @param peer of the peer to whom to send the data.
+		 */
+		template <typename data_iterator>
+		virtual void send(commands command, data_iterator begin, data_iterator end, const peer<network_manager>& peer) const = 0;
 
 		/**
 		 * @brief connects to a peer
+		 *
+		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
 		 */
-		virtual void connect(const boost::asio::ip::address&) = 0;
+		virtual peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port) = 0;
 
 		/**
 		 * @brief disconnects from a peer
 		 */
-		virtual void disconnect(const boost::asio::ip::address&) = 0;
+		virtual void disconnect(const peer<network_manager>&) = 0;
 
 	private:
 		/**
