@@ -71,7 +71,7 @@ namespace breep {
 		 *
 		 * @tparam data_iterator Any data iterator type you want to support. In the case of \em tcp_nmanager
 		 *                        and \em udp_nmanager, the data_iterator type should respect both
-		 *                        the \em ForwardIterator concept and the EqualityComparable concept.
+		 *                        the \em InputIterator.
 		 *                        (for \em uint8_t).
 		 *
 		 * @param command command of the packet (considered as data)
@@ -93,7 +93,7 @@ namespace breep {
 		/**
 		 * @brief disconnects from a peer
 		 */
-		virtual void disconnect(const peer<network_manager>&) = 0;
+		virtual void disconnect(peer<network_manager>&) = 0;
 
 	private:
 		/**

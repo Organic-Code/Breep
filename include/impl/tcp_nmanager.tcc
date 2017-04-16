@@ -30,12 +30,11 @@ inline void breep::tcp_nmanager::send(commands command, const data_container& da
 
 template <typename data_iterator>
 void breep::tcp_nmanager::send(commands command, data_iterator begin, const data_iterator& end, const peer<tcp_nmanager>& peer) const {
-	boost::asio::mutable_buffer buffer;
-	buffer << command;
-	while (!(begin == end)) {
-		buffer << *begin++;
-	}
-	boost::asio::write(*(peer.m_socket), buffer);
+	std::vector<uint8_t> buff;
+	buff.reserve(4096);
+	buff.push_back(static_cast<uint8_t>(command));
+	std::copy(begin, end, std::back_inserter(buff));
+	boost::asio::write(*(peer.m_socket), boost::asio::buffer(buff));
 }
 
 breep::peer<breep::tcp_nmanager> breep::tcp_nmanager::connect(const boost::asio::ip::address& address, unsigned short port) {
@@ -68,7 +67,7 @@ breep::peer<breep::tcp_nmanager> breep::tcp_nmanager::connect(const boost::asio:
 	);
 }
 
-inline void breep::tcp_nmanager::disconnect(const peer<tcp_nmanager>& peer) {
+inline void breep::tcp_nmanager::disconnect(peer<tcp_nmanager>& peer) {
 	send(commands::peer_disconnection, breep::detail::to_bigendian1(boost::uuids::to_string(peer.id())), peer);
 	peer.m_socket = std::shared_ptr<socket_type>(nullptr);
 }

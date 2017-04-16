@@ -32,7 +32,7 @@ namespace breep {
 
 		peer<tcp_nmanager> connect(const boost::asio::ip::address&, unsigned short port);
 
-		void disconnect(const peer<tcp_nmanager>&);
+		void disconnect(peer<tcp_nmanager>&);
 
 	private:
 		void owner(network<tcp_nmanager>* owner);
