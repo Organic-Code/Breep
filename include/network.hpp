@@ -26,12 +26,11 @@
 #include "commands.hpp"
 #include "peer.hpp"
 #include "local_peer.hpp"
+#include "network_manager_base.hpp"
 
 namespace breep {
 
 	typedef unsigned long listener_id;
-
-	class network_manager_base;
 
 	/**
 	 * @class network network.hpp
@@ -95,7 +94,7 @@ namespace breep {
 				, m_id_count{0}
 				, m_port{port}
 		{
-			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
 		}
 
@@ -112,7 +111,7 @@ namespace breep {
 				, m_id_count{0}
 				, m_port{port}
 		{
-			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
 		}
 
@@ -129,7 +128,7 @@ namespace breep {
 				, m_id_count{0}
 				, m_port{port}
 		{
-			static_assert(std::is_base_of<network_manager_base, network_manager>::value, "Specified type not derived from breep::network_manager_base");
+			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
 			m_manager.owner(this);
 		}
 

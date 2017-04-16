@@ -21,18 +21,21 @@ namespace breep {
 
 		tcp_nmanager(): m_owner(nullptr) {}
 
+		tcp_nmanager(const tcp_nmanager&) = delete;
+		tcp_nmanager& operator=(const tcp_nmanager&) = delete;
+
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<tcp_nmanager>& address) const final override;
+		void send(commands command, const data_container& data, const peer<tcp_nmanager>& address) const;
 
 		template <typename data_iterator>
-		void send(commands command, data_iterator begin, data_iterator end, const peer<tcp_nmanager>& address) const final override;
+		void send(commands command, data_iterator begin, data_iterator end, const peer<tcp_nmanager>& address) const;
 
-		peer<tcp_nmanager> connect(const boost::asio::ip::address&, unsigned short port) final override;
+		peer<tcp_nmanager> connect(const boost::asio::ip::address&, unsigned short port);
 
-		void disconnect(const peer&) final override;
+		void disconnect(const peer<tcp_nmanager>&);
 
 	private:
-		void owner(network<tcp_nmanager>* owner) final override;
+		void owner(network<tcp_nmanager>* owner);
 
 		network<tcp_nmanager>* m_owner;
 	};

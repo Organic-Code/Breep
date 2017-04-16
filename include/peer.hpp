@@ -34,8 +34,6 @@ namespace breep {
 	class peer {
 	public:
 
-		static const peer bad_peer = peer(boost::uuids::nil_uuid(), boost::asio::ip::address());
-
 		/**
 	 	 * @since 0.1.0
 		 */
@@ -64,7 +62,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		peer(const peer<network_manager>&&) = default;
+		peer(peer<network_manager>&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -93,6 +91,12 @@ namespace breep {
 
 		friend network_manager;
 	};
+
+	namespace constant {
+		template<typename T>
+		static const peer<T> bad_peer =
+				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address(), std::shared_ptr<typename T::socket_type>());
+	}
 
 #include "impl/peer.tcc"
 }

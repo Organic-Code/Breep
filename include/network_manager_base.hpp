@@ -19,18 +19,20 @@
  */
 
 #include "commands.hpp"
+#include "network.hpp"
+#include "detail/utils.hpp"
 
-namespace boost::asio::ip {
+namespace boost { namespace asio { namespace ip {
 	class address;
-}
+}}}
 
 namespace breep {
 
 	template <typename T>
-	class network<T>;
+	class network;
 
 	template <typename T>
-	class peer<T>;
+	class peer;
 
 	/**
 	 * @class network_manager_base network_manager_base.hpp
@@ -60,7 +62,9 @@ namespace breep {
 		 * @param peer the peer to whom to send the data.
 		 */
 		template <typename data_container>
-		virtual void send(commands command, const data_container& data, const peer<network_manager>& peer) const = 0;
+		void send(commands command, const data_container& data, const peer<network_manager>& peer) const {
+			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_container>::value, "Send called without specialisation.");
+		}
 
 		/**
 		 * @brief Sends data to a peer
@@ -74,7 +78,9 @@ namespace breep {
 		 * @param peer of the peer to whom to send the data.
 		 */
 		template <typename data_iterator>
-		virtual void send(commands command, data_iterator begin, data_iterator end, const peer<network_manager>& peer) const = 0;
+		void send(commands command, data_iterator begin, data_iterator end, const peer<network_manager>& peer) const {
+			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_iterator>::value, "Send called without specialisation.");
+		}
 
 		/**
 		 * @brief connects to a peer

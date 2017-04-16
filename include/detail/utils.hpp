@@ -18,7 +18,7 @@
  */
 
 
-namespace breep::detail {
+namespace breep { namespace detail {
 	/**
 	 * @brief Converts from local endianness to big endian and the reverse.
 	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
@@ -35,6 +35,9 @@ namespace breep::detail {
 	inline container to_bigendian3(const container& data) {
 		return to_bigendian1<container, container>(data);
 	}
-}
+
+	template <typename... T>
+	struct dependent_false { static constexpr bool value = false; };
+}}
 
 #endif //BREEP_UTILS_HPP

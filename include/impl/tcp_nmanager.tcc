@@ -24,22 +24,22 @@
 #include "network.hpp"
 
 template <typename data_container>
-void breep::tcp_nmanager::send(commands command, const data_container& data, const peer& address) const final override {
+void breep::tcp_nmanager::send(commands command, const data_container& data, const peer<tcp_nmanager>& address) const {
 	//todo
 }
 
 template <typename data_iterator>
-void breep::tcp_nmanager::send(commands command, data_iterator begin, data_iterator end, const peer& address) const final override {
+void breep::tcp_nmanager::send(commands command, data_iterator begin, data_iterator end, const peer<tcp_nmanager>& address) const {
 	//todo
 }
 
-peer breep::tcp_nmanager::connect(const boost::asio::ip::address& address, unsigned short port) final override {
+breep::peer<breep::tcp_nmanager> breep::tcp_nmanager::connect(const boost::asio::ip::address& address, unsigned short port) {
 	boost::asio::io_service io_service;
 	boost::asio::ip::tcp::resolver resolver(io_service);
 	boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
 			resolver.resolve(boost::asio::ip::tcp::resolver::query(address.to_string(),std::to_string(port)));
 
-	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared(io_service);
+	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(io_service);
 	boost::asio::connect(*socket, endpoint_iterator);
 	boost::asio::write(
 			*socket,
@@ -50,24 +50,24 @@ peer breep::tcp_nmanager::connect(const boost::asio::ip::address& address, unsig
 	size_t len = socket->read_some(boost::asio::buffer(buffer), error);
 
 	if (error) {
-		return peer::bad_peer;
+		return constant::bad_peer<tcp_nmanager>;
 	}
 
 	std::vector<char> input{};
 	input.reserve(len);
 	std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(input));
-	return peer(
+	return peer<tcp_nmanager>(
 			boost::uuids::string_generator{}(breep::detail::to_bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
 	        std::move(socket)
 	);
 }
 
-void breep::tcp_nmanager::disconnect(const peer&) final override {
+void breep::tcp_nmanager::disconnect(const peer<tcp_nmanager>&) {
 	//todo
 }
 
-void breep::tcp_nmanager::owner(network<tcp_nmanager>* owner) final override {
+void breep::tcp_nmanager::owner(network<tcp_nmanager>* owner) {
 	if (m_owner == nullptr) {
 		m_owner = owner;
 	} else {

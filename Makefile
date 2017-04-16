@@ -45,7 +45,7 @@ COMPFLAGS       = -Wdisabled-optimization -Wvector-operation-performance -Winval
                   -Wwrite-strings -Wmissing-noreturn
 
 #Compile standard
-COMPSTANDARD    = -std=c++1z
+COMPSTANDARD    = -std=c++14
 #Includes' flags
 INCLUDEDIR      = -I include/
 #Libraries paths' flags
