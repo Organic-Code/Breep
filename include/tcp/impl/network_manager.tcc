@@ -17,6 +17,7 @@
 #include <boost/uuid/uuid_io.hpp> // boost::uuids::to_string
 #include <boost/array.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -25,15 +26,27 @@
 
 template <typename data_container>
 inline void breep::tcp::network_manager::send(commands command, const data_container& data, const peer<network_manager>& peer) const {
-	send(command, data.cbegin(), data.cend(), peer);
+	send(command, data.cbegin(), data.size(), peer);
 }
 
-template <typename data_iterator>
-inline void breep::tcp::network_manager::send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const {
+template <typename data_iterator, typename size_type>
+void breep::tcp::network_manager::send(commands command, data_iterator it, size_type size, const peer<network_manager>& peer) const {
 	std::vector<uint8_t> buff;
-	buff.reserve(4096);
+	buff.reserve(1 + size + size / std::numeric_limits<uint8_t>::max());
+
 	buff.push_back(static_cast<uint8_t>(command));
-	std::copy(begin, end, std::back_inserter(buff));
+	for (size_type current_index{0} ; current_index < size ; ++current_index) {
+
+		if (!(current_index % std::numeric_limits<uint8_t>::max())) {
+			if (size - current_index <= std::numeric_limits<uint8_t>::max()) {
+				buff.push_back(static_cast<uint8_t>(size - current_index));
+			} else {
+				buff.push_back(0);
+			}
+		}
+		buff.push_back(*it++);
+		++current_index;
+	}
 	boost::asio::write(*(peer.m_socket), boost::asio::buffer(buff));
 }
 

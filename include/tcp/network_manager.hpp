@@ -27,8 +27,8 @@ namespace breep { namespace tcp {
 		template <typename data_container>
 		void send(commands command, const data_container& data, const peer<network_manager>& peer) const;
 
-		template <typename data_iterator>
-		void send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const;
+		template <typename data_iterator, typename size_type>
+		void send(commands command, data_iterator begin, size_type size, const peer<network_manager>& peer) const;
 
 		peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port);
 

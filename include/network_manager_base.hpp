@@ -73,13 +73,15 @@ namespace breep {
 		 *                        and \em udp_nmanager, the data_iterator type should respect both
 		 *                        the \em InputIterator.
 		 *                        (for \em uint8_t).
+		 * @tparam size_type
 		 *
 		 * @param command command of the packet (considered as data)
-		 * @param data data to be sent. It is uppon your responsability to check for endianness.
+		 * @param begin iterator to the data to be sent. It is uppon your responsability to check for endianness.
+		 * @param size quantity of data to be sent
 		 * @param peer of the peer to whom to send the data.
 		 */
-		template <typename data_iterator>
-		void send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const {
+		template <typename data_iterator, typename  size_type>
+		void send(commands command, data_iterator begin, size_type size, const peer<network_manager>& peer) const {
 			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 
