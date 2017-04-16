@@ -18,8 +18,7 @@ template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to_all(const data_container& data) const {
 	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
-		const peer& p2 = m_me.path_to(pair.second);
-		if (pair.second == p2) {
+		if (pair.second == m_me.path_to(pair.second)) {
 			m_manager.send(commands::send_to_all, data, pair.second);
 		}
 	}
@@ -35,8 +34,7 @@ template <typename T>
 template <typename data_iterator>
 void breep::network<T>::send_to_all(const data_iterator& begin, const data_iterator& end) const {
 	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
-		const peer& p2 = m_me.path_to(pair.second);
-		if (pair.second == p2) {
+		if (pair.second == m_me.path_to(pair.second)) {
 			m_manager.send(commands::send_to_all, begin, end, pair.second);
 		}
 	}
@@ -73,8 +71,8 @@ inline void breep::network<T>::connect(boost::asio::ip::address&& address) {
 template <typename T>
 inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& address) {
 	if (m_peers.empty()) {
-		peer new_peer(m_manager.connect(address, m_port));
-		if (new_peer != peer::bad_peer) {
+		peer<T> new_peer(m_manager.connect(address, m_port));
+		if (new_peer != peer<T>::bad_peer) {
 			m_peers.insert(std::make_pair(new_peer.id(), new_peer));
 			m_me.path_to_passing_by().insert(std::make_pair(new_peer.id(), new_peer));
 			m_me.bridging_from_to().insert(std::make_pair(new_peer.id(), new_peer));
@@ -102,40 +100,40 @@ void breep::network<T>::disconnect_sync() {
 	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
 		m_manager.disconnect(pair.second);
 	}
-	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
-	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
-	std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
+	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
+	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
+	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(connection_listener listener) {
+inline breep::listener_id breep::network<T>::add_listener(connection_listener listener) {
 		return add_listener(std::move(listener));
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(connection_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_listener(connection_listener&& listener) {
 	m_co_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(data_received_listener listener) {
+inline breep::listener_id breep::network<T>::add_listener(data_received_listener listener) {
 	return add_listener(std::move(listener));
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(data_received_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_listener(data_received_listener&& listener) {
 	m_data_r_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(disconnection_listener listener) {
+inline breep::listener_id breep::network<T>::add_listener(disconnection_listener listener) {
 	return add_listener(std::move(listener));
 }
 
 template <typename T>
-inline listener_id breep::network<T>::add_listener(disconnection_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_listener(disconnection_listener&& listener) {
 	m_dc_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }

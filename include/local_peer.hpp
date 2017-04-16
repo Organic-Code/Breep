@@ -37,7 +37,7 @@ namespace breep {
 	public:
 
 		local_peer()
-				: peer(boost::uuids::random_generator{}(), boost::asio::ip::address::from_string("localhost"))
+				: peer<network_manager>::peer(boost::uuids::random_generator{}(), boost::asio::ip::address::from_string("localhost"))
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
 		{}
@@ -53,36 +53,36 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		peer<network_manager>& path_to(const peer& p);
+		peer<network_manager>& path_to(const peer<network_manager>& p);
 
 		/**
 		 * @copydoc local_peer::path_to(const peer&)
 		 */
-		const peer<network_manager>& path_to(const peer& p) const;
+		const peer<network_manager>& path_to(const peer<network_manager>& p) const;
 
 		/**
 		 * @return A reference to the private field m_path_to_passing_by
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() noexcept;
+		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() noexcept;
 
 		/**
 		 * @copydoc local_peer::path_to_passing_by()
 		 */
-		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() const noexcept;
+		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() const noexcept;
 
 		/**
 		 * @return A reference to the private field m_bridging_from_to
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() noexcept;
+		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() noexcept;
 
 		/**
 		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() const noexcept;
+		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() const noexcept;
 
 	private:
 		/**
@@ -105,7 +105,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
+		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
 
 
 		/**
@@ -125,11 +125,11 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
+		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
 	};
 
-#include "local_peer.tpp"
 }
 
+#include "impl/local_peer.tcc"
 
 #endif //BREEP_LOCAL_PEER_HPP

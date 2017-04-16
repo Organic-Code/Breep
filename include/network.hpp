@@ -341,7 +341,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		unsigned short port() const {
-			return m_port
+			return m_port;
 		}
 
 		/**
@@ -374,6 +374,6 @@ namespace breep {
 	};
 }
 
-#include "network.tpp"
+#include "impl/network.tcc"
 
 #endif //BREEP_NETWORK_HPP

@@ -38,6 +38,6 @@ namespace breep {
 	};
 }
 
-#include "tcp_nmanager.tpp"
+#include "impl/tcp_nmanager.tcc"
 
 #endif //BREEP_TCP_NETWORK_HPP

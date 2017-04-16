@@ -39,7 +39,8 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, std::shared_ptr<network_manager::socket_type> socket = std::shared_ptr(nullptr))
+		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address,
+		     std::shared_ptr<typename network_manager::socket_type> socket = std::shared_ptr<typename network_manager::socket_type>(nullptr))
 				: m_id(id)
 				, m_address(address)
 				, m_socket(socket)
@@ -48,7 +49,8 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, std::shared_ptr<network_manager::socket_type>&& socket)
+		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address,
+		     std::shared_ptr<typename network_manager::socket_type>&& socket)
 				: m_id(id)
 				, m_address(address)
 				, m_socket(socket)
@@ -57,12 +59,12 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const peer&) = delete;
+		peer(const peer<network_manager>&) = default;
 
 		/**
 		 * @since 0.1.0
 		 */
-		peer(const peer&&) = default;
+		peer(const peer<network_manager>&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -76,9 +78,9 @@ namespace breep {
 		 */
 		const boost::asio::ip::address& address() const noexcept;
 
-		const bool operator==(const peer& lhs) const;
+		bool operator==(const peer<network_manager>& lhs) const;
 
-		const bool operator!=(const peer& lhs) const;
+		bool operator!=(const peer<network_manager>& lhs) const;
 
 	private:
 		const boost::uuids::uuid m_id;
@@ -87,12 +89,12 @@ namespace breep {
 		/**
 		 * m_socket must be set by the \em network_manager class
 		 */
-		std::shared_ptr<network_manager::socket_type> m_socket;
+		std::shared_ptr<typename network_manager::socket_type> m_socket;
 
 		friend network_manager;
 	};
 
-#include "peer.tpp"
+#include "impl/peer.tcc"
 }
 
 

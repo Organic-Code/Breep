@@ -8,33 +8,24 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 template <typename T>
-inline peer<T>& local_peer<T>::path_to(const peer<T>& p) {
-	return m_path_to_passing_by.at(p.id());
+inline const boost::uuids::uuid& breep::peer<T>::id() const noexcept {
+	return m_id;
 }
 
 template <typename T>
-inline const peer<T>& local_peer<T>::path_to(const peer<T>& p) const {
-	return m_path_to_passing_by.at(p.id());
+inline const boost::asio::ip::address& breep::peer<T>::address() const noexcept {
+	return m_address;
 }
 
 template <typename T>
-inline std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::path_to_passing_by() noexcept {
-	return m_path_to_passing_by;
+inline bool breep::peer<T>::operator==(const peer<T>& lhs) const {
+	return this->m_address == lhs.m_address && this->m_id == lhs.m_id;
 }
 
 template <typename T>
-inline const std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::path_to_passing_by() const noexcept {
-	return m_path_to_passing_by;
+inline bool breep::peer<T>::operator!=(const peer<T>& lhs) const {
+	return this->m_address != lhs.m_address || this->m_id != lhs.m_id;
 }
-
-template <typename T>
-inline std::unordered_map<boost::uuids::uuid,peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::bridging_from_to() noexcept {
-	return m_bridging_from_to;
-};
-
-template <typename T>
-const std::unordered_map<boost::uuids::uuid,peer<T>, boost::hash<boost::uuids::uuid>>& local_peer<T>::bridging_from_to() const noexcept {
-	return m_bridging_from_to;
-};

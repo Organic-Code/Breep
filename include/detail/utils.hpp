@@ -23,13 +23,13 @@ namespace breep::detail {
 	 * @brief Converts from local endianness to big endian and the reverse.
 	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
 	 */
-	template<typename data_container, typename output_container = std::vector<data_container::value_type>>
+	template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
 	output_container to_bigendian1(const data_container& data);
 
 	template<typename output_container, typename data_container>
 	inline output_container to_bigendian2(const data_container& data) {
 		return to_bigendian1<data_container, output_container>(data);
-	};
+	}
 
 	template <typename container>
 	inline container to_bigendian3(const container& data) {
