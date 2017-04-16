@@ -55,10 +55,10 @@ namespace breep {
 		 *
 		 * @tparam data_container Any data container type you want to support. In the case of \em tcp_nmanager
 		 *                        and \em udp_nmanager, the data_container type should respect the \em Container concept
-		 *                        for \em uint8_t.
+		 *                        (for \em uint8_t).
 		 *
 		 * @param command command of the packet (considered as data)
-		 * @param data data to be sent
+		 * @param data data to be sent. It is uppon your responsability to check for endianness.
 		 * @param peer the peer to whom to send the data.
 		 */
 		template <typename data_container>
@@ -70,15 +70,16 @@ namespace breep {
 		 * @brief Sends data to a peer
 		 *
 		 * @tparam data_iterator Any data iterator type you want to support. In the case of \em tcp_nmanager
-		 *                        and \em udp_nmanager, the data_iterator type should respect the \em InputIterator concept
-		 *                        for \em uint8_t.
+		 *                        and \em udp_nmanager, the data_iterator type should respect both
+		 *                        the \em ForwardIterator concept and the EqualityComparable concept.
+		 *                        (for \em uint8_t).
 		 *
 		 * @param command command of the packet (considered as data)
-		 * @param data data to be sent
+		 * @param data data to be sent. It is uppon your responsability to check for endianness.
 		 * @param peer of the peer to whom to send the data.
 		 */
 		template <typename data_iterator>
-		void send(commands command, data_iterator begin, data_iterator end, const peer<network_manager>& peer) const {
+		void send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const {
 			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 

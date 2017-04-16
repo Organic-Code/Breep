@@ -25,10 +25,10 @@ namespace breep {
 		tcp_nmanager& operator=(const tcp_nmanager&) = delete;
 
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<tcp_nmanager>& address) const;
+		void send(commands command, const data_container& data, const peer<tcp_nmanager>& peer) const;
 
 		template <typename data_iterator>
-		void send(commands command, data_iterator begin, data_iterator end, const peer<tcp_nmanager>& address) const;
+		void send(commands command, data_iterator begin, const data_iterator& end, const peer<tcp_nmanager>& peer) const;
 
 		peer<tcp_nmanager> connect(const boost::asio::ip::address&, unsigned short port);
 
