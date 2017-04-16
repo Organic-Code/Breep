@@ -13,10 +13,10 @@
 
 #include "network_manager_base.hpp"
 
-namespace breep {
-	class udp_nmanager: public network_manager_base<udp_nmanager> {
+namespace breep { namespace upd {
+	class network_manager: public network_manager_base<network_manager> {
 
 	};
-}
+}}
 
 #endif //BREEP_UDP_NETWORK_HPP

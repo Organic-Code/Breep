@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "tcp_nmanager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "tcp/network_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 #include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -24,12 +24,12 @@
 #include "network.hpp"
 
 template <typename data_container>
-inline void breep::tcp_nmanager::send(commands command, const data_container& data, const peer<tcp_nmanager>& peer) const {
+inline void breep::tcp::network_manager::send(commands command, const data_container& data, const peer<network_manager>& peer) const {
 	send(command, data.cbegin(), data.cend(), peer);
 }
 
 template <typename data_iterator>
-void breep::tcp_nmanager::send(commands command, data_iterator begin, const data_iterator& end, const peer<tcp_nmanager>& peer) const {
+inline void breep::tcp::network_manager::send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const {
 	std::vector<uint8_t> buff;
 	buff.reserve(4096);
 	buff.push_back(static_cast<uint8_t>(command));
@@ -37,7 +37,7 @@ void breep::tcp_nmanager::send(commands command, data_iterator begin, const data
 	boost::asio::write(*(peer.m_socket), boost::asio::buffer(buff));
 }
 
-breep::peer<breep::tcp_nmanager> breep::tcp_nmanager::connect(const boost::asio::ip::address& address, unsigned short port) {
+breep::peer<breep::tcp::network_manager> breep::tcp::network_manager::connect(const boost::asio::ip::address& address, unsigned short port) {
 	boost::asio::io_service io_service;
 	boost::asio::ip::tcp::resolver resolver(io_service);
 	boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
@@ -54,25 +54,25 @@ breep::peer<breep::tcp_nmanager> breep::tcp_nmanager::connect(const boost::asio:
 	size_t len = socket->read_some(boost::asio::buffer(buffer), error);
 
 	if (error) {
-		return constant::bad_peer<tcp_nmanager>;
+		return constant::bad_peer<network_manager>;
 	}
 
 	std::vector<char> input{};
 	input.reserve(len);
 	std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(input));
-	return peer<tcp_nmanager>(
+	return peer<network_manager>(
 			boost::uuids::string_generator{}(breep::detail::to_bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
 	        std::move(socket)
 	);
 }
 
-inline void breep::tcp_nmanager::disconnect(peer<tcp_nmanager>& peer) {
+inline void breep::tcp::network_manager::disconnect(breep::peer<network_manager>& peer) {
 	send(commands::peer_disconnection, breep::detail::to_bigendian1(boost::uuids::to_string(peer.id())), peer);
 	peer.m_socket = std::shared_ptr<socket_type>(nullptr);
 }
 
-inline void breep::tcp_nmanager::owner(network<tcp_nmanager>* owner) {
+inline void breep::tcp::network_manager::owner(network<network_manager>* owner) {
 	if (m_owner == nullptr) {
 		m_owner = owner;
 	} else {

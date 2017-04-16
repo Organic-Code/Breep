@@ -14,33 +14,33 @@
 #include "network_manager_base.hpp"
 #include "network.hpp"
 
-namespace breep {
-	class tcp_nmanager: public network_manager_base<tcp_nmanager> {
+namespace breep { namespace tcp {
+	class network_manager: public network_manager_base<network_manager> {
 	public:
 		typedef boost::asio::ip::tcp::socket socket_type;
 
-		tcp_nmanager(): m_owner(nullptr) {}
+		network_manager(): m_owner(nullptr) {}
 
-		tcp_nmanager(const tcp_nmanager&) = delete;
-		tcp_nmanager& operator=(const tcp_nmanager&) = delete;
+		network_manager(const network_manager&) = delete;
+		network_manager& operator=(const network_manager&) = delete;
 
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<tcp_nmanager>& peer) const;
+		void send(commands command, const data_container& data, const peer<network_manager>& peer) const;
 
 		template <typename data_iterator>
-		void send(commands command, data_iterator begin, const data_iterator& end, const peer<tcp_nmanager>& peer) const;
+		void send(commands command, data_iterator begin, const data_iterator& end, const peer<network_manager>& peer) const;
 
-		peer<tcp_nmanager> connect(const boost::asio::ip::address&, unsigned short port);
+		peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port);
 
-		void disconnect(peer<tcp_nmanager>&);
+		void disconnect(peer<network_manager>& peer);
 
 	private:
-		void owner(network<tcp_nmanager>* owner);
+		void owner(network<network_manager>* owner);
 
-		network<tcp_nmanager>* m_owner;
+		network<network_manager>* m_owner;
 	};
-}
+}}
 
-#include "impl/tcp_nmanager.tcc"
+#include "tcp/impl/network_manager.tcc"
 
 #endif //BREEP_TCP_NETWORK_HPP
