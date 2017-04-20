@@ -33,20 +33,22 @@ inline void breep::tcp::network_manager::send(commands command, const data_conta
 template <typename data_iterator, typename size_type>
 void breep::tcp::network_manager::send(commands command, data_iterator it, size_type size, const peernm& peer) const {
 	std::vector<uint8_t> buff;
-	buff.reserve(1 + size + size / std::numeric_limits<uint8_t>::max());
+	buff.reserve(2 + size + size / std::numeric_limits<uint8_t>::max());
 
 	buff.push_back(static_cast<uint8_t>(command));
-	for (size_type current_index{0} ; current_index < size ; ++current_index) {
-
-		if (!(current_index % std::numeric_limits<uint8_t>::max())) {
-			if (size - current_index <= std::numeric_limits<uint8_t>::max()) {
-				buff.push_back(static_cast<uint8_t>(size - current_index));
-			} else {
-				buff.push_back(0);
+	size_type current_index{0};
+	while (current_index < size) {
+		if (size - current_index > std::numeric_limits<uint8_t>::max()) {
+			buff.push_back(0);
+			for (uint8_t i = std::numeric_limits<uint8_t>::max() ; i-- ; ++current_index) {
+				buff.push_back(*it++);
+			}
+		} else {
+			buff.push_back(static_cast<uint8_t>(size - current_index));
+			while(current_index++ < size) {
+				buff.push_back(*it++);
 			}
 		}
-		buff.push_back(*it++);
-		++current_index;
 	}
 	boost::asio::write(*peer.m_socket, boost::asio::buffer(buff));
 }
