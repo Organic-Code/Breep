@@ -20,6 +20,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <mutex>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -88,35 +89,15 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		explicit network(unsigned short port = default_port) noexcept
-				: m_peers{}
-				, m_co_listener{}
-				, m_data_r_listener{}
-				, m_dc_listener{}
-				, m_me{}
-				, m_manager{}
-				, m_id_count{0}
-				, m_port{port}
-		{
-			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
-			m_manager.owner(this);
-		}
+				: network(network_manager{}, port)
+		{}
 
 		/**
 		 * @since 0.1.0
 		 */
 		explicit network(const network_manager& manager, unsigned short port = default_port) noexcept
-				: m_peers{}
-				, m_co_listener{}
-				, m_data_r_listener{}
-				, m_dc_listener{}
-				, m_me{}
-				, m_manager(manager)
-				, m_id_count{0}
-				, m_port{port}
-		{
-			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
-			m_manager.owner(this);
-		}
+				: network(network_manager(manager), port)
+		{}
 
 		/**
 		 * @since 0.1.0
@@ -127,7 +108,7 @@ namespace breep {
 				, m_data_r_listener{}
 				, m_dc_listener{}
 				, m_me{}
-				, m_manager(manager)
+				, m_manager{std::move(manager)}
 				, m_id_count{0}
 				, m_port{port}
 		{
@@ -204,6 +185,7 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		void connect(const boost::asio::ip::address& address);
+
 		/**
 		 * @copydoc network::connect(const boost::asio::ip::address&)
 		 */
@@ -331,9 +313,12 @@ namespace breep {
 		/**
 		 * @return The list of connected peers
 		 *
+		 * @details Returned by copy to avoid data race.
+		 *
 		 * @since 0.1.0
 		 */
-		const std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>>& peers() const {
+		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> peers() const {
+			std::lock_guard<std::mutex> lock_guard(m_peers_mutex);
 			return m_peers;
 		}
 
@@ -362,7 +347,7 @@ namespace breep {
 
 	private:
 
-		void peer_connected(const peer<network_manager>& p);
+		void peer_connected(peer<network_manager>&& p, unsigned short distance);
 		void peer_disconnected(const peer<network_manager>& p);
 		void data_received(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
 
@@ -378,6 +363,11 @@ namespace breep {
 
 		unsigned short m_port;
 
+		std::mutex m_co_mutex;
+		std::mutex m_dc_mutex;
+		std::mutex m_data_mutex;
+		std::mutex m_peers_mutex;
+
 		friend class network_attorney_client<network_manager>;
 	};
 
@@ -386,8 +376,8 @@ namespace breep {
 
 		network_attorney_client() = delete;
 
-		inline static void peer_connected(network<T>& object, const peer<T>& p) {
-			object.peer_connected(p);
+		inline static void peer_connected(network<T>& object, const peer<T>& p, unsigned short distance) {
+			object.peer_connected(p, distance);
 		}
 
 		inline static void peer_disconnected(network<T>& object, const peer<T>& p) {

@@ -73,12 +73,7 @@ inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& addr
 	if (m_peers.empty()) {
 		peer<T> new_peer(m_manager.connect(address, m_port));
 		if (new_peer != breep::constant::bad_peer<T>) {
-
-			std::pair<boost::uuids::uuid, breep::peer<T>> pair = std::make_pair(new_peer.id(), std::move(new_peer));
-			m_peers.insert(pair);
-			m_me.path_to_passing_by().insert(pair);
-			m_me.bridging_from_to().insert(std::vector<breep::peer<T>>{});
-			m_manager.process_connected_peer(pair.second);
+			peer_connected(std::move(new_peer), 0);
 			return true;
 		} else {
 			return false;
@@ -143,15 +138,18 @@ inline breep::listener_id breep::network<T>::add_listener(disconnection_listener
 
 template <typename T>
 inline bool breep::network<T>::remove_connection_listener(listener_id id) {
+	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	return m_co_listener.erase(id) > 0;
 }
 
 template <typename T>
 inline bool breep::network<T>::remove_disconnection_listener(listener_id id) {
+	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
 	return m_dc_listener.erase(id) > 0;
 }
 
 template <typename T>
 inline bool breep::network<T>::remove_data_listener(listener_id id) {
+	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 	return m_data_r_listener.erase(id) > 0;
 }
