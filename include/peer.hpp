@@ -57,6 +57,7 @@ namespace breep {
 				, m_socket(std::move(socket))
 				, m_fixed_buffer()
 				, m_dynamic_buffer()
+				, m_last_received_command()
 		{
 			m_dynamic_buffer.reserve(network_manager::buffer_length);
 		}
@@ -105,12 +106,17 @@ namespace breep {
 		/**
 		 * fixed size buffer unused by this class, left to use for network_manager
 		 */
-		std::array<uint8_t, network_manager::buffer_length> m_fixed_buffer;
+		mutable std::array<uint8_t, network_manager::buffer_length> m_fixed_buffer;
 
 		/**
 		 * dynamic buffer unused by this class, left to use for network_manager
 		 */
-		std::vector<uint8_t> m_dynamic_buffer;
+		mutable std::vector<uint8_t> m_dynamic_buffer;
+
+		/**
+		 * variable unused by this class, left to use for network_manager.
+		 */
+		mutable commands m_last_received_command;
 
 		friend network_manager;
 	};

@@ -49,6 +49,8 @@ namespace breep { namespace tcp {
 	private:
 		void owner(network<network_manager<BUFFER_LENGTH>>* owner) override;
 
+		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);
+
 		void process_disconnection(peernm& disconnected_peer);
 
 		network<network_manager<BUFFER_LENGTH>>* m_owner;

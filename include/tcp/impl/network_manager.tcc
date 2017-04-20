@@ -110,6 +110,78 @@ inline void breep::tcp::network_manager<T>::owner(network<network_manager<T>>* o
 }
 
 template <unsigned int T>
+void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::error_code error, std::size_t read) {
+	if (!error) {
+		std::vector<uint8_t>& dyn_buff = peer.m_dynamic_buffer;
+		std::array<uint8_t, T>& fixed_buff = peer.m_fixed_buffer;
+
+		typename std::array<uint8_t, T>::size_type current_index{0};
+		if (dyn_buff.empty()) {
+			peer.m_last_received_command = static_cast<commands>(fixed_buff[current_index++]);
+			if (peer.m_last_received_command == commands::retrieve_distance) {
+				network_attorney_client<network_manager<T>>::data_received(*m_owner, peer, commands::retrieve_distance, dyn_buff);
+				return;
+			}
+		}
+
+		bool has_work = true;
+		std::size_t max_idx = std::max(read, fixed_buff.size());
+		for (; has_work ;) {
+			uint8_t to_be_red = fixed_buff[current_index++];
+			if (to_be_red) {
+				if (to_be_red + current_index <= max_idx) {
+					while (--to_be_red) {
+						dyn_buff.push_back(fixed_buff[current_index++]);
+					}
+					network_attorney_client<network_manager <T>> ::data_received(*m_owner, peer, peer.m_last_received_command, dyn_buff);
+					dyn_buff.clear();
+					boost::asio::async_read(
+							*peer.m_socket,
+							boost::asio::buffer(fixed_buff.data(), fixed_buff.size()),
+							boost::bind(&network_manager<T>::process_read, this, peer, _1, _2)
+					);
+					has_work = false;
+				} else {
+					uint8_t count{0};
+					--current_index;
+					while (to_be_red--) {
+						fixed_buff[count++] = fixed_buff[current_index++];
+					}
+					boost::asio::async_read(
+							*peer.m_socket,
+							boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
+							boost::bind(&network_manager::process_read, this, peer, _1, _2)
+					);
+					has_work = false;
+				}
+			} else {
+				to_be_red = std::numeric_limits<uint8_t>::max();
+				if (to_be_red + current_index <= max_idx) {
+					while (to_be_red--) {
+						dyn_buff.push_back(fixed_buff[current_index++]);
+					}
+				} else {
+					uint8_t count{0};
+					--current_index;
+					while (to_be_red--) {
+						fixed_buff[count++] = fixed_buff[current_index++];
+					}
+					boost::asio::async_read(
+							*peer.m_socket,
+							boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
+							boost::bind(&network_manager<T>::process_read, this, peer, _1, _2)
+					);
+					has_work = false;
+				}
+			}
+		}
+	} else {
+		peer.m_socket = std::shared_ptr<socket_type>(nullptr);
+		process_disconnection(peer);
+	}
+}
+
+template <unsigned int T>
 void breep::tcp::network_manager<T>::process_disconnection(peernm& disconnected_peer) {
 	const std::vector<peernm>& others = m_owner->self().bridging_from_to().at(disconnected_peer.id());
 	if (!others.empty()) {
