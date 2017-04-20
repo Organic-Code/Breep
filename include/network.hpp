@@ -32,6 +32,9 @@ namespace breep {
 
 	typedef unsigned long listener_id;
 
+	template <typename T>
+	class network_attorney_client;
+
 	/**
 	 * @class network network.hpp
 	 * @brief                  This class is used to manage a peer to peer network.
@@ -70,7 +73,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::vector<char>& data, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::vector<uint8_t>& data, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -359,6 +362,10 @@ namespace breep {
 
 	private:
 
+		void peer_connected(const peer<network_manager>& p);
+		void peer_disconnected(const peer<network_manager>& p);
+		void data_received(const peer<network_manager>& source, const std::vector<uint8_t>& data, bool sent_to_all);
+
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
@@ -370,6 +377,28 @@ namespace breep {
 		listener_id m_id_count;
 
 		unsigned short m_port;
+
+		friend class network_attorney_client<network_manager>;
+	};
+
+	template <typename T>
+	class network_attorney_client {
+
+		network_attorney_client() = delete;
+
+		inline static void peer_connected(network<T>& object, const peer<T>& p) {
+			object.peer_connected(p);
+		}
+
+		inline static void peer_disconnected(network<T>& object, const peer<T>& p) {
+			object.peer_disconnected(p);
+		}
+
+		inline static void data_received(network<T>& object, const peer<T>& source, const std::vector<uint8_t>& data, bool sent_to_all) {
+			object.data_received(source, data, sent_to_all);
+		}
+
+		friend T;
 	};
 }
 
