@@ -364,7 +364,7 @@ namespace breep {
 
 		void peer_connected(const peer<network_manager>& p);
 		void peer_disconnected(const peer<network_manager>& p);
-		void data_received(const peer<network_manager>& source, const std::vector<uint8_t>& data, bool sent_to_all);
+		void data_received(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
 
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
@@ -394,8 +394,8 @@ namespace breep {
 			object.peer_disconnected(p);
 		}
 
-		inline static void data_received(network<T>& object, const peer<T>& source, const std::vector<uint8_t>& data, bool sent_to_all) {
-			object.data_received(source, data, sent_to_all);
+		inline static void data_received(network<T>& object, const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+			object.data_received(source, command, data);
 		}
 
 		friend T;
