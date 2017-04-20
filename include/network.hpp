@@ -351,6 +351,9 @@ namespace breep {
 		void peer_disconnected(const peer<network_manager>& p);
 		void data_received(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
 
+
+		void replace(peer<network_manager>& ancestor, const peer<network_manager>& successor);
+
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;

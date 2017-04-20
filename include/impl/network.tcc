@@ -11,7 +11,11 @@
 #include "network.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 #include <thread>
+#include <iostream>
+#include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
+#include "detail/utils.hpp"
 #include "invalid_state.hpp"
 
 template <typename T>
@@ -183,3 +187,99 @@ inline void breep::network<T>::peer_disconnected(const peer<T>& p) {
 	}
 }
 
+template <typename T>
+void breep::network<T>::data_received(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+	switch (command) {
+		case commands::send_to: {
+			std::vector<uint8_t> processed_data = detail::bigendian1(data);
+			std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+			for (auto& l : m_data_r_listener) {
+				l.second(*this, source, processed_data, false);
+			}
+			break;
+		}
+		case commands::send_to_all: {
+			std::vector<uint8_t> processed_data = detail::bigendian1(data);
+			std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+			for (auto& l : m_data_r_listener) {
+				l.second(*this, source, processed_data, true);
+			}
+			break;
+		}
+		case commands::forward_to: {
+			boost::uuids::uuid id = boost::uuids::string_generator{}(detail::bigendian2<std::string>(data));
+			peer<T>& target = m_peers.at(id);
+			m_me.bridging_from_to()[id].push_back(source);
+			m_me.bridging_from_to()[source.id()].push_back(target);
+
+			m_manager.send(commands::forwarding_to, detail::bigendian1(boost::uuids::to_string(source.id())), target);
+			m_manager.send(commands::forwarding_to, detail::bigendian1(boost::uuids::to_string(target.id())), source);
+			break;
+		}
+		case commands::stop_forwarding: {
+			boost::uuids::uuid id = boost::uuids::string_generator{}(detail::bigendian2<std::string>(data));
+			peer<T>& target = m_peers.at(id);
+			std::vector<breep::peer<T>>& v = m_me.bridging_from_to()[id];
+			auto it = std::find(v.begin(), v.end(), source); // keeping a vector because this code is unlikely to be called.
+			if (it != v.end()) {
+				replace(*it, v.back());
+				v.pop_back();
+			}
+
+			std::vector<breep::peer<T>>& v2 = m_me.bridging_from_to()[source.id()];
+			it = std::find(v2.begin(), v2.end(), target); // keeping a vector because this code is unlikely to be called.
+			if (it != v2.end()) {
+				replace(*it, v2.back());
+				v2.pop_back();
+			}
+			break;
+		}
+		case commands::forwarding_to: {
+			peer<T>& target = m_peers.at(boost::uuids::string_generator{}(detail::bigendian2<std::string>(data)));
+			replace(m_me.path_to(target), source);
+			replace(m_me.path_to(source), target);
+			break;
+		}
+		case commands::connect_to: {
+			size_t id_size = data[0];
+			std::string buff;
+			buff.reserve(id_size++);
+			size_t i{1};
+			for (; --id_size; ++i) {
+				buff.push_back(data[i]);
+			}
+			boost::uuids::uuid id = boost::uuids::string_generator{}(buff);
+			id_size = buff.size();
+			buff.clear();
+			buff.reserve(data.size() - id_size - 1);
+			while(i < data.size()) {
+				buff.push_back(data[i++]);
+			}
+			peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff), m_port));
+			if (p.id() == id) {
+				peer_connected(std::move(p), m_port);
+				m_manager.send(commands::successfully_connected, detail::bigendian1(boost::uuids::to_string(id)), source);
+			} else {
+				m_manager.send(commands::cant_connect, detail::bigendian1(boost::uuids::to_string(id)), source);
+			}
+			break;
+		}
+		case commands::cant_connect:break;
+		case commands::successfully_connected:break;
+		case commands::update_distance:break;
+		case commands::retrieve_distance:break;
+		case commands::peers_list:break;
+		case commands::new_peer:break;
+		case commands::peer_disconnection:break;
+		default:
+			std::cerr << "Warning: unknown command received...";
+	}
+}
+
+// This method exist because it is not possible to implement peer<T>::operator=(const peer<T>&), as
+// peer<T> has constant members (id & ip).
+template <typename T>
+inline void breep::network<T>::replace(peer<T>& ancestor, const peer<T>& successor) {
+	ancestor.~peer<T>();
+	new(&ancestor) peer<T>(successor);
+}

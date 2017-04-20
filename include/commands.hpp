@@ -49,6 +49,7 @@ namespace breep {
 		 * @brief     Command to indicate a peer he must bridge for you
 		 * @details   Must be followed by a target peer (id).
 		 * @sa        commands::stop_forwarding
+		 * @sa        commands::forwarding_to
 		 *
 		 * @since 0.1.0
 		 */
@@ -57,13 +58,23 @@ namespace breep {
 		 * @brief     Command to tell a peer to stop bridging for you.
 		 * @details   Must be followed by a peer (id)
 		 * @sa        commands::forward_to
+		 * @sa        commands::forwarding_to
 		 *
 		 * @since 0.1.0
 		 */
 		stop_forwarding,
 		/**
+		 * @brief     Command to tell a peer you are bridging for him
+		 * @details   Must be followed by a peer (id)
+		 * @sa        commands::forward_to
+		 * @sa        commands::stop_forwarding
+		 *
+		 * @since     0.1.0
+		 */
+		forwarding_to,
+		/**
 		 * @brief     Command to tell a peer to connect to another buddy.
-		 * @details   Must be followed by a target peer (id + ip).
+		 * @details   Must be followed by a target peer (size of id (in octets, on 1 octet) + id + ip).
 		 *
 		 * @since 0.1.0
 		 */
