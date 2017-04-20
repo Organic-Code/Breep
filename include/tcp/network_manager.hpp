@@ -19,34 +19,39 @@ namespace boost { namespace asio {
 }}
 
 namespace breep { namespace tcp {
-	class network_manager final: public network_manager_base<network_manager> {
+
+	template <unsigned int BUFFER_LENGTH = 1024>
+	class network_manager final: public network_manager_base<network_manager<BUFFER_LENGTH>> {
 	public:
 		typedef boost::asio::ip::tcp::socket socket_type;
-		static const std::size_t buffer_length = 1024;
+		static constexpr std::size_t buffer_length = BUFFER_LENGTH;
+		using peernm = peer<network_manager<BUFFER_LENGTH>>;
 
-		network_manager(): m_owner(nullptr), m_io_service{} {}
+		network_manager(): m_owner(nullptr), m_io_service{} {
+			static_assert(BUFFER_LENGTH > std::numeric_limits<uint8_t>::max(), "Buffer too small");
+		}
 
-		network_manager(const network_manager&) = delete;
-		network_manager& operator=(const network_manager&) = delete;
+		network_manager(const network_manager<BUFFER_LENGTH>&) = delete;
+		network_manager<BUFFER_LENGTH>& operator=(const network_manager<BUFFER_LENGTH>&) = delete;
 
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<network_manager>& peer) const;
+		void send(commands command, const data_container& data, const peernm& peer) const;
 
 		template <typename data_iterator, typename size_type>
-		void send(commands command, data_iterator begin, size_type size, const peer<network_manager>& peer) const;
+		void send(commands command, data_iterator begin, size_type size, const peernm& peer) const;
 
-		peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port);
+		peernm connect(const boost::asio::ip::address&, unsigned short port);
 
-		void process_connected_peer(peer<network_manager>& peer) override;
+		void process_connected_peer(peernm& peer) override;
 
-		void disconnect(peer<network_manager>& peer) override;
+		void disconnect(peernm& peer) override;
 
 	private:
-		void owner(network<network_manager>* owner) override;
+		void owner(network<network_manager<BUFFER_LENGTH>>* owner) override;
 
-		void process_disconnection(peer<network_manager>& disconnected_peer);
+		void process_disconnection(peernm& disconnected_peer);
 
-		network<network_manager>* m_owner;
+		network<network_manager<BUFFER_LENGTH>>* m_owner;
 		boost::asio::io_service m_io_service;
 	};
 }}
