@@ -18,6 +18,7 @@ namespace breep { namespace tcp {
 	class network_manager: public network_manager_base<network_manager> {
 	public:
 		typedef boost::asio::ip::tcp::socket socket_type;
+		static const std::size_t buffer_length = 1024;
 
 		network_manager(): m_owner(nullptr) {}
 

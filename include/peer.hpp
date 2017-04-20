@@ -19,7 +19,8 @@
 #include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-
+#include <cstdint>
+#include <vector>
 #include <memory>
 
 namespace breep {
@@ -39,9 +40,11 @@ namespace breep {
 		 */
 		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address,
 		     std::shared_ptr<typename network_manager::socket_type> socket = std::shared_ptr<typename network_manager::socket_type>(nullptr))
-				: m_id(id)
-				, m_address(address)
-				, m_socket(socket)
+			: peer(
+				boost::uuids::uuid(id),
+				boost::asio::ip::address(address),
+				std::shared_ptr<typename network_manager::socket_type>(socket)
+		)
 		{}
 
 		/**
@@ -49,15 +52,25 @@ namespace breep {
 		 */
 		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address,
 		     std::shared_ptr<typename network_manager::socket_type>&& socket)
-				: m_id(id)
-				, m_address(address)
-				, m_socket(socket)
-		{}
+				: m_id(std::move(id))
+				, m_address(std::move(address))
+				, m_socket(std::move(socket))
+				, m_fixed_buffer()
+				, m_dynamic_buffer()
+		{
+			m_dynamic_buffer.reserve(network_manager::buffer_length);
+		}
 
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const peer<network_manager>&) = default;
+		peer(const peer<network_manager>& p)
+			: peer(
+				boost::uuids::uuid(p.m_id),
+				boost::asio::ip::address(p.m_address),
+				std::shared_ptr<typename network_manager::socket_type>(p.m_socket)
+		)
+		{}
 
 		/**
 		 * @since 0.1.0
@@ -88,6 +101,16 @@ namespace breep {
 		 * m_socket must be set by the \em network_manager class
 		 */
 		std::shared_ptr<typename network_manager::socket_type> m_socket;
+
+		/**
+		 * fixed size buffer unused by this class, left to use for network_manager
+		 */
+		std::array<uint8_t, network_manager::buffer_length> m_fixed_buffer;
+
+		/**
+		 * dynamic buffer unused by this class, left to use for network_manager
+		 */
+		std::vector<uint8_t> m_dynamic_buffer;
 
 		friend network_manager;
 	};
