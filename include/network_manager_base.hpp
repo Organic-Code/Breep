@@ -37,6 +37,7 @@ namespace breep {
 	/**
 	 * @class network_manager_base network_manager_base.hpp
 	 * @brief base class for network managers, used by \em network<typename network_manager>.
+	 * @details Classes inheriting from network_manager_base should specify a socket_type type and a buffer_length size.
 	 *
 	 * @sa breep::network
 	 *
@@ -91,6 +92,11 @@ namespace breep {
 		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
 		 */
 		virtual peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port) = 0;
+
+		/**
+		 * @brief performs any required action after a peer connection.
+		 */
+		virtual void process_connected_peer(peer<network_manager>& peer) = 0;
 
 		/**
 		 * @brief disconnects from a peer

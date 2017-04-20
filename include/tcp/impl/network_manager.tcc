@@ -51,12 +51,11 @@ void breep::tcp::network_manager::send(commands command, data_iterator it, size_
 }
 
 breep::peer<breep::tcp::network_manager> breep::tcp::network_manager::connect(const boost::asio::ip::address& address, unsigned short port) {
-	boost::asio::io_service io_service;
-	boost::asio::ip::tcp::resolver resolver(io_service);
+	boost::asio::ip::tcp::resolver resolver(m_io_service);
 	boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
 			resolver.resolve(boost::asio::ip::tcp::resolver::query(address.to_string(),std::to_string(port)));
 
-	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(io_service);
+	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 	boost::asio::connect(*socket, endpoint_iterator);
 	boost::asio::write(
 			*socket,
@@ -76,7 +75,15 @@ breep::peer<breep::tcp::network_manager> breep::tcp::network_manager::connect(co
 	return peer<network_manager>(
 			boost::uuids::string_generator{}(breep::detail::to_bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
-	        std::move(socket)
+			std::move(socket)
+	);;
+}
+
+void breep::tcp::network_manager::process_connected_peer(breep::peer<breep::tcp::network_manager>& peer) {
+	boost::asio::async_read(
+			*peer.m_socket,
+			boost::asio::buffer(peer.m_fixed_buffer.data(), network_manager::buffer_length),
+			boost::bind(&network_manager::process_read, this, _1, _2)
 	);
 }
 

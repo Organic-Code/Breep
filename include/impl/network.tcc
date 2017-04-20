@@ -17,7 +17,7 @@
 template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to_all(const data_container& data) const {
-	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+	for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
 		if (pair.second == m_me.path_to(pair.second)) {
 			m_manager.send(commands::send_to_all, data, pair.second);
 		}
@@ -33,7 +33,7 @@ inline void breep::network<T>::send_to_all(data_container&& data) const {
 template <typename T>
 template <typename data_iterator>
 void breep::network<T>::send_to_all(const data_iterator& begin, const data_iterator& end) const {
-	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+	for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
 		if (pair.second == m_me.path_to(pair.second)) {
 			m_manager.send(commands::send_to_all, begin, end, pair.second);
 		}
@@ -72,10 +72,13 @@ template <typename T>
 inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& address) {
 	if (m_peers.empty()) {
 		peer<T> new_peer(m_manager.connect(address, m_port));
-		if (new_peer != peer<T>::bad_peer) {
-			m_peers.insert(std::make_pair(new_peer.id(), new_peer));
-			m_me.path_to_passing_by().insert(std::make_pair(new_peer.id(), new_peer));
-			m_me.bridging_from_to().insert(std::make_pair(new_peer.id(), new_peer));
+		if (new_peer != breep::constant::bad_peer<T>) {
+
+			std::pair<boost::uuids::uuid, breep::peer<T>> pair = std::make_pair(new_peer.id(), std::move(new_peer));
+			m_peers.insert(pair);
+			m_me.path_to_passing_by().insert(pair);
+			m_me.bridging_from_to().insert(pair);
+			m_manager.process_connected_peer(pair.second);
 			return true;
 		} else {
 			return false;
@@ -97,12 +100,12 @@ void breep::network<T>::disconnect() {
 
 template <typename T>
 void breep::network<T>::disconnect_sync() {
-	for (const std::pair<boost::uuids::uuid, peer<T>>& pair : m_peers) {
+	for (std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
 		m_manager.disconnect(pair.second);
 	}
-	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
-	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
-	std::unordered_map<boost::uuids::uuid, peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
+	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
+	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
+	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
 }
 
 template <typename T>
