@@ -26,12 +26,12 @@
 #include "network.hpp"
 
 template <typename data_container>
-inline void breep::tcp::network_manager::send(commands command, const data_container& data, const peer<network_manager>& peer) const {
+inline void breep::tcp::network_manager::send(commands command, const data_container& data, const peernm& peer) const {
 	send(command, data.cbegin(), data.size(), peer);
 }
 
 template <typename data_iterator, typename size_type>
-void breep::tcp::network_manager::send(commands command, data_iterator it, size_type size, const peer<network_manager>& peer) const {
+void breep::tcp::network_manager::send(commands command, data_iterator it, size_type size, const peernm& peer) const {
 	std::vector<uint8_t> buff;
 	buff.reserve(1 + size + size / std::numeric_limits<uint8_t>::max());
 
@@ -48,10 +48,10 @@ void breep::tcp::network_manager::send(commands command, data_iterator it, size_
 		buff.push_back(*it++);
 		++current_index;
 	}
-	boost::asio::write(*(peer.m_socket), boost::asio::buffer(buff));
+	boost::asio::write(*peer.m_socket, boost::asio::buffer(buff));
 }
 
-breep::peer<breep::tcp::network_manager> breep::tcp::network_manager::connect(const boost::asio::ip::address& address, unsigned short port) {
+peernm breep::tcp::network_manager::connect(const boost::asio::ip::address& address, unsigned short port) {
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
 	boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
 			resolver.resolve(boost::asio::ip::tcp::resolver::query(address.to_string(),std::to_string(port)));
@@ -73,14 +73,14 @@ breep::peer<breep::tcp::network_manager> breep::tcp::network_manager::connect(co
 	std::vector<char> input{};
 	input.reserve(len);
 	std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(input));
-	return peer<network_manager>(
+	return peernm(
 			boost::uuids::string_generator{}(breep::detail::to_bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
 			std::move(socket)
-	);;
+	);
 }
 
-void breep::tcp::network_manager::process_connected_peer(breep::peer<breep::tcp::network_manager>& peer) {
+void breep::tcp::network_manager::process_connected_peer(peernm& peer) {
 	boost::asio::async_read(
 			*peer.m_socket,
 			boost::asio::buffer(peer.m_fixed_buffer.data(), network_manager::buffer_length),
@@ -88,7 +88,7 @@ void breep::tcp::network_manager::process_connected_peer(breep::peer<breep::tcp:
 	);
 }
 
-inline void breep::tcp::network_manager::disconnect(breep::peer<network_manager>& peer) {
+inline void breep::tcp::network_manager::disconnect(peernm& peer) {
 	send(commands::peer_disconnection, breep::detail::to_bigendian1(boost::uuids::to_string(peer.id())), peer);
 	peer.m_socket = std::shared_ptr<socket_type>(nullptr);
 }
@@ -101,13 +101,13 @@ inline void breep::tcp::network_manager::owner(network<network_manager>* owner) 
 	}
 }
 
-void breep::tcp::network_manager::process_disconnection(breep::peer<breep::tcp::network_manager>& disconnected_peer) {
-	const std::vector<breep::peer<network_manager>>& others = m_owner->self().bridging_from_to().at(disconnected_peer.id());
+void breep::tcp::network_manager::process_disconnection(peernm& disconnected_peer) {
+	const std::vector<peernm>& others = m_owner->self().bridging_from_to().at(disconnected_peer.id());
 	if (!others.empty()) {
 		std::vector<uint8_t> vect(breep::detail::to_bigendian1<std::string, std::vector<uint8_t>>(boost::uuids::to_string(disconnected_peer.id())));
 		vect.insert(vect.cbegin(), static_cast<uint8_t>(commands::peer_disconnection)); // boost::asio::buffer cannot take deque as parameter :(
 		boost::asio::const_buffer buffer(boost::asio::buffer(vect));
-		for (const peer<network_manager>& p : others) {
+		for (const peernm& p : others) {
 			boost::asio::async_write(
 					*p.m_socket,
 					buffer,
