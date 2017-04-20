@@ -63,9 +63,11 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 
 	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 	boost::asio::connect(*socket, endpoint_iterator);
+	std::string my_id = boost::uuids::to_string(m_owner->self().id());
+	my_id.insert(my_id.begin(), static_cast<uint8_t>(my_id.size()));
 	boost::asio::write(
 			*socket,
-			boost::asio::buffer(breep::detail::to_bigendian1(boost::uuids::to_string(m_owner->self().id())))
+			boost::asio::buffer(breep::detail::to_bigendian1(my_id))
 	);
 	boost::system::error_code error;
 	boost::array<char, 512> buffer;
