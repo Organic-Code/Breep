@@ -24,20 +24,21 @@ namespace breep { namespace detail {
 	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
 	 */
 	template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-	output_container to_bigendian1(const data_container& data);
+	output_container bigendian1(const data_container& data);
 
 	template<typename output_container, typename data_container>
-	inline output_container to_bigendian2(const data_container& data) {
-		return to_bigendian1<data_container, output_container>(data);
-	}
-
-	template <typename container>
-	inline container to_bigendian3(const container& data) {
-		return to_bigendian1<container, container>(data);
+	inline output_container bigendian2(const data_container& data) {
+		return bigendian1<data_container, output_container>(data);
 	}
 
 	template <typename... T>
 	struct dependent_false { static constexpr bool value = false; };
+
+	struct unused{ constexpr unused() {}};
+}}
+
+namespace breep { namespace constant {
+	constexpr detail::unused unused_param{};
 }}
 
 #endif //BREEP_UTILS_HPP

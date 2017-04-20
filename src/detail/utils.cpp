@@ -15,7 +15,7 @@
 #include "detail/utils.hpp"
 
 template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-output_container to_bigendian1(const data_container& data) {
+output_container bigendian1(const data_container& data) {
 	static_assert(sizeof(typename data_container::value_type) == 1, "Converting endianness is possible only for 1-byte long types.");
 #ifdef BOOST_LITTLE_ENDIAN
 	output_container out;
