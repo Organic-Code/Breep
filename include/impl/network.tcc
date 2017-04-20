@@ -153,3 +153,33 @@ inline bool breep::network<T>::remove_data_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 	return m_data_r_listener.erase(id) > 0;
 }
+
+
+template <typename T>
+inline void breep::network<T>::peer_connected(peer<T>&& p, unsigned short distance) {
+	std::pair<boost::uuids::uuid, breep::peer<T>> pair = std::make_pair(p.id(), std::move(p));
+	m_me.path_to_passing_by().insert(pair);
+	m_me.bridging_from_to().insert(std::make_pair(p.id(), std::vector<breep::peer<T>>{}));
+	m_peers_mutex.lock();
+	m_peers.insert(std::make_pair(p.id(), p));
+	m_peers_mutex.unlock();
+	m_manager.process_connected_peer(m_peers.at(p.id()));
+	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
+	for(auto& l : m_co_listener) {
+		l.second(*this, p, distance);
+	}
+}
+
+template <typename T>
+inline void breep::network<T>::peer_disconnected(const peer<T>& p) {
+	m_me.path_to_passing_by().erase(p.id());
+	m_me.bridging_from_to().erase(p.id());
+	m_peers_mutex.lock();
+	m_peers.erase(p.id());
+	m_peers_mutex.unlock();
+	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
+	for(auto& l : m_dc_listener) {
+		l.second(*this, p);
+	}
+}
+
