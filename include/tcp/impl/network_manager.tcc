@@ -17,6 +17,7 @@
 #include <boost/uuid/uuid_io.hpp> // boost::uuids::to_string
 #include <boost/array.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include <vector>
 #include <limits>
 #include <memory>
 #include <string>
@@ -98,4 +99,25 @@ inline void breep::tcp::network_manager::owner(network<network_manager>* owner) 
 	} else {
 		throw invalid_state("Tried to set an already set owner. This object shouldn't be shared.");
 	}
+}
+
+void breep::tcp::network_manager::process_disconnection(breep::peer<breep::tcp::network_manager>& disconnected_peer) {
+	const std::vector<breep::peer<network_manager>>& others = m_owner->self().bridging_from_to().at(disconnected_peer.id());
+	if (!others.empty()) {
+		std::vector<uint8_t> vect(breep::detail::to_bigendian1<std::string, std::vector<uint8_t>>(boost::uuids::to_string(disconnected_peer.id())));
+		vect.insert(vect.cbegin(), static_cast<uint8_t>(commands::peer_disconnection)); // boost::asio::buffer cannot take deque as parameter :(
+		boost::asio::const_buffer buffer(boost::asio::buffer(vect));
+		for (const peer<network_manager>& p : others) {
+			boost::asio::async_write(
+					*p.m_socket,
+					buffer,
+			        boost::bind(&network_manager::write_done, this, _1, _2)
+			);
+		}
+	}
+}
+
+
+inline void breep::tcp::network_manager::write_done(boost::system::error_code, std::size_t) {
+	// ignored for now.
 }

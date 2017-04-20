@@ -16,6 +16,7 @@
  * @author Lucas Lazare
  */
 
+#include <vector>
 #include <unordered_map>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -37,7 +38,10 @@ namespace breep {
 	public:
 
 		local_peer()
-				: peer<network_manager>::peer(boost::uuids::random_generator{}(), boost::asio::ip::address::from_string("localhost"))
+				: peer<network_manager>::peer(
+												boost::uuids::random_generator{}(),
+												boost::asio::ip::address::from_string("localhost")
+										)
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
 		{}
@@ -65,24 +69,44 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() noexcept;
+		std::unordered_map<
+				boost::uuids::uuid,
+				breep::peer<network_manager>,
+				boost::hash<boost::uuids::uuid>
+		>&
+		path_to_passing_by() noexcept;
 
 		/**
 		 * @copydoc local_peer::path_to_passing_by()
 		 */
-		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& path_to_passing_by() const noexcept;
+		const std::unordered_map<
+				boost::uuids::uuid,
+				breep::peer<network_manager>,
+				boost::hash<boost::uuids::uuid>
+		>&
+		path_to_passing_by() const noexcept;
 
 		/**
 		 * @return A reference to the private field m_bridging_from_to
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() noexcept;
+		std::unordered_map<
+				boost::uuids::uuid,
+				std::vector<breep::peer<network_manager>>,
+				boost::hash<boost::uuids::uuid>
+		>&
+		bridging_from_to() noexcept;
 
 		/**
 		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>& bridging_from_to() const noexcept;
+		const std::unordered_map<
+				boost::uuids::uuid,
+				std::vector<breep::peer<network_manager>>,
+				boost::hash<boost::uuids::uuid>
+		>&
+		bridging_from_to() const noexcept;
 
 	private:
 		/**
@@ -91,13 +115,17 @@ namespace breep {
 		 *          peer \em b to peer \em c is using you as a bridge,
 		 *          then we have
 		 *          @code{.cpp}
-		 *          	m_bridging_from_to.at(b) == c;
-		 *          	m_bridging_from_to.at(c) == b;
+		 *          	const std::vector<peer<T>>& v1 = m_bridging_from_to.at(b);
+		 *          	std::find(v1.cbegin(), v1.cend(), c) != v1.end();
+		 *          	const std::vector<peer<T>>& v2 = m_bridging_from_to.at(c);
+		 *          	std::find(v2.cbegin(), v2.cend(), b) != v2.end();
 		 *          @endcode
 		 *          otherwise, we have
 		 *          @code{.cpp}
-		 *          	m_bridging_from_to.at(b) == b;
-		 *          	m_bridging_from_to.at(c) == c;
+		 *          	const std::vector<peer<T>>& v1 = m_bridging_from_to.at(b);
+		 *          	std::find(v1.cbegin(), v1.cend(), c) == v1.end();
+		 *          	const std::vector<peer<T>>& v2 = m_bridging_from_to.at(c);
+		 *          	std::find(v2.cbegin(), v2.cend(), b) == v2.end();
 		 *          @endcode
 		 *
 		 * @sa local_peer::path_to(const peer& p)
@@ -105,7 +133,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
+		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
 
 
 		/**

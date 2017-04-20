@@ -77,7 +77,7 @@ inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& addr
 			std::pair<boost::uuids::uuid, breep::peer<T>> pair = std::make_pair(new_peer.id(), std::move(new_peer));
 			m_peers.insert(pair);
 			m_me.path_to_passing_by().insert(pair);
-			m_me.bridging_from_to().insert(pair);
+			m_me.bridging_from_to().insert(std::vector<breep::peer<T>>{});
 			m_manager.process_connected_peer(pair.second);
 			return true;
 		} else {
@@ -105,7 +105,7 @@ void breep::network<T>::disconnect_sync() {
 	}
 	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
 	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
-	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
+	std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<T>>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
 }
 
 template <typename T>

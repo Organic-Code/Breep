@@ -42,7 +42,9 @@ namespace breep { namespace tcp {
 		void disconnect(peer<network_manager>& peer) override;
 
 	private:
-		void owner(network<network_manager>* owner);
+		void owner(network<network_manager>* owner) override;
+
+		void process_disconnection(peer<network_manager>& disconnected_peer);
 
 		network<network_manager>* m_owner;
 		boost::asio::io_service m_io_service;
