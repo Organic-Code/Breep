@@ -1,4 +1,3 @@
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
 // Copyright 2017 Lucas Lazare.                                                                  //
@@ -52,7 +51,11 @@ void breep::tcp::network_manager<T>::send(commands command, data_iterator it, si
 			}
 		}
 	}
-	boost::asio::write(*peer.m_socket, boost::asio::buffer(buff));
+	boost::asio::async_write(
+			*peer.m_socket,
+	        boost::asio::buffer(buff),
+	        boost::bind(&network_manager<T>::write_done, this, _1, _2)
+	);
 }
 
 template <unsigned int T>
@@ -67,7 +70,7 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 	my_id.insert(my_id.begin(), static_cast<uint8_t>(my_id.size()));
 	boost::asio::write(
 			*socket,
-			boost::asio::buffer(breep::detail::to_bigendian1(my_id))
+			boost::asio::buffer(breep::detail::bigendian1(my_id))
 	);
 	boost::system::error_code error;
 	boost::array<char, 512> buffer;
@@ -81,7 +84,7 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 	input.reserve(len);
 	std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(input));
 	return peernm(
-			boost::uuids::string_generator{}(breep::detail::to_bigendian2<std::string>(input)),
+			boost::uuids::string_generator{}(breep::detail::bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
 			std::move(socket)
 	);
@@ -98,7 +101,7 @@ void breep::tcp::network_manager<T>::process_connected_peer(peernm& peer) {
 
 template <unsigned int T>
 inline void breep::tcp::network_manager<T>::disconnect(peernm& peer) {
-	send(commands::peer_disconnection, breep::detail::to_bigendian1(boost::uuids::to_string(peer.id())), peer);
+	send(commands::peer_disconnection, breep::detail::bigendian1(boost::uuids::to_string(peer.id())), peer);
 	peer.m_socket = std::shared_ptr<socket_type>(nullptr);
 }
 
@@ -135,7 +138,7 @@ void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::e
 					while (--to_be_red) {
 						dyn_buff.push_back(fixed_buff[current_index++]);
 					}
-					network_attorney_client<network_manager <T>> ::data_received(*m_owner, peer, peer.m_last_received_command, dyn_buff);
+					network_attorney_client<network_manager <T>>::data_received(*m_owner, peer, peer.m_last_received_command, dyn_buff);
 					dyn_buff.clear();
 					boost::asio::async_read(
 							*peer.m_socket,
@@ -187,7 +190,8 @@ template <unsigned int T>
 void breep::tcp::network_manager<T>::process_disconnection(peernm& disconnected_peer) {
 	const std::vector<peernm>& others = m_owner->self().bridging_from_to().at(disconnected_peer.id());
 	if (!others.empty()) {
-		std::vector<uint8_t> vect(breep::detail::to_bigendian1<std::string, std::vector<uint8_t>>(boost::uuids::to_string(disconnected_peer.id())));
+		std::vector<uint8_t> vect(breep::detail::bigendian1<std::string, std::vector<uint8_t>>(
+				boost::uuids::to_string(disconnected_peer.id())));
 		vect.insert(vect.cbegin(), static_cast<uint8_t>(commands::peer_disconnection)); // boost::asio::buffer cannot take deque as parameter :(
 		auto buffer = boost::asio::buffer(vect);
 		for (const peernm& p : others) {
@@ -198,10 +202,11 @@ void breep::tcp::network_manager<T>::process_disconnection(peernm& disconnected_
 			);
 		}
 	}
+	network_attorney_client<network_manager<T>>::peer_disconnected(*m_owner, disconnected_peer);
 }
 
 
 template <unsigned int T>
-inline void breep::tcp::network_manager<T>::write_done(boost::system::error_code, std::size_t) {
+inline void breep::tcp::network_manager<T>::write_done(boost::system::error_code, std::size_t) const {
 	// ignored for now.
 }
