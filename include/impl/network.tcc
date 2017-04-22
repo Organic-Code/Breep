@@ -161,14 +161,15 @@ inline bool breep::network<T>::remove_data_listener(listener_id id) {
 
 
 template <typename T>
-inline void breep::network<T>::peer_connected(peer<T>&& p, unsigned short distance) {
+inline void breep::network<T>::peer_connected(peer<T>&& p, unsigned char distance) {
 	std::pair<boost::uuids::uuid, breep::peer<T>> pair = std::make_pair(p.id(), std::move(p));
 	m_me.path_to_passing_by().insert(pair);
-	m_me.bridging_from_to().insert(std::make_pair(p.id(), std::vector<breep::peer<T>>{}));
+	m_me.bridging_from_to().insert(std::make_pair(pair.second.id(), std::vector<breep::peer<T>>{}));
 	m_peers_mutex.lock();
-	m_peers.insert(std::make_pair(p.id(), p));
+	m_peers.insert(pair);
 	m_peers_mutex.unlock();
-	m_manager.process_connected_peer(m_peers.at(p.id()));
+	m_manager.process_connected_peer(m_peers.at(pair.second.id()));
+	pair.second.distance(distance);
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	for(auto& l : m_co_listener) {
 		l.second(*this, p, distance);
@@ -213,8 +214,16 @@ void breep::network<T>::data_received(const peer<T>& source, commands command, c
 			m_me.bridging_from_to()[id].push_back(source);
 			m_me.bridging_from_to()[source.id()].push_back(target);
 
-			m_manager.send(commands::forwarding_to, detail::bigendian1(boost::uuids::to_string(source.id())), target);
-			m_manager.send(commands::forwarding_to, detail::bigendian1(boost::uuids::to_string(target.id())), source);
+			m_manager.send(
+					commands::forwarding_to,
+					detail::bigendian1(std::to_string(source.distance()) + boost::uuids::to_string(source.id())),
+					target
+			);
+			m_manager.send(
+					commands::forwarding_to,
+					detail::bigendian1(std::to_string(target.distance()) + boost::uuids::to_string(target.id())),
+					source
+			);
 			break;
 		}
 		case commands::stop_forwarding: {
@@ -236,9 +245,12 @@ void breep::network<T>::data_received(const peer<T>& source, commands command, c
 			break;
 		}
 		case commands::forwarding_to: {
-			peer<T>& target = m_peers.at(boost::uuids::string_generator{}(detail::bigendian2<std::string>(data)));
+			std::string str = detail::bigendian2<std::string>(data);
+			unsigned char distance = static_cast<unsigned char>(str[0]);
+			peer<T>& target = m_peers.at(boost::uuids::string_generator{}(str.substr(1)));
 			replace(m_me.path_to(target), source);
 			replace(m_me.path_to(source), target);
+			peer_connected(peer<T>(target), static_cast<unsigned char>(distance + 1));
 			break;
 		}
 		case commands::connect_to: {
@@ -258,7 +270,7 @@ void breep::network<T>::data_received(const peer<T>& source, commands command, c
 			}
 			peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff), m_port));
 			if (p.id() == id) {
-				peer_connected(std::move(p), m_port);
+				peer_connected(std::move(p), 0);
 				m_manager.send(commands::successfully_connected, detail::bigendian1(boost::uuids::to_string(id)), source);
 			} else {
 				m_manager.send(commands::cant_connect, detail::bigendian1(boost::uuids::to_string(id)), source);

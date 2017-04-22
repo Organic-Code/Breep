@@ -347,7 +347,7 @@ namespace breep {
 
 	private:
 
-		void peer_connected(peer<network_manager>&& p, unsigned short distance);
+		void peer_connected(peer<network_manager>&& p, unsigned char distance);
 		void peer_disconnected(const peer<network_manager>& p);
 		void data_received(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
 

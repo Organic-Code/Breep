@@ -44,7 +44,7 @@ namespace breep {
 				boost::uuids::uuid(id),
 				boost::asio::ip::address(address),
 				std::shared_ptr<typename network_manager::socket_type>(socket)
-		)
+			)
 		{}
 
 		/**
@@ -58,6 +58,7 @@ namespace breep {
 				, m_fixed_buffer()
 				, m_dynamic_buffer()
 				, m_last_received_command()
+				, m_distance()
 		{
 			m_dynamic_buffer.reserve(network_manager::buffer_length);
 		}
@@ -70,7 +71,7 @@ namespace breep {
 				boost::uuids::uuid(p.m_id),
 				boost::asio::ip::address(p.m_address),
 				std::shared_ptr<typename network_manager::socket_type>(p.m_socket)
-		)
+			)
 		{}
 
 		/**
@@ -93,6 +94,17 @@ namespace breep {
 		bool operator==(const peer<network_manager>& lhs) const;
 
 		bool operator!=(const peer<network_manager>& lhs) const;
+
+		/**
+		 * @return The distance from you to the peer.
+		 */
+		unsigned char distance() const {
+			return m_distance;
+		}
+
+		void distance(unsigned char d) {
+			m_distance = d;
+		}
 
 	private:
 		const boost::uuids::uuid m_id;
@@ -117,6 +129,11 @@ namespace breep {
 		 * variable unused by this class, left to use for network_manager.
 		 */
 		mutable commands m_last_received_command;
+
+		/**
+		 * Distance from here to the other peers.
+		 */
+		unsigned char m_distance;
 
 		friend network_manager;
 	};
