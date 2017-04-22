@@ -20,7 +20,7 @@ namespace boost { namespace asio {
 
 namespace breep { namespace tcp {
 
-	template <unsigned int BUFFER_LENGTH = 1024>
+	template <unsigned int BUFFER_LENGTH>
 	class network_manager final: public network_manager_base<network_manager<BUFFER_LENGTH>> {
 	public:
 		typedef boost::asio::ip::tcp::socket socket_type;
@@ -60,6 +60,8 @@ namespace breep { namespace tcp {
 		network<network_manager<BUFFER_LENGTH>>* m_owner;
 		boost::asio::io_service m_io_service;
 	};
+
+	typedef network_manager<1024> default_network_manager;
 }}
 
 #include "tcp/impl/network_manager.tcc"
