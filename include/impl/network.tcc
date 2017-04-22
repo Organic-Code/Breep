@@ -16,30 +16,14 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "detail/utils.hpp"
-#include "invalid_state.hpp"
 
 template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to_all(const data_container& data) const {
+	std::vector<uint8_t> ldata = detail::bigendian2<std::vector<uint8_t>>(data);
 	for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
 		if (pair.second == m_me.path_to(pair.second)) {
-			m_manager.send(commands::send_to_all, data, pair.second);
-		}
-	}
-}
-
-template <typename T>
-template <typename data_container>
-inline void breep::network<T>::send_to_all(data_container&& data) const {
-	send_to_all(data);
-}
-
-template <typename T>
-template <typename data_iterator>
-void breep::network<T>::send_to_all(const data_iterator& begin, const data_iterator& end) const {
-	for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
-		if (pair.second == m_me.path_to(pair.second)) {
-			m_manager.send(commands::send_to_all, begin, end, pair.second);
+			m_manager.send(commands::send_to_all, ldata, pair.second);
 		}
 	}
 }
@@ -47,50 +31,37 @@ void breep::network<T>::send_to_all(const data_iterator& begin, const data_itera
 template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to(const peer<T>& p, const data_container& data) const {
-	m_manager.send(commands::send_to, data, m_me.path_to(p));
+	std::vector<uint8_t> ldata = detail::bigendian1(data);
+	m_manager.send(commands::send_to, ldata, m_me.path_to(p));
 }
 
 template <typename T>
 template <typename data_container>
 inline void breep::network<T>::send_to(const peer<T>& p, data_container&& data) const {
-	m_manager.send(commands::send_to, data, m_me.path_to(p));
+	std::vector<uint8_t> ldata = detail::bigendian1(data);
+	m_manager.send(commands::send_to, ldata, m_me.path_to(p));
 }
 
-template <typename T>
-template <typename data_iterator>
-inline void breep::network<T>::send_to(const peer<T>& p, const data_iterator& begin, const data_iterator& end) const {
-	m_manager.send(commands::send_to, begin, end, m_me.path_to(p));
-}
+
 
 template <typename T>
-inline void breep::network<T>::connect(const boost::asio::ip::address& address) {
+inline void breep::network<T>::connect(boost::asio::ip::address address) {
+	require_non_running();
 	std::thread(&network<T>::connect_sync, this, address).detach();
 }
 
 template <typename T>
-inline void breep::network<T>::connect(boost::asio::ip::address&& address) {
-	connect(address);
-}
-
-template <typename T>
 inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& address) {
-	if (m_peers.empty()) {
-		peer<T> new_peer(m_manager.connect(address, m_port));
-		if (new_peer != breep::constant::bad_peer<T>) {
-			peer_connected(std::move(new_peer), 0);
-			m_manager.run();
-			return true;
-		} else {
-			return false;
-		}
+	require_non_running();
+	m_running = true;
+	peer<T> new_peer(m_manager.connect(address, m_port));
+	if (new_peer != breep::constant::bad_peer<T>) {
+		peer_connected(std::move(new_peer), 0);
+		m_manager.run();
+		return true;
 	} else {
-		throw invalid_state("Cannot connect to more than one network.");
+		return false;
 	}
-}
-
-template <typename T>
-inline bool breep::network<T>::connect_sync(boost::asio::ip::address&& address) {
-	return connect_sync(address);
 }
 
 template <typename T>
@@ -109,34 +80,19 @@ void breep::network<T>::disconnect_sync() {
 }
 
 template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(connection_listener listener) {
-		return add_listener(std::move(listener));
-}
-
-template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(connection_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_connection_listener(connection_listener listener) {
 	m_co_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(data_received_listener listener) {
-	return add_listener(std::move(listener));
-}
-
-template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(data_received_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_data_listener(data_received_listener listener){
 	m_data_r_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(disconnection_listener listener) {
-	return add_listener(std::move(listener));
-}
-
-template <typename T>
-inline breep::listener_id breep::network<T>::add_listener(disconnection_listener&& listener) {
+inline breep::listener_id breep::network<T>::add_disconnection_listener(disconnection_listener listener){
 	m_dc_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
@@ -299,9 +255,9 @@ inline void breep::network<T>::replace(peer<T>& ancestor, const peer<T>& success
 }
 
 template <typename T>
-inline void void breep::network<T>::forward_if_needed(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+inline void breep::network<T>::forward_if_needed(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
 	const std::vector<breep::peer<T>>& peers =	m_me.bridging_from_to().at(source.id());
-	for (const peer& peer : peers) {
+	for (const peer<T>& peer : peers) {
 		m_manager.send(command, data, peer);
 	}
 }

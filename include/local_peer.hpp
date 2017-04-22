@@ -40,7 +40,7 @@ namespace breep {
 		local_peer()
 				: peer<network_manager>::peer(
 												boost::uuids::random_generator{}(),
-												boost::asio::ip::address::from_string("localhost")
+												boost::asio::ip::address::from_string("127.0.0.1")
 										)
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}

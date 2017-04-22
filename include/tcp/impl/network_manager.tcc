@@ -66,23 +66,32 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 
 	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 	boost::asio::connect(*socket, endpoint_iterator);
-	std::string my_id = boost::uuids::to_string(m_owner->self().id());
-	my_id.insert(my_id.begin(), static_cast<uint8_t>(my_id.size()));
 	boost::asio::write(
 			*socket,
-			boost::asio::buffer(breep::detail::bigendian1(my_id))
+			boost::asio::buffer(m_id_string_bigendian)
 	);
 	boost::system::error_code error;
-	boost::array<char, 512> buffer;
+	boost::array<uint8_t, 512> buffer;
 	size_t len = socket->read_some(boost::asio::buffer(buffer), error);
 
 	if (error) {
 		return constant::bad_peer<network_manager<T>>;
 	}
 
-	std::vector<char> input{};
-	input.reserve(len);
-	std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(input));
+	size_t expected_length = buffer[0];
+	std::vector<uint8_t> input{};
+	input.reserve(expected_length);
+	std::copy(buffer.cbegin() + 1, buffer.cbegin() + len, std::back_inserter(input));
+	--len;
+	while (len < expected_length) {
+		expected_length -= len;
+		len = socket->read_some(boost::asio::buffer(buffer), error);
+		if (error) {
+			return constant::bad_peer<network_manager<T>>;
+		}
+		std::copy(buffer.cbegin(), buffer.cbegin() + len, std::back_inserter(input));
+	}
+
 	return peernm(
 			boost::uuids::string_generator{}(breep::detail::bigendian2<std::string>(input)),
 			boost::asio::ip::address(address),
@@ -114,6 +123,9 @@ template <unsigned int T>
 inline void breep::tcp::network_manager<T>::owner(network<network_manager<T>>* owner) {
 	if (m_owner == nullptr) {
 		m_owner = owner;
+		m_id_string_bigendian = boost::uuids::to_string(m_owner->self().id());
+		m_id_string_bigendian.insert(m_id_string_bigendian.begin(), static_cast<uint8_t>(m_id_string_bigendian.size()));
+		m_id_string_bigendian = breep::detail::bigendian2<std::string>(m_id_string_bigendian);
 	} else {
 		throw invalid_state("Tried to set an already set owner. This object shouldn't be shared.");
 	}

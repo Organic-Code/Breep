@@ -41,4 +41,6 @@ namespace breep { namespace constant {
 	constexpr detail::unused unused_param{};
 }}
 
+#include "detail/impl/utils.tcc"
+
 #endif //BREEP_UTILS_HPP

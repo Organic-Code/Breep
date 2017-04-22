@@ -12,10 +12,10 @@
 #include <cstdint>
 #include <boost/detail/endian.hpp>
 
-#include "detail/utils.hpp"
+#include "detail/utils.hpp" // TODO: remove
 
 template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-output_container bigendian1(const data_container& data) {
+output_container breep::detail::bigendian1(const data_container& data) {
 	static_assert(
 			sizeof(typename data_container::value_type) == sizeof(typename output_container::value_type) == 1,
 	              "Converting endianness is possible only for 1-byte long types.");

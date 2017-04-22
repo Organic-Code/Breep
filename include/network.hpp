@@ -28,6 +28,7 @@
 #include "peer.hpp"
 #include "local_peer.hpp"
 #include "network_manager_base.hpp"
+#include "invalid_state.hpp"
 
 namespace breep {
 
@@ -89,7 +90,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		explicit network(unsigned short port = default_port) noexcept
-				: network(network_manager{port})
+				: network(network_manager{port}, port)
 		{}
 
 		/**
@@ -111,6 +112,7 @@ namespace breep {
 				, m_manager{std::move(manager)}
 				, m_id_count{0}
 				, m_port{port}
+			    , m_running(false)
 				, m_co_mutex{}
 				, m_dc_mutex{}
 				, m_data_mutex{}
@@ -135,21 +137,6 @@ namespace breep {
 		void send_to_all(const data_container& data) const;
 
 		/**
-		 * @copydoc network::send_to_all(const data_container&) const
-		 */
-		template <typename data_container>
-		void send_to_all(data_container&& data) const;
-
-
-		/**
-		 * @brief Same as \em send_to_all(const data_container&), but with iterators
-		 * @tparam data_iterator Iterator type. what it musts respect exactly depends on the underlying \em networ_manager#send
-		 */
-		template <typename data_iterator>
-		void send_to_all(const data_iterator& begin, const data_iterator& end) const;
-
-
-		/**
 		 * Sends data to a specific member of the network
 		 * @tparam data_container Type representing data. Exact definition
 		 *                        is to be defined by \em network_manager_base::send
@@ -171,11 +158,7 @@ namespace breep {
 
 
 		/**
-		 * @brief Same as \em send_to(const peer<network_manager>&, const data_container&), but with iterators
-		 * @tparam data_iterator Iterator type. what it musts respect exactly depends on the underlying \em networ_manager#send
 		 */
-		template <typename data_iterator>
-		void send_to(const peer<network_manager>& p, const data_iterator& begin, const data_iterator& end) const;
 
 		/**
 		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer
@@ -189,12 +172,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		void connect(const boost::asio::ip::address& address);
-
-		/**
-		 * @copydoc network::connect(const boost::asio::ip::address&)
-		 */
-		void connect(boost::asio::ip::address&& address);
+		void connect(boost::asio::ip::address address);
 
 		/**
 		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until disconnected from all the network or the connection was not successful.
@@ -207,11 +185,6 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		bool connect_sync(const boost::asio::ip::address& address);
-
-		/**
-		 * @copydoc network::connect_sync(const boost::asio::ip::address&)
-		 */
-		bool connect_sync(boost::asio::ip::address&& address);
 
 		/**
 		 * @brief asynchronically disconnects from the network
@@ -244,11 +217,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		listener_id add_listener(connection_listener listener);
-		/**
-		 * @copydoc network::add_listener(connection_listener)
-		 */
-		listener_id add_listener(connection_listener&& listener);
+		listener_id add_connection_listener(connection_listener listener);
 
 		/**
 		 * @brief Adds a listener for incoming connections
@@ -263,11 +232,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		listener_id add_listener(data_received_listener listener);
-		/**
-		 * @copydoc network::add_listener(data_received_listener)
-		 */
-		listener_id add_listener(data_received_listener&& listener);
+		listener_id add_data_listener(data_received_listener listener);
 
 		/**
 		 * @brief Adds a listener for disconnections
@@ -282,11 +247,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		listener_id add_listener(disconnection_listener listener);
-		/**
-		 * @copydoc network::add_listener(disconnection_listener)
-		 */
-		listener_id add_listener(disconnection_listener&& listener);
+		listener_id add_disconnection_listener(disconnection_listener listener);
 
 		/**
 		 * @brief Removes a listener
@@ -359,6 +320,10 @@ namespace breep {
 
 		void replace(peer<network_manager>& ancestor, const peer<network_manager>& successor);
 		void forward_if_needed(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
+		void require_non_running() {
+			if (m_running)
+				invalid_state("Already running.");
+		}
 
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
@@ -371,6 +336,7 @@ namespace breep {
 		listener_id m_id_count;
 
 		unsigned short m_port;
+		bool m_running;
 
 		std::mutex m_co_mutex;
 		std::mutex m_dc_mutex;
@@ -385,8 +351,8 @@ namespace breep {
 
 		network_attorney_client() = delete;
 
-		inline static void peer_connected(network<T>& object, peer<T>&& p, unsigned char distance) {
-			object.peer_connected(std::move(p), distance);
+		inline static void peer_connected(network<T>& object, peer<T>&& p) {
+			object.peer_connected(std::move(p), 0);
 		}
 
 		inline static void peer_disconnected(network<T>& object, const peer<T>& p) {

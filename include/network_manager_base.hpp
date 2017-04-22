@@ -38,6 +38,8 @@ namespace breep {
 	 * @class network_manager_base network_manager_base.hpp
 	 * @brief base class for network managers, used by \em network<typename network_manager>.
 	 * @details Classes inheriting from network_manager_base should specify a socket_type type and a buffer_length size.
+	 * The object should open ports and start listening for incoming connections as soon as they get an owner.
+	 * The constructor should take an unsigned short [port] as parameter if instantiated from the class breep::network_manager).
 	 *
 	 * @sa breep::network
 	 *

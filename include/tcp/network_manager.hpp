@@ -59,6 +59,8 @@ namespace breep { namespace tcp {
 
 		network<network_manager<BUFFER_LENGTH>>* m_owner;
 		boost::asio::io_service m_io_service;
+
+		std::string m_id_string_bigendian;
 	};
 
 	typedef network_manager<1024> default_network_manager;
