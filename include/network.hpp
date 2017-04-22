@@ -89,7 +89,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		explicit network(unsigned short port = default_port) noexcept
-				: network(network_manager{}, port)
+				: network(network_manager{port})
 		{}
 
 		/**
@@ -111,9 +111,14 @@ namespace breep {
 				, m_manager{std::move(manager)}
 				, m_id_count{0}
 				, m_port{port}
+				, m_co_mutex{}
+				, m_dc_mutex{}
+				, m_data_mutex{}
+				, m_peers_mutex{}
+
 		{
 			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
-			m_manager.owner(this);
+			static_cast<network_manager_base<network_manager>*>(&m_manager)->owner(this);
 		}
 
 		/**
@@ -353,6 +358,7 @@ namespace breep {
 
 
 		void replace(peer<network_manager>& ancestor, const peer<network_manager>& successor);
+		void forward_if_needed(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
 
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
@@ -379,8 +385,8 @@ namespace breep {
 
 		network_attorney_client() = delete;
 
-		inline static void peer_connected(network<T>& object, const peer<T>& p, unsigned short distance) {
-			object.peer_connected(p, distance);
+		inline static void peer_connected(network<T>& object, peer<T>&& p, unsigned char distance) {
+			object.peer_connected(std::move(p), distance);
 		}
 
 		inline static void peer_disconnected(network<T>& object, const peer<T>& p) {

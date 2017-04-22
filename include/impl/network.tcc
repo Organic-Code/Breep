@@ -201,6 +201,7 @@ void breep::network<T>::data_received(const peer<T>& source, commands command, c
 			break;
 		}
 		case commands::send_to_all: {
+			forward_if_needed(source, command, data);
 			std::vector<uint8_t> processed_data = detail::bigendian1(data);
 			std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 			for (auto& l : m_data_r_listener) {
@@ -295,4 +296,12 @@ template <typename T>
 inline void breep::network<T>::replace(peer<T>& ancestor, const peer<T>& successor) {
 	ancestor.~peer<T>();
 	new(&ancestor) peer<T>(successor);
+}
+
+template <typename T>
+inline void void breep::network<T>::forward_if_needed(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+	const std::vector<breep::peer<T>>& peers =	m_me.bridging_from_to().at(source.id());
+	for (const peer& peer : peers) {
+		m_manager.send(command, data, peer);
+	}
 }

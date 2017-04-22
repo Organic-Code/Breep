@@ -16,7 +16,9 @@
 
 template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
 output_container bigendian1(const data_container& data) {
-	static_assert(sizeof(typename data_container::value_type) == 1, "Converting endianness is possible only for 1-byte long types.");
+	static_assert(
+			sizeof(typename data_container::value_type) == sizeof(typename output_container::value_type) == 1,
+	              "Converting endianness is possible only for 1-byte long types.");
 #ifdef BOOST_LITTLE_ENDIAN
 	output_container out;
 	out.reserve(data.size() - data.size() % sizeof(uintmax_t) + sizeof(uintmax_t));
@@ -27,7 +29,7 @@ output_container bigendian1(const data_container& data) {
 		}
 	}
 	if (max < data.size()) {
-		for (uint_fast8_t j{static_cast<uint_fast8_t>(max + sizeof(uintmax_t) - data.size())} ; j-- ;) {
+		for (uint_fast8_t j{static_cast<uint_fast8_t>(max + sizeof(uintmax_t) - data.size() + 1)} ; --j ;) {
 			out.push_back(0);
 		}
 		for (uint_fast8_t i{static_cast<uint_fast8_t>(data.size() - max)} ; i-- ;) {
@@ -38,6 +40,7 @@ output_container bigendian1(const data_container& data) {
 #elif defined BOOST_BIG_ENDIAN
 	return data;
 #else
-#error "Unknown endianness."
+#error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
+#error "Middle endian is not supported."
 #endif
 }
