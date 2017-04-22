@@ -78,6 +78,7 @@ inline bool breep::network<T>::connect_sync(const boost::asio::ip::address& addr
 		peer<T> new_peer(m_manager.connect(address, m_port));
 		if (new_peer != breep::constant::bad_peer<T>) {
 			peer_connected(std::move(new_peer), 0);
+			m_manager.run();
 			return true;
 		} else {
 			return false;

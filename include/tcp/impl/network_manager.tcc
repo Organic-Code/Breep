@@ -106,6 +106,11 @@ inline void breep::tcp::network_manager<T>::disconnect(peernm& peer) {
 }
 
 template <unsigned int T>
+inline void breep::tcp::network_manager<T>::run() {
+	m_io_service.run();
+}
+
+template <unsigned int T>
 inline void breep::tcp::network_manager<T>::owner(network<network_manager<T>>* owner) {
 	if (m_owner == nullptr) {
 		m_owner = owner;

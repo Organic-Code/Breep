@@ -103,6 +103,11 @@ namespace breep {
 		 */
 		virtual void disconnect(peer<network_manager>&) = 0;
 
+		/**
+		 * @brief Network's main thread entry point
+		 */
+		virtual void run() = 0;
+
 	private:
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.

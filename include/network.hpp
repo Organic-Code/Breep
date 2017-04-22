@@ -192,7 +192,7 @@ namespace breep {
 		void connect(boost::asio::ip::address&& address);
 
 		/**
-		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until connected to the network
+		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until disconnected from all the network or the connection was not successful.
 		 * @return true if connection was successful, false otherwise
 		 *
 		 * @throws invalid_state thrown when trying to connect twice to a network.
