@@ -14,14 +14,84 @@
 
 #include "detail/utils.hpp" // TODO: remove
 
-template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-output_container breep::detail::bigendian1(const data_container& data) {
+template <typename T, typename output_container>
+output_container breep::detail::bigendian1(const std::vector<T>& data) {
 	static_assert(
-			sizeof(typename data_container::value_type) == sizeof(typename output_container::value_type) == 1,
-	              "Converting endianness is possible only for 1-byte long types.");
+			sizeof(typename output_container::value_type) == 1
+			&& sizeof(T) == 1,
+			"Converting endianness is possible only for 1-byte long types."
+	);
+
 #ifdef BOOST_LITTLE_ENDIAN
 	output_container out;
 	out.reserve(data.size() - data.size() % sizeof(uintmax_t) + sizeof(uintmax_t));
+	size_t max = data.size() - data.size() % sizeof(uintmax_t);
+	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
+		for (uint_fast8_t j{sizeof(uintmax_t)} ; j-- ;) {
+			out.push_back(data[i + j]);
+		}
+	}
+	if (max < data.size()) {
+		for (uint_fast8_t j{static_cast<uint_fast8_t>(max + sizeof(uintmax_t) - data.size() + 1)} ; --j ;) {
+			out.push_back(0);
+		}
+		for (uint_fast8_t i{static_cast<uint_fast8_t>(data.size() - max)} ; i-- ;) {
+			out.push_back(data[max + i]);
+		}
+	}
+	return out;
+#elif defined BOOST_BIG_ENDIAN
+	return data;
+#else
+#error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
+#error "Middle endian is not supported."
+#endif
+}
+
+template<typename T, typename output_container>
+output_container breep::detail::bigendian1(const std::basic_string<T>& data) {
+	static_assert(
+			sizeof(typename output_container::value_type) == 1
+			&& sizeof(T) == 1,
+			"Converting endianness is possible only for 1-byte long types."
+	);
+
+#ifdef BOOST_LITTLE_ENDIAN
+	output_container out;
+	out.reserve(data.size() - data.size() % sizeof(uintmax_t) + sizeof(uintmax_t));
+	size_t max = data.size() - data.size() % sizeof(uintmax_t);
+	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
+		for (uint_fast8_t j{sizeof(uintmax_t)} ; j-- ;) {
+			out.push_back(data[i + j]);
+		}
+	}
+	if (max < data.size()) {
+		for (uint_fast8_t j{static_cast<uint_fast8_t>(max + sizeof(uintmax_t) - data.size() + 1)} ; --j ;) {
+			out.push_back(0);
+		}
+		for (uint_fast8_t i{static_cast<uint_fast8_t>(data.size() - max)} ; i-- ;) {
+			out.push_back(data[max + i]);
+		}
+	}
+	return out;
+#elif defined BOOST_BIG_ENDIAN
+	return data;
+#else
+#error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
+#error "Middle endian is not supported."
+#endif
+}
+
+template<typename data_container, typename output_container>
+output_container breep::detail::bigendian1(const data_container& data) {
+	static_assert(
+			sizeof(typename output_container::value_type) == 1
+				&& sizeof(typename data_container::value_type) == 1,
+			"Converting endianness is possible only for 1-byte long types."
+	);
+
+#ifdef BOOST_LITTLE_ENDIAN
+	output_container out;
 	size_t max = data.size() - data.size() % sizeof(uintmax_t);
 	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
 		for (uint_fast8_t j{sizeof(uintmax_t)} ; j-- ;) {
