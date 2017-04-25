@@ -30,7 +30,7 @@ namespace breep {
 	enum class commands : uint8_t {
 		/**
 		 * @brief     Command for sending data to a specific peer.
-		 * @details   Must be followed by some data
+		 * @details   Must be followed by: size of id (in octet, in one octet), a target peer (id) + some data
 		 * @attention Keep in mind that other peers may
 		 *            still intercept the message, if there is no
 		 *            direct link to the target buddy.
@@ -74,7 +74,7 @@ namespace breep {
 		forwarding_to,
 		/**
 		 * @brief     Command to tell a peer to connect to another buddy.
-		 * @details   Must be followed by a target peer (size of id (in octets, on 1 octet) + id + ip).
+		 * @details   Must be followed by a target peer (target port (2 octets) + size of id (in octets, on 1 octet) + id + ip).
 		 *
 		 * @since 0.1.0
 		 */
@@ -140,6 +140,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		peer_disconnection,
+		null_command
 	};
 }
 

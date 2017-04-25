@@ -16,7 +16,12 @@
 /**
  * @file invalid_state.hpp
  * @author Lucas Lazare
+ *
+ * @since 0.1.0
  */
+
+#include <boost/uuid/uuid.hpp>
+#include <boost/functional/hash.hpp>
 
 #include "commands.hpp"
 #include "network.hpp"
@@ -73,8 +78,7 @@ namespace breep {
 		 * @brief Sends data to a peer
 		 *
 		 * @tparam data_iterator Any data iterator type you want to support. In the case of \em tcp_nmanager
-		 *                        and \em udp_nmanager, the data_iterator type should respect both
-		 *                        the \em InputIterator.
+		 *                        and \em udp_nmanager, the data_iterator type should respect the \em InputIterator concept.
 		 *                        (for \em uint8_t).
 		 * @tparam size_type
 		 *
@@ -101,9 +105,9 @@ namespace breep {
 		virtual void process_connected_peer(peer<network_manager>& peer) = 0;
 
 		/**
-		 * @brief disconnects from a peer
+		 * @brief disconnects from the network
 		 */
-		virtual void disconnect(peer<network_manager>&) = 0;
+		virtual void disconnect() = 0;
 
 		/**
 		 * @brief Network's main thread entry point

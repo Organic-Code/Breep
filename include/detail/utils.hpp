@@ -35,6 +35,26 @@ namespace breep { namespace detail {
 	struct dependent_false { static constexpr bool value = false; };
 
 	struct unused{ constexpr unused() {}};
+
+	struct fake_mini_container {
+		typedef uint8_t value_type;
+
+		fake_mini_container(const uint8_t* data, size_t size)
+			: data_(data)
+			, size_(size)
+		{}
+
+		uint8_t operator[](size_t index) const {
+			return data_[index];
+		}
+
+		size_t size() const {
+			return size_;
+		}
+
+		uint8_t const * const data_;
+		const size_t size_;
+	};
 }}
 
 namespace breep { namespace constant {

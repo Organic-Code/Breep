@@ -75,7 +75,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::vector<uint8_t>& data, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::deque<uint8_t>& data, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -112,7 +112,7 @@ namespace breep {
 				, m_manager{std::move(manager)}
 				, m_id_count{0}
 				, m_port{port}
-			    , m_running(false)
+				, m_running(false)
 				, m_co_mutex{}
 				, m_dc_mutex{}
 				, m_data_mutex{}
@@ -156,15 +156,22 @@ namespace breep {
 		template <typename data_container>
 		void send_to(const peer<network_manager>& p, data_container&& data) const;
 
+		/**
+		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
+		 */
+		void run();
 
 		/**
+		 * Starts a new network. Same as run(), excepts it is a blocking method.
 		 */
+		void run_sync();
 
 		/**
 		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer
 		 * @note  it is not possible to be connected to more than one network at the same time.
 		 *
 		 * @param address Address of a member
+		 * @param port Target port. Defaults to the local listening port.
 		 *
 		 * @throws invalid_state thrown when trying to connect twice to a network.
 		 *
@@ -172,7 +179,10 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		void connect(boost::asio::ip::address address);
+		void connect(boost::asio::ip::address address, unsigned short port);
+		void connect(const boost::asio::ip::address& address) {
+			connect(address, m_port);
+		}
 
 		/**
 		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until disconnected from all the network or the connection was not successful.
@@ -184,7 +194,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		bool connect_sync(const boost::asio::ip::address& address);
+		bool connect_sync(const boost::asio::ip::address& address, unsigned short port);
 
 		/**
 		 * @brief asynchronically disconnects from the network
@@ -338,10 +348,10 @@ namespace breep {
 		unsigned short m_port;
 		bool m_running;
 
-		std::mutex m_co_mutex;
-		std::mutex m_dc_mutex;
-		std::mutex m_data_mutex;
-		std::mutex m_peers_mutex;
+		mutable std::mutex m_co_mutex;
+		mutable std::mutex m_dc_mutex;
+		mutable std::mutex m_data_mutex;
+		mutable std::mutex m_peers_mutex;
 
 		friend class network_attorney_client<network_manager>;
 	};

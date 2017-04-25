@@ -14,6 +14,8 @@
 /**
  * @file local_peer.hpp
  * @author Lucas Lazare
+ *
+ * @since 0.1.0
  */
 
 #include <vector>

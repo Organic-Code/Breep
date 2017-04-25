@@ -28,28 +28,22 @@
 
 #Set BUILDINGLIB to 1 if the final product is a library rather than an executable
 #Used for checking when the 'run' rule is invoked
-BUILDINGLIB     = 1
+BUILDINGLIB     = 0
 #Set to 1 if you don't want make to link objects file together.
 INHIBITLINKING  = 0
+
+LEAKCHECKER = gdb
 
 #Compiler command
 COMPILER        = g++
 #compiler flags
-COMPFLAGS       = -Wdisabled-optimization -Wvector-operation-performance -Winvalid-pch     \
-                  -Wunused -Wconversion -Wlogical-op -Wuninitialized -Wsuggest-final-types \
-                  -Wdouble-promotion -Wmissing-include-dirs -Wall -pedantic -Wmain         \
-                  -Wswitch-default -Wunreachable-code -Winline -Wfloat-equal -Wundef       \
-                  -Wcast-align -Wredundant-decls -Winit-self -Wshadow -Wnon-virtual-dtor   \
-                  -Weffc++ -Wswitch-enum -Wmissing-declarations -fmessage-length=150 -W    \
-                  -Wpointer-arith -Wzero-as-null-pointer-constant -Wcast-qual -Wcast-align \
-                  -Wwrite-strings -Wmissing-noreturn
-
+COMPFLAGS       =
 #Compile standard
 COMPSTANDARD    = -std=c++14
 #Includes' flags
-INCLUDEDIR      = -I include/
+INCLUDEDIR      = -I ../../include
 #Libraries paths' flags
-LIBSDIR         =
+LIBSDIR         = -L ../../bin
 #Libraries links' flags
 LINKS           = -lboost_system -pthread
 #Extra compiler flags
@@ -57,11 +51,11 @@ DEFINES         =
 #Compiler argument to name the output file
 COMPOUTPUTNAME  = -o
 #Compiler argument to generate an object file rather than directly an executable
-COMPSTOP2OBJECT = -c -fPIC
+COMPSTOP2OBJECT = -c
 #Compiler argument for a debug build
 COMPDEBUG       = -g
 #Compiler argument added when mixing all objects files for the final product (ie: when building a library using GCC, add '-shared' here)
-COMPFINALIZE    = -shared
+COMPFINALIZE    =
 #Extensions for source files, space separated, without the '.' character
 FILEIDENTIFIERS = cpp
 #Files to exclude, space separated. Any file with that name will be ignored
@@ -71,14 +65,14 @@ EXCLUDEDSPEC    =
 
 #--Directories should be empty or end by '/'--
 #Directory for the final executable
-BUILDDIR        = bin/
+BUILDDIR        = ./
 #Directory for objects file
-OBJDIR          = build/
+OBJDIR          = /tmp/
 #Sources' directories, separated by a space
-SOURCEDIR       = src/
+SOURCEDIR       = ./
 
 #Name of the output executable
-OUTNAME         = libbreep.so
+OUTNAME         = chat.elf
 #Command to be run before anything is compiled
 PREBUILDHOOK    =
 #Command to be run just before linking obj files together, given all objects files as parameter

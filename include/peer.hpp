@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <utility>
 
 namespace breep {
 
@@ -55,23 +56,25 @@ namespace breep {
 				: m_id(std::move(id))
 				, m_address(std::move(address))
 				, m_socket(std::move(socket))
-				, m_fixed_buffer()
-				, m_dynamic_buffer()
-				, m_last_received_command()
+				, m_fixed_buffer(std::make_shared<std::array<uint8_t, network_manager::buffer_length>>())
+				, m_dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+				, m_last_received_command(commands::null_command)
 				, m_distance()
 		{
-			m_dynamic_buffer.reserve(network_manager::buffer_length);
+			m_dynamic_buffer->reserve(network_manager::buffer_length);
 		}
 
 		/**
 	 	 * @since 0.1.0
 		 */
 		peer(const peer<network_manager>& p)
-			: peer(
-				boost::uuids::uuid(p.m_id),
-				boost::asio::ip::address(p.m_address),
-				std::shared_ptr<typename network_manager::socket_type>(p.m_socket)
-			)
+			: m_id(p.m_id)
+			, m_address(p.m_address)
+			, m_socket(p.m_socket)
+			, m_fixed_buffer(p.m_fixed_buffer)
+			, m_dynamic_buffer(p.m_dynamic_buffer)
+			, m_last_received_command(p.m_last_received_command)
+			, m_distance(p.m_distance)
 		{}
 
 		/**
@@ -118,12 +121,12 @@ namespace breep {
 		/**
 		 * fixed size buffer unused by this class, left to use for network_manager
 		 */
-		mutable std::array<uint8_t, network_manager::buffer_length> m_fixed_buffer;
+		mutable std::shared_ptr<std::array<uint8_t, network_manager::buffer_length>> m_fixed_buffer;
 
 		/**
 		 * dynamic buffer unused by this class, left to use for network_manager
 		 */
-		mutable std::vector<uint8_t> m_dynamic_buffer;
+		mutable std::shared_ptr<std::vector<uint8_t>> m_dynamic_buffer;
 
 		/**
 		 * variable unused by this class, left to use for network_manager.
