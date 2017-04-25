@@ -11,6 +11,11 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @file tcp/network_manager.hpp
+ * @author Lucas Lazare
+ */
+
 #include <unordered_map>
 #include <queue>
 #include <vector>
@@ -22,12 +27,19 @@
 #include "network_manager_base.hpp"
 #include "network.hpp"
 
-namespace boost { namespace asio {
-		class io_service;
-}}
+namespace boost::asio {
+	class io_service;
+}
 
-namespace breep { namespace tcp {
+namespace breep::tcp {
 
+	/**
+	 * @brief reference tcp network_manager implementation
+	 *
+	 * @tparam BUFFER_LENGTH size of the local buffer
+	 *
+	 * @since 0.1.0
+	 */
 	template <unsigned int BUFFER_LENGTH>
 	class network_manager final: public network_manager_base<network_manager<BUFFER_LENGTH>> {
 	public:
@@ -102,7 +114,7 @@ namespace breep { namespace tcp {
 		network<network_manager<BUFFER_LENGTH>>* m_owner;
 		mutable boost::asio::io_service m_io_service;
 		boost::asio::ip::tcp::acceptor m_acceptor;
-		std::unique_ptr<boost::asio::ip::tcp::socket> m_socket;
+		std::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
 
 		std::string m_id_string_bigendian;
 
@@ -112,7 +124,7 @@ namespace breep { namespace tcp {
 	typedef network_manager<1024> default_network_manager;
 	typedef network<default_network_manager> default_network;
 	typedef peer<default_network_manager> default_peer;
-}}
+}
 
 #include "tcp/impl/network_manager.tcc"
 

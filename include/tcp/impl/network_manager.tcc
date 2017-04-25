@@ -91,6 +91,7 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 	input.reserve(expected_length);
 	std::copy(buffer.cbegin() + 1, buffer.cbegin() + len, std::back_inserter(input));
 	--len;
+
 	while (len < expected_length) {
 		expected_length -= len;
 		len = socket->read_some(boost::asio::buffer(buffer), error);
@@ -101,7 +102,7 @@ breep::peer<breep::tcp::network_manager<T>> breep::tcp::network_manager<T>::conn
 	}
 
 	return peernm(
-			boost::uuids::string_generator{}(breep::detail::bigendian2<std::string>(input)),
+			boost::uuids::string_generator{}(breep::detail::littleendian2<std::string>(input)),
 			boost::asio::ip::address(address),
 			std::move(socket)
 	);
@@ -132,12 +133,14 @@ inline void breep::tcp::network_manager<T>::run() {
 	m_io_service.run();
 }
 
+/* PRIVATE */
+
 template <unsigned int T>
 inline void breep::tcp::network_manager<T>::owner(network<network_manager<T>>* owner) {
 	if (m_owner == nullptr) {
 		m_owner = owner;
 		m_id_string_bigendian = boost::uuids::to_string(m_owner->self().id());
-		m_id_string_bigendian = breep::detail::bigendian2<std::string>(m_id_string_bigendian);
+		m_id_string_bigendian = breep::detail::littleendian2<std::string>(m_id_string_bigendian);
 		m_id_string_bigendian.insert(m_id_string_bigendian.begin(), static_cast<uint8_t>(m_id_string_bigendian.size()));
 		m_acceptor.async_accept(*m_socket, boost::bind(&network_manager<T>::accept, this, _1));
 	} else {
@@ -165,14 +168,18 @@ void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::e
 
 		bool has_work = true;
 		std::size_t max_idx = std::max(read, fixed_buff.size());
-		for (; has_work ;) {
+		do {
 			uint8_t to_be_red = fixed_buff[current_index++];
+
 			if (to_be_red) {
+
 				if (to_be_red + current_index <= max_idx) {
+				// We can reach the end of the packet.
 					while (to_be_red--) {
 						dyn_buff.push_back(fixed_buff[current_index++]);
 					}
-					network_attorney_client<network_manager <T>>::data_received(*m_owner, peer, peer.m_last_received_command, dyn_buff);
+					detail::network_attorney_client<network_manager <T>>::data_received(*m_owner, peer, peer.m_last_received_command, dyn_buff);
+
 					dyn_buff.clear();
 					peer.m_last_received_command = commands::null_command;
 					peer.m_socket->async_read_some(
@@ -180,12 +187,16 @@ void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::e
 						boost::bind(&network_manager<T>::process_read, this, peer, _1, _2)
 					);
 					has_work = false;
+
 				} else {
+				// We still have to wait for some more input
 					uint8_t count{0};
 					--current_index;
+					// shifting the buffer so we can use the end of it to store the up coming bits
 					while (to_be_red--) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
+
 					peer.m_socket->async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
 						boost::bind(&network_manager::process_read, this, peer, _1, _2)
@@ -193,17 +204,22 @@ void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::e
 					has_work = false;
 				}
 			} else {
+			// to_be_red == 0 <=> more than std::numeric_limits octets to process.
 				to_be_red = std::numeric_limits<uint8_t>::max();
 				if (to_be_red + current_index <= max_idx) {
+				// We can reach the end of the sub packet
 					while (to_be_red--) {
 						dyn_buff.push_back(fixed_buff[current_index++]);
 					}
 				} else {
+				// We still have to wait for some more input
 					uint8_t count{0};
 					--current_index;
+					// shifting the buffer so we can use the end of it to store the up coming bits
 					while (to_be_red--) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
+
 					peer.m_socket->async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
 						boost::bind(&network_manager<T>::process_read, this, peer, _1, _2)
@@ -211,10 +227,11 @@ void breep::tcp::network_manager<T>::process_read(peernm& peer, boost::system::e
 					has_work = false;
 				}
 			}
-		}
+		} while (has_work);
 	} else {
+		// error
 		peer.m_socket = std::shared_ptr<socket_type>(nullptr);
-		network_attorney_client<network_manager<T>>::peer_disconnected(*m_owner, peer);
+		detail::network_attorney_client<network_manager<T>>::peer_disconnected(*m_owner, peer);
 	}
 }
 
@@ -247,12 +264,14 @@ inline void breep::tcp::network_manager<T>::accept(boost::system::error_code ec)
 		if (ec) {
 			m_socket->close();
 		} else {
-			std::vector<uint8_t> data = detail::bigendian1(buffer);
+			// Reading the id
+			std::vector<uint8_t> data = detail::littleendian1(buffer);
 			size_t expected_length = buffer[0];
 			std::vector<uint8_t> peer_id{};
 			peer_id.reserve(expected_length);
 			std::copy(buffer.cbegin() + 1, buffer.cbegin() + len, std::back_inserter(peer_id));
 			--len;
+
 			while (len < expected_length) {
 				expected_length -= len;
 				len = m_socket->read_some(boost::asio::buffer(buffer), ec);
@@ -264,19 +283,22 @@ inline void breep::tcp::network_manager<T>::accept(boost::system::error_code ec)
 				std::copy(buffer.cbegin(), buffer.cbegin() + len, std::back_inserter(peer_id));
 			}
 
+			// Sending our id
 			boost::asio::write(
 					*m_socket,
 			        boost::asio::buffer(m_id_string_bigendian)
 			);
-			network_attorney_client<network_manager<T>>::peer_connected(
+
+			detail::network_attorney_client<network_manager<T>>::peer_connected(
 					*m_owner,
 					peernm(
-						boost::uuids::string_generator{}(breep::detail::bigendian2<std::string>(peer_id)),
+						boost::uuids::string_generator{}(breep::detail::littleendian2<std::string>(peer_id)),
 						boost::asio::ip::address(m_socket->remote_endpoint().address()),
 						m_socket
 					)
 			);
 		}
+		// reset the socket.
 		m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 	}
 	m_acceptor.async_accept(*m_socket, boost::bind(&network_manager<T>::accept, this, _1));

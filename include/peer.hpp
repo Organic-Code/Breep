@@ -100,6 +100,7 @@ namespace breep {
 
 		/**
 		 * @return The distance from you to the peer.
+		 * @since 0.1.0
 		 */
 		unsigned char distance() const {
 			return m_distance;

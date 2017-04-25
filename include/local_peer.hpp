@@ -40,10 +40,8 @@ namespace breep {
 	public:
 
 		local_peer()
-				: peer<network_manager>::peer(
-												boost::uuids::random_generator{}(),
-												boost::asio::ip::address::from_string("127.0.0.1")
-										)
+				: peer<network_manager>::peer(boost::uuids::random_generator{}(),
+				                              boost::asio::ip::address::from_string("127.0.0.1"))
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
 		{}
@@ -71,21 +69,13 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<
-				boost::uuids::uuid,
-				breep::peer<network_manager>,
-				boost::hash<boost::uuids::uuid>
-		>&
+		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() noexcept;
 
 		/**
 		 * @copydoc local_peer::path_to_passing_by()
 		 */
-		const std::unordered_map<
-				boost::uuids::uuid,
-				breep::peer<network_manager>,
-				boost::hash<boost::uuids::uuid>
-		>&
+		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() const noexcept;
 
 		/**
@@ -93,21 +83,13 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<
-				boost::uuids::uuid,
-				std::vector<breep::peer<network_manager>>,
-				boost::hash<boost::uuids::uuid>
-		>&
+		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() noexcept;
 
 		/**
 		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<
-				boost::uuids::uuid,
-				std::vector<breep::peer<network_manager>>,
-				boost::hash<boost::uuids::uuid>
-		>&
+		const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() const noexcept;
 
 	private:

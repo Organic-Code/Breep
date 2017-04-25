@@ -14,16 +14,16 @@
 
 #include "detail/utils.hpp" // TODO: remove
 
-template <typename T, typename output_container>
-output_container breep::detail::bigendian1(const std::vector<T>& data) {
+template <typename data_container, typename T>
+std::vector<T> breep::detail::littleendian1(const data_container& data) {
 	static_assert(
-			sizeof(typename output_container::value_type) == 1
+			sizeof(typename data_container::value_type) == 1
 			&& sizeof(T) == 1,
 			"Converting endianness is possible only for 1-byte long types."
 	);
 
-#ifdef BOOST_LITTLE_ENDIAN
-	output_container out;
+#ifdef BOOST_BIG_ENDIAN
+	std::vector<T> out;
 	out.reserve(data.size() - data.size() % sizeof(uintmax_t) + sizeof(uintmax_t));
 	size_t max = data.size() - data.size() % sizeof(uintmax_t);
 	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
@@ -40,24 +40,27 @@ output_container breep::detail::bigendian1(const std::vector<T>& data) {
 		}
 	}
 	return out;
-#elif defined BOOST_BIG_ENDIAN
-	return data;
+#elif defined BOOST_LITTLE_ENDIAN
+	std::vector<T> out;
+	out.reserve(data.size());
+	std::copy(data.cbegin(), data.cend(), std::back_inserter(out));
+	return out;
 #else
 #error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
 #error "Middle endian is not supported."
 #endif
 }
 
-template<typename T, typename output_container>
-output_container breep::detail::bigendian1(const std::basic_string<T>& data) {
+template<typename data_container, typename T>
+std::basic_string<T> breep::detail::littleendian1(const data_container& data) {
 	static_assert(
-			sizeof(typename output_container::value_type) == 1
+			sizeof(typename data_container::value_type) == 1
 			&& sizeof(T) == 1,
 			"Converting endianness is possible only for 1-byte long types."
 	);
 
-#ifdef BOOST_LITTLE_ENDIAN
-	output_container out;
+#ifdef BOOST_BIG_ENDIAN
+	std::basic_string<T> out;
 	out.reserve(data.size() - data.size() % sizeof(uintmax_t) + sizeof(uintmax_t));
 	size_t max = data.size() - data.size() % sizeof(uintmax_t);
 	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
@@ -74,8 +77,11 @@ output_container breep::detail::bigendian1(const std::basic_string<T>& data) {
 		}
 	}
 	return out;
-#elif defined BOOST_BIG_ENDIAN
-	return data;
+#elif defined BOOST_LITTLE_ENDIAN
+	std::basic_string<T> out;
+	out.reserve(data.size());
+	std::copy(data.cbegin(), data.cend(), std::back_inserter(out));
+	return out;
 #else
 #error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
 #error "Middle endian is not supported."
@@ -83,14 +89,14 @@ output_container breep::detail::bigendian1(const std::basic_string<T>& data) {
 }
 
 template<typename data_container, typename output_container>
-output_container breep::detail::bigendian1(const data_container& data) {
+output_container breep::detail::littleendian1(const data_container& data) {
 	static_assert(
 			sizeof(typename output_container::value_type) == 1
 				&& sizeof(typename data_container::value_type) == 1,
 			"Converting endianness is possible only for 1-byte long types."
 	);
 
-#ifdef BOOST_LITTLE_ENDIAN
+#ifdef BOOST_BIG_ENDIAN
 	output_container out;
 	size_t max = data.size() - data.size() % sizeof(uintmax_t);
 	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
@@ -107,8 +113,10 @@ output_container breep::detail::bigendian1(const data_container& data) {
 		}
 	}
 	return out;
-#elif defined BOOST_BIG_ENDIAN
-	return data;
+#elif defined BOOST_LITTLE_ENDIAN
+	output_container out;
+	std::copy(data.cbegin(), data.cend(), std::back_inserter(out));
+	return out;
 #else
 #error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
 #error "Middle endian is not supported."

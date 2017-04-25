@@ -39,7 +39,7 @@ COMPILER        = g++
 #compiler flags
 COMPFLAGS       =
 #Compile standard
-COMPSTANDARD    = -std=c++14
+COMPSTANDARD    = -std=c++17
 #Includes' flags
 INCLUDEDIR      = -I ../../include
 #Libraries paths' flags

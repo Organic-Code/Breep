@@ -34,8 +34,10 @@ namespace breep {
 
 	typedef unsigned long listener_id;
 
-	template <typename T>
-	class network_attorney_client;
+	namespace detail {
+		template<typename T>
+		class network_attorney_client;
+	}
 
 	/**
 	 * @class network network.hpp
@@ -57,6 +59,7 @@ namespace breep {
 	class network {
 	public:
 		static const unsigned short default_port = 3479;
+		using network_command_handler = void (network<network_manager>::*)(const peer<network_manager>&, const std::vector<uint8_t>&);
 
 		/**
 		 * Type representing a connection listener
@@ -103,25 +106,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(network_manager&& manager, unsigned short port = default_port) noexcept
-				: m_peers{}
-				, m_co_listener{}
-				, m_data_r_listener{}
-				, m_dc_listener{}
-				, m_me{}
-				, m_manager{std::move(manager)}
-				, m_id_count{0}
-				, m_port{port}
-				, m_running(false)
-				, m_co_mutex{}
-				, m_dc_mutex{}
-				, m_data_mutex{}
-				, m_peers_mutex{}
-
-		{
-			static_assert(std::is_base_of<network_manager_base<network_manager>, network_manager>::value, "Specified type not derived from breep::network_manager_base");
-			static_cast<network_manager_base<network_manager>*>(&m_manager)->owner(this);
-		}
+		explicit network(network_manager&& manager, unsigned short port = default_port) noexcept;
 
 		/**
 		 * @brief Sends data to all members of the network
@@ -335,6 +320,21 @@ namespace breep {
 				invalid_state("Already running.");
 		}
 
+		/* command handlers */
+		void send_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void send_to_all_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void forward_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void stop_forwarding_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void forwarding_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void connect_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void cant_connect_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void successfully_connected_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void update_distance_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void retrieve_distance_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void peers_list_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void new_peer_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void peer_disconnection_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+
 		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
@@ -348,13 +348,17 @@ namespace breep {
 		unsigned short m_port;
 		bool m_running;
 
+		network_command_handler m_command_handlers[static_cast<uint8_t>(commands::null_command)];
+
 		mutable std::mutex m_co_mutex;
 		mutable std::mutex m_dc_mutex;
 		mutable std::mutex m_data_mutex;
 		mutable std::mutex m_peers_mutex;
 
-		friend class network_attorney_client<network_manager>;
+		friend class detail::network_attorney_client<network_manager>;
 	};
+
+	namespace detail {
 
 	template <typename T>
 	class network_attorney_client {
@@ -375,6 +379,8 @@ namespace breep {
 
 		friend T;
 	};
+
+	}
 }
 
 #include "impl/network.tcc"

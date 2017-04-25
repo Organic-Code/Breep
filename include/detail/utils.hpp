@@ -24,11 +24,11 @@ namespace breep { namespace detail {
 	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
 	 */
 	template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-	output_container bigendian1(const data_container& data);
+	output_container littleendian1(const data_container& data);
 
 	template<typename output_container, typename data_container>
-	inline output_container bigendian2(const data_container& data) {
-		return bigendian1<data_container, output_container>(data);
+	inline output_container littleendian2(const data_container& data) {
+		return littleendian1<data_container, output_container>(data);
 	}
 
 	template <typename... T>
@@ -50,6 +50,14 @@ namespace breep { namespace detail {
 
 		size_t size() const {
 			return size_;
+		}
+
+		const uint8_t* cbegin() const {
+			return data_;
+		}
+
+		const uint8_t* cend() const {
+			return data_ + size_;
 		}
 
 		uint8_t const * const data_;
