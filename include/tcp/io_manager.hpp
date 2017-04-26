@@ -25,10 +25,11 @@
 #include <boost/bind.hpp>
 
 #include "io_manager_base.hpp"
-#include "network_manager.hpp"
 
-namespace boost::asio {
-	class io_service;
+
+namespace breep {
+	template <typename T>
+	class network_manager;
 }
 
 namespace breep::tcp {
@@ -101,6 +102,13 @@ namespace breep::tcp {
 		void run() override ;
 
 	private:
+
+		void port(unsigned short port) {
+			m_acceptor.close();
+			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)};
+			m_acceptor.async_accept(*m_socket, boost::bind((&io_manager<BUFFER_LENGTH>::accept, this, _1)));
+		}
+
 		void owner(network_manager<io_manager<BUFFER_LENGTH>>* owner) override;
 
 		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);

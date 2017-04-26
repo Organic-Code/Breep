@@ -180,6 +180,9 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		bool connect_sync(const boost::asio::ip::address& address, unsigned short port);
+		bool connect_sync(const boost::asio::ip::address& address) {
+			return connect_sync(address, m_port);
+		}
 
 		/**
 		 * @brief asynchronically disconnects from the network
@@ -295,11 +298,14 @@ namespace breep {
 		/**
 		 * @brief Changes the port to which the object is mapped
 		 * @param port the new port
-		 * @attention If the port is changed while there are ongoing connections,
-		 *            the behavior is undefined and possibly depends on the underlying \em network_manager.
+		 * @attention If the port is changed while there are ongoing connections, breep::invalid_state exception is raised.
 		 */
 		void port(unsigned short port) {
-			m_port = port;
+			if (m_port != port) {
+				require_non_running();
+				m_port = port;
+				m_manager.port(port);
+			}
 		}
 
 		const local_peer<io_manager>& self() const {
@@ -319,6 +325,8 @@ namespace breep {
 			if (m_running)
 				invalid_state("Already running.");
 		}
+
+		bool connect_sync_impl(const boost::asio::ip::address address);
 
 		/* command handlers */
 		void send_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);

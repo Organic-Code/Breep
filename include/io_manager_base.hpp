@@ -114,6 +114,14 @@ namespace breep {
 		virtual void run() = 0;
 
 	protected:
+
+		/**
+		 * @brief sets the port
+		 * 			Will never be called from the owner if the network is active.
+		 * @param port the new port.
+		 */
+		virtual void port(unsigned short port) = 0;
+
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.
 		 */

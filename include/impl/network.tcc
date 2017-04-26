@@ -100,20 +100,14 @@ inline void breep::network_manager<T>::run_sync() {
 template <typename T>
 inline void breep::network_manager<T>::connect(boost::asio::ip::address address, unsigned short port) {
 	require_non_running();
-	std::thread(&network_manager<T>::connect_sync, this, address, port).detach();
+	port(port);
+	std::thread(&network_manager<T>::connect_sync_impl, this, address).detach();
 }
 
 template <typename T>
 inline bool breep::network_manager<T>::connect_sync(const boost::asio::ip::address& address, unsigned short port) {
-	require_non_running();
-    peer<T> new_peer(m_manager.connect(address, port));
-	if (new_peer != breep::constant::bad_peer<T>) {
-		peer_connected(std::move(new_peer), 0);
-		run_sync();
-		return true;
-	} else {
-		return false;
-	}
+	port(port);
+	return connect_sync_impl(address);
 }
 
 template <typename T>
@@ -224,6 +218,18 @@ inline void breep::network_manager<T>::forward_if_needed(const peer<T>& source, 
 	}
 }
 
+template <typename T>
+bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address address) {
+	require_non_running();
+	peer<T> new_peer(m_manager.connect(address, port));
+	if (new_peer != breep::constant::bad_peer<T>) {
+		peer_connected(std::move(new_peer), 0);
+		run_sync();
+		return true;
+	} else {
+		return false;
+	}
+}
 
 template <typename T>
 void breep::network_manager<T>::send_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
