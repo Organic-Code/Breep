@@ -1,5 +1,5 @@
-#ifndef BREEP_NETWORK_HPP
-#define BREEP_NETWORK_HPP
+#ifndef BREEP_NETWORK_MANAGER_HPP
+#define BREEP_NETWORK_MANAGER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -27,7 +27,7 @@
 #include "commands.hpp"
 #include "peer.hpp"
 #include "local_peer.hpp"
-#include "network_manager_base.hpp"
+#include "io_manager_base.hpp"
 #include "invalid_state.hpp"
 
 namespace breep {
@@ -42,7 +42,7 @@ namespace breep {
 	/**
 	 * @class network network.hpp
 	 * @brief                  This class is used to manage a peer to peer network.
-	 * @tparam network_manager Manager used to manage the network
+	 * @tparam io_manager      Manager used to manage input and ouput operations of (including connection & disconection) the network
 	 *                         This class should inherit from \em breep::network_manager_base
 	 *                         see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
 	 *                         network_manager::socket_type must also be defined.
@@ -55,11 +55,11 @@ namespace breep {
 	 *
 	 * @since 0.1.0
 	 */
-	template <typename network_manager>
-	class network {
+	template <typename io_manager>
+	class network_manager {
 	public:
 		static const unsigned short default_port = 3479;
-		using network_command_handler = void (network<network_manager>::*)(const peer<network_manager>&, const std::vector<uint8_t>&);
+		using network_command_handler = void (network_manager<io_manager>::*)(const peer<io_manager>&, const std::vector<uint8_t>&);
 
 		/**
 		 * Type representing a connection listener
@@ -68,7 +68,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using connection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& new_peer, unsigned short distance)>;
+		using connection_listener = std::function<void(breep::network_manager<io_manager>& network, const breep::peer<io_manager>& new_peer, unsigned short distance)>;
 
 		/**
 		 * Type representing a data listener.
@@ -78,7 +78,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& received_from, const std::deque<uint8_t>& data, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::network_manager<io_manager>& network, const breep::peer<io_manager>& received_from, const std::deque<uint8_t>& data, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -87,26 +87,26 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using disconnection_listener = std::function<void(breep::network<network_manager>& network, const breep::peer<network_manager>& disconnected_peer)>;
+		using disconnection_listener = std::function<void(breep::network_manager<io_manager>& network, const breep::peer<io_manager>& disconnected_peer)>;
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(unsigned short port = default_port) noexcept
-				: network(network_manager{port}, port)
+		explicit network_manager(unsigned short port = default_port) noexcept
+				: network_manager(io_manager{port}, port)
 		{}
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(const network_manager& manager, unsigned short port = default_port) noexcept
-				: network(network_manager(manager), port)
+		explicit network_manager(const io_manager& manager, unsigned short port = default_port) noexcept
+				: network_manager(io_manager(manager), port)
 		{}
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit network(network_manager&& manager, unsigned short port = default_port) noexcept;
+		explicit network_manager(io_manager&& manager, unsigned short port = default_port) noexcept;
 
 		/**
 		 * @brief Sends data to all members of the network
@@ -133,13 +133,13 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send_to(const peer<network_manager>& p, const data_container& data) const;
+		void send_to(const peer<io_manager>& p, const data_container& data) const;
 
 		/**
 		 * @copydoc network::send_to(const peer&, const data_container&) const;
 		 */
 		template <typename data_container>
-		void send_to(const peer<network_manager>& p, data_container&& data) const;
+		void send_to(const peer<io_manager>& p, data_container&& data) const;
 
 		/**
 		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
@@ -278,7 +278,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> peers() const {
+		std::unordered_map<boost::uuids::uuid, peer<io_manager>, boost::hash<boost::uuids::uuid>> peers() const {
 			std::lock_guard<std::mutex> lock_guard(m_peers_mutex);
 			return m_peers;
 		}
@@ -302,46 +302,46 @@ namespace breep {
 			m_port = port;
 		}
 
-		const local_peer<network_manager>& self() const {
+		const local_peer<io_manager>& self() const {
 			return m_me;
 		}
 
 	private:
 
-		void peer_connected(peer<network_manager>&& p, unsigned char distance);
-		void peer_disconnected(const peer<network_manager>& p);
-		void data_received(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
+		void peer_connected(peer<io_manager>&& p, unsigned char distance);
+		void peer_disconnected(const peer<io_manager>& p);
+		void data_received(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 
 
-		void replace(peer<network_manager>& ancestor, const peer<network_manager>& successor);
-		void forward_if_needed(const peer<network_manager>& source, commands command, const std::vector<uint8_t>& data);
+		void replace(peer<io_manager>& ancestor, const peer<io_manager>& successor);
+		void forward_if_needed(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
 			if (m_running)
 				invalid_state("Already running.");
 		}
 
 		/* command handlers */
-		void send_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void send_to_all_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void forward_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void stop_forwarding_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void forwarding_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void connect_to_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void cant_connect_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void successfully_connected_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void update_distance_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void retrieve_distance_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void peers_list_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void new_peer_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
-		void peer_disconnection_handler(const peer<network_manager>& peer, const std::vector<uint8_t>& data);
+		void send_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void send_to_all_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void forward_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void stop_forwarding_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void forwarding_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void connect_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void cant_connect_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void successfully_connected_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void update_distance_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void retrieve_distance_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void peers_list_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void new_peer_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void peer_disconnection_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 
-		std::unordered_map<boost::uuids::uuid, peer<network_manager>, boost::hash<boost::uuids::uuid>> m_peers;
+		std::unordered_map<boost::uuids::uuid, peer<io_manager>, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
-		local_peer<network_manager> m_me;
+		local_peer<io_manager> m_me;
 
-		network_manager m_manager;
+		io_manager m_manager;
 
 		listener_id m_id_count;
 
@@ -355,7 +355,7 @@ namespace breep {
 		mutable std::mutex m_data_mutex;
 		mutable std::mutex m_peers_mutex;
 
-		friend class detail::network_attorney_client<network_manager>;
+		friend class detail::network_attorney_client<io_manager>;
 	};
 
 	namespace detail {
@@ -365,15 +365,15 @@ namespace breep {
 
 		network_attorney_client() = delete;
 
-		inline static void peer_connected(network<T>& object, peer<T>&& p) {
+		inline static void peer_connected(network_manager<T>& object, peer<T>&& p) {
 			object.peer_connected(std::move(p), 0);
 		}
 
-		inline static void peer_disconnected(network<T>& object, const peer<T>& p) {
+		inline static void peer_disconnected(network_manager<T>& object, const peer<T>& p) {
 			object.peer_disconnected(p);
 		}
 
-		inline static void data_received(network<T>& object, const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+		inline static void data_received(network_manager<T>& object, const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
 			object.data_received(source, command, data);
 		}
 
@@ -385,4 +385,4 @@ namespace breep {
 
 #include "impl/network.tcc"
 
-#endif //BREEP_NETWORK_HPP
+#endif //BREEP_NETWORK_MANAGER_HPP

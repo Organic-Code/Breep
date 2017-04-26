@@ -9,16 +9,16 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <network.hpp>
-#include <tcp/network_manager.hpp>
 #include <iostream>
 #include <vector>
-
 #include <boost/uuid/uuid_io.hpp>
+
+#include <network_manager.hpp>
+#include <tcp/io_manager.hpp>
 
 #define forever for(;;)
 
-void message_received(breep::tcp::default_network&, const breep::tcp::default_peer& source, const std::deque<uint8_t>& data, bool) {
+void message_received(breep::tcp::default_network_manager&, const breep::tcp::default_peer& source, const std::deque<uint8_t>& data, bool) {
 	std::cout << '\r' << boost::uuids::to_string(source.id()).substr(0,4) << ": ";
 	for (uint8_t a : data) {
 		std::cout << static_cast<char>(a);
@@ -26,11 +26,11 @@ void message_received(breep::tcp::default_network&, const breep::tcp::default_pe
 	std::cout << std::endl;
 }
 
-void connection(breep::tcp::default_network&, const breep::tcp::default_peer& new_peer, unsigned short) {
+void connection(breep::tcp::default_network_manager&, const breep::tcp::default_peer& new_peer, unsigned short) {
 	std::cout << "SYSTEM: " << boost::uuids::to_string(new_peer.id()).substr(0,4) << " connected!" << std::endl;
 }
 
-void disconnection(breep::tcp::default_network&, const breep::tcp::default_peer& peer) {
+void disconnection(breep::tcp::default_network_manager&, const breep::tcp::default_peer& peer) {
 	std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0,4) << " disconnected" << std::endl;
 }
 
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	breep::tcp::default_network network((unsigned short)atoi(argv[1]));
+	breep::tcp::default_network_manager network((unsigned short)atoi(argv[1]));
 
 	std::cout << "SYSTEM: " << boost::uuids::to_string(network.self().id()) << " is your identity" << std::endl;
 

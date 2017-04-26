@@ -35,12 +35,12 @@ namespace breep {
 	 * @brief This class represent the user's client
 	 * @since 0.1.0
 	 */
-	template <typename network_manager>
-	class local_peer: public peer<network_manager> {
+	template <typename io_manager>
+	class local_peer: public peer<io_manager> {
 	public:
 
 		local_peer()
-				: peer<network_manager>::peer(boost::uuids::random_generator{}(),
+				: peer<io_manager>::peer(boost::uuids::random_generator{}(),
 				                              boost::asio::ip::address::from_string("127.0.0.1"))
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
@@ -57,25 +57,25 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		peer<network_manager>& path_to(const peer<network_manager>& p);
+		peer<io_manager>& path_to(const peer<io_manager>& p);
 
 		/**
 		 * @copydoc local_peer::path_to(const peer&)
 		 */
-		const peer<network_manager>& path_to(const peer<network_manager>& p) const;
+		const peer<io_manager>& path_to(const peer<io_manager>& p) const;
 
 		/**
 		 * @return A reference to the private field m_path_to_passing_by
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>&
+		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() noexcept;
 
 		/**
 		 * @copydoc local_peer::path_to_passing_by()
 		 */
-		const std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>>&
+		const std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() const noexcept;
 
 		/**
@@ -83,13 +83,13 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>>&
+		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() noexcept;
 
 		/**
 		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>>&
+		const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() const noexcept;
 
 	private:
@@ -117,7 +117,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<network_manager>>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
+		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
 
 
 		/**
@@ -137,7 +137,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<network_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
+		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
 	};
 
 }

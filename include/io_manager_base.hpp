@@ -1,5 +1,5 @@
-#ifndef BREEP_NETWORK_MANAGER_BASE_HPP
-#define BREEP_NETWORK_MANAGER_BASE_HPP
+#ifndef BREEP_IO_MANAGER_BASE_HPP
+#define BREEP_IO_MANAGER_BASE_HPP
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,17 +24,16 @@
 #include <boost/functional/hash.hpp>
 
 #include "commands.hpp"
-#include "network.hpp"
 #include "detail/utils.hpp"
 
-namespace boost { namespace asio { namespace ip {
+namespace boost::asio::ip {
 	class address;
-}}}
+}
 
 namespace breep {
 
 	template <typename T>
-	class network;
+	class network_manager;
 
 	template <typename T>
 	class peer;
@@ -50,11 +49,11 @@ namespace breep {
 	 *
 	 * @since 0.1.0
 	 */
-	template <typename network_manager>
-	class network_manager_base {
+	template <typename io_manager>
+	class io_manager_base {
 	public:
 
-		virtual ~network_manager_base() {
+		virtual ~io_manager_base() {
 
 		}
 
@@ -70,8 +69,8 @@ namespace breep {
 		 * @param peer the peer to whom to send the data.
 		 */
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<network_manager>& peer) const {
-			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_container>::value, "Send called without specialisation.");
+		void send(commands command, const data_container& data, const peer<io_manager>& peer) const {
+			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_container>::value, "Send called without specialisation.");
 		}
 
 		/**
@@ -88,8 +87,8 @@ namespace breep {
 		 * @param peer of the peer to whom to send the data.
 		 */
 		template <typename data_iterator, typename  size_type>
-		void send(commands command, data_iterator begin, size_type size, const peer<network_manager>& peer) const {
-			static_assert(detail::dependent_false<network_manager_base<network_manager>, data_iterator>::value, "Send called without specialisation.");
+		void send(commands command, data_iterator begin, size_type size, const peer<io_manager>& peer) const {
+			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 
 		/**
@@ -97,12 +96,12 @@ namespace breep {
 		 *
 		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
 		 */
-		virtual peer<network_manager> connect(const boost::asio::ip::address&, unsigned short port) = 0;
+		virtual peer<io_manager> connect(const boost::asio::ip::address&, unsigned short port) = 0;
 
 		/**
 		 * @brief performs any required action after a peer connection.
 		 */
-		virtual void process_connected_peer(peer<network_manager>& peer) = 0;
+		virtual void process_connected_peer(peer<io_manager>& peer) = 0;
 
 		/**
 		 * @brief disconnects from the network
@@ -118,10 +117,10 @@ namespace breep {
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.
 		 */
-		virtual void owner(network<network_manager>* owner) = 0;
+		virtual void owner(network_manager<io_manager>* owner) = 0;
 
-		friend class network<network_manager>;
+		friend class network_manager<io_manager>;
 	};
 }
 
-#endif //BREEP_NETWORK_MANAGER_BASE_HPP
+#endif //BREEP_IO_MANAGER_BASE_HPP

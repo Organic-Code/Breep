@@ -1,5 +1,5 @@
-#ifndef BREEP_UDP_NETWORK_HPP
-#define BREEP_UDP_NETWORK_HPP
+#ifndef BREEP_UDP_IO_MANAGER_NETWORK_HPP
+#define BREEP_UDP_IO_MANAGER_NETWORK_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -11,12 +11,12 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "network_manager_base.hpp"
+#include "io_manager_base.hpp"
 
 namespace breep::udp {
-	class network_manager: public network_manager_base<network_manager> {
+	class io_manager: public io_manager_base<io_manager> {
 
 	};
 }
 
-#endif //BREEP_UDP_NETWORK_HPP
+#endif //BREEP_UDP_IO_MANAGER_NETWORK_HPP

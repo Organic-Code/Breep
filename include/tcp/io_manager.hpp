@@ -1,5 +1,5 @@
-#ifndef BREEP_TCP_NETWORK_HPP
-#define BREEP_TCP_NETWORK_HPP
+#ifndef BREEP_TCP_IO_MANAGER
+#define BREEP_TCP_IO_MANAGER
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -24,8 +24,8 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
-#include "network_manager_base.hpp"
-#include "network.hpp"
+#include "io_manager_base.hpp"
+#include "network_manager.hpp"
 
 namespace boost::asio {
 	class io_service;
@@ -41,13 +41,13 @@ namespace breep::tcp {
 	 * @since 0.1.0
 	 */
 	template <unsigned int BUFFER_LENGTH>
-	class network_manager final: public network_manager_base<network_manager<BUFFER_LENGTH>> {
+	class io_manager final: public io_manager_base<io_manager<BUFFER_LENGTH>> {
 	public:
 		typedef boost::asio::ip::tcp::socket socket_type;
 		static constexpr std::size_t buffer_length = BUFFER_LENGTH;
-		using peernm = peer<network_manager<BUFFER_LENGTH>>;
+		using peernm = peer<io_manager<BUFFER_LENGTH>>;
 
-		explicit network_manager(unsigned short port)
+		explicit io_manager(unsigned short port)
 				: m_owner(nullptr)
 				, m_io_service{}
 				, m_acceptor(m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
@@ -59,7 +59,7 @@ namespace breep::tcp {
 			m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 		}
 
-		network_manager(network_manager<BUFFER_LENGTH>&& other)
+		io_manager(io_manager<BUFFER_LENGTH>&& other)
 				: m_owner(other.m_owner)
 				, m_io_service()
 				, m_acceptor(std::move(other.m_acceptor))
@@ -73,18 +73,18 @@ namespace breep::tcp {
 			m_acceptor.close();
 			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)};
 			if (m_owner != nullptr) {
-				m_acceptor.async_accept(*m_socket, boost::bind(&network_manager<BUFFER_LENGTH>::accept, this, _1));
+				m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<BUFFER_LENGTH>::accept, this, _1));
 			}
 		}
 
-		~network_manager() {
+		~io_manager() {
 			m_acceptor.close();
 			m_socket->close();
 			m_io_service.stop();
 		}
 
-		network_manager(const network_manager<BUFFER_LENGTH>&) = delete;
-		network_manager<BUFFER_LENGTH>& operator=(const network_manager<BUFFER_LENGTH>&) = delete;
+		io_manager(const io_manager<BUFFER_LENGTH>&) = delete;
+		io_manager<BUFFER_LENGTH>& operator=(const io_manager<BUFFER_LENGTH>&) = delete;
 
 		template <typename data_container>
 		void send(commands command, const data_container& data, const peernm& peer) const;
@@ -101,7 +101,7 @@ namespace breep::tcp {
 		void run() override ;
 
 	private:
-		void owner(network<network_manager<BUFFER_LENGTH>>* owner) override;
+		void owner(network_manager<io_manager<BUFFER_LENGTH>>* owner) override;
 
 		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);
 
@@ -111,7 +111,7 @@ namespace breep::tcp {
 
 		void accept(boost::system::error_code ec);
 
-		network<network_manager<BUFFER_LENGTH>>* m_owner;
+		network_manager<io_manager<BUFFER_LENGTH>>* m_owner;
 		mutable boost::asio::io_service m_io_service;
 		boost::asio::ip::tcp::acceptor m_acceptor;
 		std::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
@@ -121,11 +121,11 @@ namespace breep::tcp {
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
 
-	typedef network_manager<1024> default_network_manager;
-	typedef network<default_network_manager> default_network;
-	typedef peer<default_network_manager> default_peer;
+	typedef io_manager<1024> default_io_manager;
+	typedef network_manager<default_io_manager> default_network_manager;
+	typedef peer<default_io_manager> default_peer;
 }
 
-#include "tcp/impl/network_manager.tcc"
+#include "tcp/impl/io_manager.tcc"
 
-#endif //BREEP_TCP_NETWORK_HPP
+#endif //BREEP_TCP_IO_MANAGER
