@@ -25,6 +25,7 @@ breep::network_manager<T>::network_manager(T&& io_manager, unsigned short port) 
 	, m_data_r_listener{}
 	, m_dc_listener{}
 	, m_me{}
+    , m_uuid_gen{}
 	, m_manager{std::move(io_manager)}
 	, m_id_count{0}
 	, m_port{port}
@@ -71,9 +72,9 @@ template <typename data_container>
 inline void breep::network_manager<T>::send_to(const peer<T>& p, const data_container& data) const {
     std::deque<uint8_t> ldata;
     std::copy(data.cbegin(), data.cend(), std::back_inserter(ldata));
-    std::string id_string = boost::uuids::to_string(m_me.id());
+    const std::string& id_string = m_me.id_as_string();
     for (size_t i{id_string.size()} ; i-- ;) {
-        ldata.push_front(id_string[i]);
+        ldata.emplace_front(id_string[i]);
     }
     ldata.push_front(static_cast<uint8_t>(id_string.size()));
 
@@ -233,12 +234,9 @@ bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address
 
 template <typename T>
 void breep::network_manager<T>::send_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
-	// todo: store my id as string somewhere, store uuids::string_generator somewhere.
-
-	uint8_t trailing = data[0];
 	std::deque<uint8_t> processed_data = detail::littleendian2<std::deque<uint8_t>>(
 			detail::fake_mini_container(data.data() + 1, data.size() - 1));
-	while(trailing--) {
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(processed_data.size() - data.size()) ; trailing-- ;) {
 		processed_data.pop_back();
 	}
 
@@ -251,13 +249,13 @@ void breep::network_manager<T>::send_to_handler(const peer<T>& source, const std
 		processed_data.pop_front();
 	}
 
-	if (boost::uuids::to_string(m_me.id()) == id) {
+	if (m_me.id_as_string() == id) {
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 		for (auto& l : m_data_r_listener) {
 			l.second(*this, source, processed_data, false);
 		}
 	} else {
-		m_manager.send(commands::send_to, data, m_me.path_to(m_peers.at(boost::uuids::string_generator{}(id))));
+		m_manager.send(commands::send_to, data, m_me.path_to(m_peers.at(m_uuid_gen(id))));
 	}
 }
 
@@ -266,10 +264,9 @@ void breep::network_manager<T>::send_to_all_handler(const peer<T>& source, const
 
 	forward_if_needed(source, commands::send_to_all, data);
 
-	uint8_t trailing = data[0];
 	std::deque<uint8_t> processed_data = detail::littleendian2<std::deque<uint8_t>>(
 			detail::fake_mini_container(data.data() + 1, data.size() - 1));
-	while (trailing--) {
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(processed_data.size() - data.size()) ; trailing-- ;) {
 		processed_data.pop_back();
 	}
 
@@ -283,24 +280,31 @@ template <typename T>
 void breep::network_manager<T>::forward_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
 
 	std::string id = detail::littleendian2<std::string>(data);
-	for (size_t trailing = id.size() - data.size() + 1 ; --trailing ;) {
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(id.size() - data.size()) ; trailing-- ;) {
 		id.pop_back();
 	}
-	boost::uuids::uuid uuid = boost::uuids::string_generator{}(id);
+	boost::uuids::uuid uuid = m_uuid_gen(id);
 
 	peer<T>& target = m_peers.at(uuid);
 	m_me.bridging_from_to()[uuid].push_back(source);
 	m_me.bridging_from_to()[source.id()].push_back(target);
 
-	// todo : add number of trailing zeros from endianness
+
+	std::string id_as_str = boost::uuids::to_string(source.id());
+	std::deque<uint8_t> d = detail::littleendian2<std::deque<uint8_t>>(std::to_string(source.distance()) + id_as_str);
+	d.push_front(static_cast<uint8_t>(d.size() - id_as_str.size() - 1));
 	m_manager.send(
 			commands::forwarding_to,
-			detail::littleendian1(std::to_string(source.distance()) + boost::uuids::to_string(source.id())),
+			d,
 			target
 	);
+
+	id_as_str = boost::uuids::to_string(target.id());
+	d = detail::littleendian2<std::deque<uint8_t>>(std::to_string(target.distance()) + id_as_str);
+	d.push_front(static_cast<uint8_t>(d.size() - id_as_str.size() - 1));
 	m_manager.send(
 			commands::forwarding_to,
-			detail::littleendian1(std::to_string(target.distance()) + boost::uuids::to_string(target.id())),
+			d,
 			source
 	);
 }
@@ -308,8 +312,11 @@ void breep::network_manager<T>::forward_to_handler(const peer<T>& source, const 
 template <typename T>
 void breep::network_manager<T>::stop_forwarding_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
 
-	// todo : extract trailing 0
-	boost::uuids::uuid id = boost::uuids::string_generator{}(detail::littleendian2<std::string>(data));
+	std::string data_str = detail::littleendian2<std::string>(detail::fake_mini_container(data.data() + 1, data.size() - 1));
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(data_str.size() - data.size()) ; trailing-- ;) {
+		data_str.pop_back();
+	}
+	boost::uuids::uuid id = m_uuid_gen(data_str);
 	peer<T>& target = m_peers.at(id);
 
 	std::vector<breep::peer<T>>& v = m_me.bridging_from_to()[id];
@@ -330,11 +337,12 @@ void breep::network_manager<T>::stop_forwarding_handler(const peer<T>& source, c
 template <typename T>
 void breep::network_manager<T>::forwarding_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
 	std::string str = detail::littleendian2<std::string>(detail::fake_mini_container(data.data() + 1, data.size() - 1));
-	for (size_t trailing = data[0] ; trailing--;) {
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(str.size() - data.size()) ; trailing-- ;) {
 		str.pop_back();
 	}
+
 	unsigned char distance = static_cast<unsigned char>(str[0]);
-	peer<T>& target = m_peers.at(boost::uuids::string_generator{}(str.substr(1)));
+	peer<T>& target = m_peers.at(m_uuid_gen(str.substr(1)));
 
 	replace(m_me.path_to(target), source);
 	replace(m_me.path_to(source), target);
@@ -343,9 +351,11 @@ void breep::network_manager<T>::forwarding_to_handler(const peer<T>& source, con
 
 template <typename T>
 void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
-	// todo : extract trailing 0
-	std::vector<uint8_t> ldata = detail::littleendian1(data);
-	unsigned short port = static_cast<unsigned short>(data[0] << 8 | data[1]);
+	std::vector<uint8_t> ldata = detail::littleendian1(detail::fake_mini_container(data.data() + 1, data.size() - 1));
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(ldata.size() - data.size()) ; trailing-- ;) {
+		ldata.pop_back();
+	}
+	unsigned short port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
 
 	size_t id_size = ldata[2];
 	std::string buff;
@@ -354,7 +364,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 	for (; --id_size; ++i) {
 		buff.push_back(ldata[i]);
 	}
-	boost::uuids::uuid id = boost::uuids::string_generator{}(buff);
+	boost::uuids::uuid id = m_uuid_gen(buff);
 	id_size = buff.size();
 
 	std::string buff2;
@@ -365,12 +375,14 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 
 	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), port));
 
-	//todo: endianness + trailings
+	auto local_data = detail::littleendian2<std::deque<uint8_t>>(buff);
+	local_data.push_front(static_cast<uint8_t>(local_data.size() - buff.size()));
+
 	if (p.id() == id) {
 		peer_connected(std::move(p), 0);
-		m_manager.send(commands::successfully_connected, buff, source);
+		m_manager.send(commands::successfully_connected, local_data, source);
 	} else {
-		m_manager.send(commands::forward_to, buff, source);
+		m_manager.send(commands::forward_to, local_data, source);
 	}
 }
 

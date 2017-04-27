@@ -19,6 +19,7 @@
  */
 
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -44,6 +45,7 @@ namespace breep {
 				                              boost::asio::ip::address::from_string("127.0.0.1"))
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
+				, m_id_as_string{boost::uuids::to_string(id())}
 		{}
 
 		/**
@@ -92,6 +94,10 @@ namespace breep {
 		const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() const noexcept;
 
+		const std::string& id_as_string() const {
+			return m_id_as_string;
+		}
+
 	private:
 		/**
 		 * @brief   Map representing links.
@@ -138,6 +144,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
+
+		std::string m_id_as_string;
 	};
 
 }

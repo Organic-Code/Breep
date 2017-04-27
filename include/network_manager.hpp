@@ -347,7 +347,9 @@ namespace breep {
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
+
 		local_peer<io_manager> m_me;
+		boost::uuids::string_generator m_uuid_gen;
 
 		io_manager m_manager;
 
