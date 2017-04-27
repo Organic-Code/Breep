@@ -24,7 +24,7 @@
 #include "detail/utils.hpp"
 #include "network_manager.hpp"
 #include "peer.hpp"
-#include "invalid_state.hpp"
+#include "exceptions.hpp"
 
 template <unsigned int T>
 template <typename data_container>

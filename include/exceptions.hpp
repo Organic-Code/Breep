@@ -1,5 +1,5 @@
-#ifndef BREEP_INVALID_STATE_HPP
-#define BREEP_INVALID_STATE_HPP
+#ifndef BREEP_EXCEPTIONS_HPP
+#define BREEP_EXCEPTIONS_HPP
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,12 +30,19 @@ namespace breep {
 	 *
 	 * @since 0.1.0
 	 */
-	class invalid_state: public std::runtime_error {
+	class invalid_state: public std::logic_error {
 
 	public:
-		explicit invalid_state(const std::string& what_arg): runtime_error(what_arg) {}
-		explicit invalid_state(const char* what_arg): runtime_error(what_arg) {}
+		explicit invalid_state(const std::string& what_arg): logic_error(what_arg) {}
+		explicit invalid_state(const char* what_arg): logic_error(what_arg) {}
+	};
+
+	class unsupported_system: public std::runtime_error {
+
+	public:
+		explicit unsupported_system(const std::string& what_arg): runtime_error(what_arg) {}
+		explicit unsupported_system(const char* what_arg): runtime_error(what_arg) {}
 	};
 }
 
-#endif //BREEP_INVALID_STATE_HPP
+#endif //BREEP_EXCEPTIONS_HPP

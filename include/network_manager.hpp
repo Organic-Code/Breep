@@ -28,7 +28,7 @@
 #include "peer.hpp"
 #include "local_peer.hpp"
 #include "io_manager_base.hpp"
-#include "invalid_state.hpp"
+#include "exceptions.hpp"
 
 namespace breep {
 
