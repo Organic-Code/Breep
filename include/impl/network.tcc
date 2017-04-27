@@ -355,7 +355,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(ldata.size() - data.size()) ; trailing-- ;) {
 		ldata.pop_back();
 	}
-	unsigned short port_ = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
+	unsigned short remote_port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
 
 	size_t id_size = ldata[2];
 	std::string buff;
@@ -373,7 +373,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 		buff2.push_back(ldata[i++]);
 	}
 
-	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), port_));
+	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), remote_port));
 
 	auto local_data = detail::littleendian2<std::deque<uint8_t>>(buff);
 	local_data.push_front(static_cast<uint8_t>(local_data.size() - buff.size()));
@@ -387,9 +387,35 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 }
 
 template <typename T>
-void breep::network_manager<T>::cant_connect_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
-	// todo : extract trailing 0
-	// todo
+void breep::network_manager<T>::cant_connect_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+	std::string id_string = detail::littleendian2<std::string>(detail::fake_mini_container(data.data() + 1, data.size() - 1));
+	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(id_string.size() - data.size()) ; trailing-- ;) {
+		id_string.pop_back();
+	}
+
+	boost::uuids::uuid target_id = m_uuid_gen(id_string);
+
+	std::vector<uint8_t> data_to_send;
+	id_string = boost::uuids::to_string(source.id());
+	std::string source_addr = source.address().to_string();
+	data_to_send.reserve(3 + id_string.size() + target_id.size());
+
+	// putting the port first.
+	unsigned short remote_port = source.remote_port();
+	data_to_send.push_back(static_cast<uint8_t>(remote_port >> 8 & std::numeric_limits<uint8_t>::max()));
+	data_to_send.push_back(static_cast<uint8_t>(remote_port & std::numeric_limits<uint8_t>::max()));
+	data_to_send.push_back(static_cast<uint8_t>(id_string.size()));
+	std::copy(id_string.cbegin(), id_string.cend(), std::back_inserter(data_to_send));
+	std::copy(source_addr.cbegin(), source_addr.cend(), std::back_inserter(data_to_send));
+
+	auto buffer = detail::littleendian2<std::deque<uint8_t>>(data_to_send);
+	buffer.push_front(static_cast<uint8_t>(buffer.size() - data_to_send.size()));
+
+	m_manager.send(
+			commands::connect_to,
+	        buffer,
+	        m_peers.at(target_id)
+	);
 }
 
 template <typename T>
@@ -406,7 +432,6 @@ void breep::network_manager<T>::update_distance_handler(const peer<T>& /*source*
 
 template <typename T>
 void breep::network_manager<T>::retrieve_distance_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
-	// todo : extract trailing 0
 	// todo
 }
 

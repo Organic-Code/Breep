@@ -110,6 +110,10 @@ namespace breep {
 			m_distance = d;
 		}
 
+		unsigned short remote_port() const {
+			return m_socket->remote_endpoint().port();
+		}
+
 	private:
 		const boost::uuids::uuid m_id;
 		const boost::asio::ip::address m_address;

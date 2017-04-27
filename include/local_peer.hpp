@@ -145,7 +145,7 @@ namespace breep {
 		 */
 		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
 
-		std::string m_id_as_string;
+		const std::string m_id_as_string;
 	};
 
 }

@@ -81,8 +81,7 @@ namespace breep {
 		connect_to,
 		/**
 		 * @brief     Command to indicate a peer that a connection request failed.
-		 * @details   Possibly an answer to \em connect_to. Must be followed by
-		 *            a peer (id).
+		 * @details   Must be followed by a peer (id).
 		 *
 		 * @since 0.1.0
 		 */
@@ -96,9 +95,8 @@ namespace breep {
 		 */
 		successfully_connected,
 		/**
-		 * @brief     Command to update its distances (number of links) between
-		 *            a/some peers.
-		 * @details   Format : [update_distance],[number of updated peers],[peer id],[new distance],[peer id],...
+		 * @brief     Command to update its distances (number of links) between a peer.
+		 * @details   Format : [new distance (on 1 octet)],[peer id]
 		 *
 		 * @since 0.1.0
 		 */
@@ -115,7 +113,9 @@ namespace breep {
 		/**
 		 * @brief     Command to send peers list.
 		 * @details   Answer to \em retrieve_distance.
-		 *            Format : [peers_list],[number of peers],[[peer1 ip],[peer1 id]],[[peer2 ip],[peer2 id]],...
+		 *            Format : [number of peers],[peer1],[peer2],...
+		 *            with: peerN = [peerN port (2octets)], [peerN id size (in octets, on 1 octet)], [peerN id],
+		 *                          [peerN address size (in octets, on 1 octet)], [peerN address]
 		 *
 		 * @sa        commands::retrieve_distance.
 		 *
