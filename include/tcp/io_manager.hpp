@@ -25,6 +25,7 @@
 #include <boost/bind.hpp>
 
 #include "io_manager_base.hpp"
+#include "exceptions.hpp"
 
 
 namespace breep {
@@ -48,6 +49,9 @@ namespace breep::tcp {
 		static constexpr std::size_t buffer_length = BUFFER_LENGTH;
 		using peernm = peer<io_manager<BUFFER_LENGTH>>;
 
+		/**
+		 * May throw breep::unsupported_system if the runtime system does not support IP dual stack
+		 */
 		explicit io_manager(unsigned short port)
 				: m_owner(nullptr)
 				, m_io_service{}
@@ -57,9 +61,16 @@ namespace breep::tcp {
 				, m_data_queues()
 		{
 			static_assert(BUFFER_LENGTH > std::numeric_limits<uint8_t>::max(), "Buffer too small");
-			m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			boost::system::error_code ec;
+			m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
+			if (ec) {
+				throw unsupported_system("IP dual stack is unsupported on your system.");
+			}
 		}
 
+		/**
+		 * May throw breep::unsupported_system if the runtime system does not support IP dual stack
+		 */
 		io_manager(io_manager<BUFFER_LENGTH>&& other)
 				: m_owner(other.m_owner)
 				, m_io_service()
@@ -71,8 +82,15 @@ namespace breep::tcp {
 			other.m_socket->close();
 			other.m_io_service.stop();
 			unsigned short port = m_acceptor.local_endpoint().port();
-			m_acceptor.close();
+
+			boost::system::error_code ec;
 			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)};
+			m_acceptor.close();
+			m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
+			if (ec) {
+				throw unsupported_system("IP dual stack is unsupported on your system.");
+			}
+
 			if (m_owner != nullptr) {
 				m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<BUFFER_LENGTH>::accept, this, _1));
 			}
@@ -106,7 +124,7 @@ namespace breep::tcp {
 		void port(unsigned short port) {
 			m_acceptor.close();
 			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)};
-			m_acceptor.async_accept(*m_socket, boost::bind((&io_manager<BUFFER_LENGTH>::accept, this, _1)));
+			m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<BUFFER_LENGTH>::accept, this, _1));
 		}
 
 		void owner(network_manager<io_manager<BUFFER_LENGTH>>* owner) override;

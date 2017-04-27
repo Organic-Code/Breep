@@ -42,10 +42,10 @@ namespace breep {
 
 		local_peer()
 				: peer<io_manager>::peer(boost::uuids::random_generator{}(),
-				                              boost::asio::ip::address::from_string("127.0.0.1"))
+				                              boost::asio::ip::address_v4::loopback())
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
-				, m_id_as_string{boost::uuids::to_string(id())}
+				, m_id_as_string{boost::uuids::to_string(peer<io_manager>::id())}
 		{}
 
 		/**

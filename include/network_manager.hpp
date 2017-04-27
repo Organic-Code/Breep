@@ -304,7 +304,7 @@ namespace breep {
 			if (m_port != port) {
 				require_non_running();
 				m_port = port;
-				m_manager.port(port);
+				static_cast<io_manager_base<io_manager>*>(&m_manager)->port(port);
 			}
 		}
 

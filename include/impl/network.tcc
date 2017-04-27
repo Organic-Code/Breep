@@ -99,15 +99,15 @@ inline void breep::network_manager<T>::run_sync() {
 }
 
 template <typename T>
-inline void breep::network_manager<T>::connect(boost::asio::ip::address address, unsigned short port) {
+inline void breep::network_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
 	require_non_running();
-	port(port);
+	port(port_);
 	std::thread(&network_manager<T>::connect_sync_impl, this, address).detach();
 }
 
 template <typename T>
-inline bool breep::network_manager<T>::connect_sync(const boost::asio::ip::address& address, unsigned short port) {
-	port(port);
+inline bool breep::network_manager<T>::connect_sync(const boost::asio::ip::address& address, unsigned short port_) {
+	port(port_);
 	return connect_sync_impl(address);
 }
 
@@ -222,7 +222,7 @@ inline void breep::network_manager<T>::forward_if_needed(const peer<T>& source, 
 template <typename T>
 bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address address) {
 	require_non_running();
-	peer<T> new_peer(m_manager.connect(address, port));
+	peer<T> new_peer(m_manager.connect(address, m_port));
 	if (new_peer != breep::constant::bad_peer<T>) {
 		peer_connected(std::move(new_peer), 0);
 		run_sync();
@@ -355,7 +355,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 	for (uint_fast8_t trailing = data[0] + static_cast<uint_fast8_t>(ldata.size() - data.size()) ; trailing-- ;) {
 		ldata.pop_back();
 	}
-	unsigned short port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
+	unsigned short port_ = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
 
 	size_t id_size = ldata[2];
 	std::string buff;
@@ -373,7 +373,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 		buff2.push_back(ldata[i++]);
 	}
 
-	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), port));
+	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), port_));
 
 	auto local_data = detail::littleendian2<std::deque<uint8_t>>(buff);
 	local_data.push_front(static_cast<uint8_t>(local_data.size() - buff.size()));
