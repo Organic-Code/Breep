@@ -11,31 +11,31 @@
 #include "local_peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 template <typename T>
-inline breep::peer<T>& breep::local_peer<T>::path_to(const peer<T>& p) {
+inline const breep::peer<T>*& breep::local_peer<T>::path_to(const peer<T>& p) {
 	return m_path_to_passing_by.at(p.id());
 }
 
 template <typename T>
-inline const breep::peer<T>& breep::local_peer<T>::path_to(const peer<T>& p) const {
+inline breep::peer<T> const * const & breep::local_peer<T>::path_to(const peer<T>& p) const {
 	return m_path_to_passing_by.at(p.id());
 }
 
 template <typename T>
-inline std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() noexcept {
+inline std::unordered_map<boost::uuids::uuid, const breep::peer<T>*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() noexcept {
 	return m_path_to_passing_by;
 }
 
 template <typename T>
-inline const std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() const noexcept {
+inline const std::unordered_map<boost::uuids::uuid, const breep::peer<T>*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() const noexcept {
 	return m_path_to_passing_by;
 }
 
 template <typename T>
-inline std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<T>>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() noexcept {
+inline std::unordered_map<boost::uuids::uuid, std::vector<const breep::peer<T>*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() noexcept {
 	return m_bridging_from_to;
 }
 
 template <typename T>
-const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<T>>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() const noexcept {
+const std::unordered_map<boost::uuids::uuid, std::vector<const breep::peer<T>*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() const noexcept {
 	return m_bridging_from_to;
 }

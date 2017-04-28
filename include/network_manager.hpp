@@ -318,8 +318,6 @@ namespace breep {
 		void peer_disconnected(const peer<io_manager>& p);
 		void data_received(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 
-
-		void replace(peer<io_manager>& ancestor, const peer<io_manager>& successor);
 		void forward_if_needed(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
 			if (m_running)

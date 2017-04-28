@@ -59,25 +59,25 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		peer<io_manager>& path_to(const peer<io_manager>& p);
+		const peer<io_manager>*& path_to(const peer<io_manager>& p);
 
 		/**
-		 * @copydoc local_peer::path_to(const peer&)
+		 * @copydoc local_peer::path_to(const peer<io_manager>&)
 		 */
-		const peer<io_manager>& path_to(const peer<io_manager>& p) const;
+		peer<io_manager> const * const & path_to(const peer<io_manager>& p) const;
 
 		/**
 		 * @return A reference to the private field m_path_to_passing_by
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>>&
+		std::unordered_map<boost::uuids::uuid, const breep::peer<io_manager>*, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() noexcept;
 
 		/**
 		 * @copydoc local_peer::path_to_passing_by()
 		 */
-		const std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>>&
+		const std::unordered_map<boost::uuids::uuid, const breep::peer<io_manager>*, boost::hash<boost::uuids::uuid>>&
 		path_to_passing_by() const noexcept;
 
 		/**
@@ -85,13 +85,13 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>>&
+		std::unordered_map<boost::uuids::uuid, std::vector<const breep::peer<io_manager>*>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() noexcept;
 
 		/**
 		 * @copydoc local_peer::bridging_from_to()
 		 */
-		const std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>>&
+		const std::unordered_map<boost::uuids::uuid, std::vector<const breep::peer<io_manager>*>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() const noexcept;
 
 		const std::string& id_as_string() const {
@@ -123,7 +123,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<io_manager>>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
+		std::unordered_map<boost::uuids::uuid, std::vector<const breep::peer<io_manager>*>, boost::hash<boost::uuids::uuid>> m_bridging_from_to;
 
 
 		/**
@@ -143,7 +143,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, breep::peer<io_manager>, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
+		std::unordered_map<boost::uuids::uuid, const breep::peer<io_manager>*, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
 
 		const std::string m_id_as_string;
 	};
