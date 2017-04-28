@@ -143,6 +143,16 @@ inline void breep::tcp::io_manager<T>::owner(network_manager<io_manager<T>>* own
 		m_id_string_bigendian = breep::detail::littleendian2<std::string>(m_id_string_bigendian);
 		m_id_string_bigendian.insert(m_id_string_bigendian.begin(), static_cast<uint8_t>(m_id_string_bigendian.size()));
 		m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<T>::accept, this, _1));
+
+		boost::asio::ip::v6_only v6_only;
+		m_acceptor.get_option(v6_only);
+		if (v6_only) {
+			if (m_acceptor_v4 != nullptr) {
+				delete m_acceptor_v4;
+			}
+			m_acceptor_v4 = new boost::asio::ip::tcp::acceptor(m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), m_acceptor.local_endpoint().port()));
+			m_acceptor_v4->async_accept(*m_socket, boost::bind(&io_manager<T>::accept, this, _1));
+		}
 	} else {
 		throw invalid_state("Tried to set an already set owner. This object shouldn't be shared.");
 	}
@@ -150,6 +160,7 @@ inline void breep::tcp::io_manager<T>::owner(network_manager<io_manager<T>>* own
 
 template <unsigned int T>
 void breep::tcp::io_manager<T>::process_read(peernm& peer, boost::system::error_code error, std::size_t read) {
+
 	if (!error) {
 		std::vector<uint8_t>& dyn_buff = *peer.m_dynamic_buffer;
 		std::array<uint8_t, T>& fixed_buff = *peer.m_fixed_buffer;

@@ -326,7 +326,7 @@ namespace breep {
 				invalid_state("Already running.");
 		}
 
-		bool connect_sync_impl(const boost::asio::ip::address address);
+		bool connect_sync_impl(const boost::asio::ip::address address, unsigned short port);
 
 		/* command handlers */
 		void send_to_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
