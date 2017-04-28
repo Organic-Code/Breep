@@ -393,6 +393,6 @@ namespace breep {
 	}
 }
 
-#include "impl/network.tcc"
+#include "impl/network_manager.tcc"
 
 #endif //BREEP_NETWORK_MANAGER_HPP

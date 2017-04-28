@@ -221,6 +221,7 @@ inline void breep::network_manager<T>::forward_if_needed(const peer<T>& source, 
 
 template <typename T>
 bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address address) {
+	// todo: retrieve a list of peers and try to connect to them.
 	require_non_running();
 	peer<T> new_peer(m_manager.connect(address, m_port));
 	if (new_peer != breep::constant::bad_peer<T>) {
@@ -420,12 +421,12 @@ void breep::network_manager<T>::cant_connect_handler(const peer<T>& source, cons
 
 template <typename T>
 void breep::network_manager<T>::successfully_connected_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
-	// todo : extract trailing 0
-	// todo
+	// Remove this handler & its command ?
 }
 
 template <typename T>
 void breep::network_manager<T>::update_distance_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
+	// todo : network profiling : when should I receive/send this ?
 	// todo : extract trailing 0
 	// todo
 }
