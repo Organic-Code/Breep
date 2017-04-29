@@ -19,23 +19,64 @@
 
 
 namespace breep::detail {
-	/**
-	 * @brief Converts from local endianness to big endian and the reverse.
-	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
-	 */
-	template<typename data_container, typename output_container = std::vector<typename data_container::value_type>>
-	output_container littleendian1(const data_container& data);
 
-	template<typename output_container, typename data_container>
-	inline output_container littleendian2(const data_container& data) {
-		return littleendian1<data_container, output_container>(data);
-	}
+	struct unowning_linear_container;
+
+	/**
+	 * Converts data from local endiannes to little endian and vice versa.
+	 *
+	 * @param container data to convert
+	 * @param outputIterator iterator where to store resulting data.
+	 */
+	template <typename Container, typename OutputIterator>
+	void little_endian(const Container& container, OutputIterator outputIterator);
+
+	template <typename Container, typename ValueType>
+	inline void make_little_endian(const Container& container, std::vector<ValueType>& vect) {
+		size_t idx = vect.size();
+		vect.reserve(idx + container.size() + 1);
+		vect.push_back(0);
+		little_endian(container, std::back_inserter(vect));
+		vect[idx] = static_cast<ValueType>(vect.size() - 1 - container.size()); // number of trailing 0 introduced by the endianness change.
+	};
+
+	template <typename Container>
+	inline void make_little_endian(const Container& container, std::string& str) {
+		size_t idx = str.size();
+		str.reserve(idx + container.size() + 1);
+		str.push_back(0);
+		little_endian(container, std::back_inserter(str));
+		str[idx] = static_cast<char>(str.size() - idx - 1 - container.size()); // number of trailing 0 introduced by the endianness change.
+	};
+
+	template <typename ValueType>
+	inline void unmake_little_endian(const std::vector<ValueType>& container, std::vector<ValueType>& vect) {
+		vect.reserve(container.size() - 1 - container[0]);
+		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
+		              std::back_inserter(vect));
+		for (size_t val = container.size() - vect.size() - container[0] - 1 ; val-- > 0 ;) { // locally introduced trailing 0s
+			vect.pop_back();
+		}
+	};
+
+	template <typename ValueType>
+	inline void unmake_little_endian(const std::vector<ValueType>& container, std::string& str) {
+		str.reserve(container.size() - 1 - container[0]);
+		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
+		              std::back_inserter(str));
+	};
 
 	template <typename Container>
 	inline void insert_uint16(Container& container, uint16_t uint16) {
 		static_assert(sizeof(typename Container::value_type) == 1);
 		container.push_back(static_cast<uint8_t>(uint16 >> 8) & std::numeric_limits<uint8_t>::max());
 		container.push_back(static_cast<uint8_t>(uint16 & std::numeric_limits<uint8_t>::max()));
+	}
+
+	template <typename Container>
+	inline void insert_uint32(Container& container, uint32_t uint32) {
+		insert_uint16(container, static_cast<uint16_t>((uint32 >> 16) & std::numeric_limits<uint16_t>::max()));
+		insert_uint16(container, static_cast<uint16_t>(uint32 & std::numeric_limits<uint16_t>::max()));
 	}
 
 
@@ -45,10 +86,10 @@ namespace breep::detail {
 
 	struct unused{ constexpr unused() {}};
 
-	struct fake_mini_container {
+	struct unowning_linear_container {
 		typedef uint8_t value_type;
 
-		fake_mini_container(const uint8_t* data, size_t size)
+		unowning_linear_container(const uint8_t* data, size_t size)
 			: data_(data)
 			, size_(size)
 		{}

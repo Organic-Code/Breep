@@ -18,10 +18,10 @@
 
 #define forever for(;;)
 
-void message_received(breep::tcp::default_network_manager&, const breep::tcp::default_peer& source, const std::deque<uint8_t>& data, bool) {
+void message_received(breep::tcp::default_network_manager&, const breep::tcp::default_peer& source, breep::uint8_random_iterator data, size_t size, bool) {
 	std::cout << '\r' << boost::uuids::to_string(source.id()).substr(0,4) << ": ";
-	for (uint8_t a : data) {
-		std::cout << static_cast<char>(a);
+	while (size--) {
+		std::cout << static_cast<char>(*data++);
 	}
 	std::cout << std::endl;
 }

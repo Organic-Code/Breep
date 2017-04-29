@@ -46,9 +46,15 @@ namespace breep::tcp {
 	template <unsigned int BUFFER_LENGTH>
 	class io_manager final: public io_manager_base<io_manager<BUFFER_LENGTH>> {
 	public:
-		typedef boost::asio::ip::tcp::socket socket_type;
+
+		// The protocol ID should be changed at each compatibility break.
+		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
+		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
+
 		static constexpr std::size_t buffer_length = BUFFER_LENGTH;
+
 		using peernm = peer<io_manager<BUFFER_LENGTH>>;
+		typedef boost::asio::ip::tcp::socket socket_type;
 
 		explicit io_manager(unsigned short port);
 
@@ -103,7 +109,7 @@ namespace breep::tcp {
 		boost::asio::ip::tcp::acceptor* m_acceptor_v4;
 		std::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
 
-		std::string m_id_string_bigendian;
+		std::string m_id_packet;
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
