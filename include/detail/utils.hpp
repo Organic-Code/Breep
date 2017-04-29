@@ -18,7 +18,7 @@
  */
 
 
-namespace breep { namespace detail {
+namespace breep::detail {
 	/**
 	 * @brief Converts from local endianness to big endian and the reverse.
 	 * @tparam data_container Using operator[](int) and size() methods, and ::type for underlying type (if no output container is given).
@@ -30,6 +30,15 @@ namespace breep { namespace detail {
 	inline output_container littleendian2(const data_container& data) {
 		return littleendian1<data_container, output_container>(data);
 	}
+
+	template <typename Container>
+	inline void insert_uint16(Container& container, uint16_t uint16) {
+		static_assert(sizeof(typename Container::value_type) == 1);
+		container.push_back(static_cast<uint8_t>(uint16 >> 8) & std::numeric_limits<uint8_t>::max());
+		container.push_back(static_cast<uint8_t>(uint16 & std::numeric_limits<uint8_t>::max()));
+	}
+
+
 
 	template <typename... T>
 	struct dependent_false { static constexpr bool value = false; };
@@ -63,11 +72,11 @@ namespace breep { namespace detail {
 		uint8_t const * const data_;
 		const size_t size_;
 	};
-}}
+}
 
-namespace breep { namespace constant {
+namespace breep::constant {
 	constexpr detail::unused unused_param{};
-}}
+}
 
 #include "detail/impl/utils.tcc"
 

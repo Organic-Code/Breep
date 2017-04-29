@@ -111,9 +111,9 @@ namespace breep {
 		 */
 		retrieve_distance,
 		/**
-		 * @brief     Command to send peers list.
+		 * @brief     Command to send peers list (omitting yourself).
 		 * @details   Answer to \em retrieve_distance.
-		 *            Format : [number of peers],[peer1],[peer2],...
+		 *            Format : [number of peers (2octets)],[peer1],[peer2],...<br>
 		 *            with: peerN = [peerN port (2octets)], [peerN id size (in octets, on 1 octet)], [peerN id],
 		 *                          [peerN address size (in octets, on 1 octet)], [peerN address]
 		 *
