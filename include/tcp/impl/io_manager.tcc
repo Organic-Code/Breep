@@ -26,6 +26,61 @@
 #include "peer.hpp"
 #include "exceptions.hpp"
 
+
+template <unsigned int BUFFER_LENGTH>
+breep::tcp::io_manager<BUFFER_LENGTH>::io_manager(unsigned short port)
+		: m_owner(nullptr)
+		, m_io_service{}
+		, m_acceptor(m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port))
+		, m_acceptor_v4(nullptr)
+		, m_socket{std::make_shared<boost::asio::ip::tcp::socket>(m_io_service)}
+		, m_id_string_bigendian()
+		, m_data_queues()
+{
+	static_assert(BUFFER_LENGTH > std::numeric_limits<uint8_t>::max(), "The buffer size is too small");
+
+	boost::system::error_code ec;
+	m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
+	if (ec) {
+		std::clog << "IP dual stack is unsupported on your system.\n"; // todo: set an easy way to programmatically get this error
+		std::clog << "Adding ipv4 listener.\n\n";
+	}
+}
+
+
+template <unsigned int BUFFER_LENGTH>
+breep::tcp::io_manager<BUFFER_LENGTH>::io_manager(io_manager<BUFFER_LENGTH>&& other)
+		: m_owner(other.m_owner)
+		, m_io_service()
+		, m_acceptor(std::move(other.m_acceptor))
+		, m_acceptor_v4(nullptr)
+		, m_socket(std::make_shared<boost::asio::ip::tcp::socket>(m_io_service))
+		, m_id_string_bigendian(std::move(other.m_id_string_bigendian))
+		, m_data_queues(std::move(other.m_data_queues))
+{
+	other.m_socket->close();
+	other.m_io_service.stop();
+	unsigned short port = m_acceptor.local_endpoint().port();
+	m_acceptor.close();
+
+	m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port)};
+
+	if (m_owner != nullptr) {
+		m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<BUFFER_LENGTH>::accept, this, _1));
+	}
+}
+
+template <unsigned int T>
+breep::tcp::io_manager<T>::~io_manager() {
+	m_acceptor.close();
+	m_socket->close();
+	m_io_service.stop();
+	if (m_acceptor_v4 != nullptr) {
+		m_acceptor_v4->close();
+		delete m_acceptor_v4;
+	}
+}
+
 template <unsigned int T>
 template <typename data_container>
 inline void breep::tcp::io_manager<T>::send(commands command, const data_container& data, const peernm& peer) const {
