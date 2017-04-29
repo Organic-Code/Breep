@@ -204,7 +204,7 @@ void breep::tcp::io_manager<T>::process_read(peernm& peer, boost::system::error_
 					uint8_t count{0};
 					--current_index;
 					// shifting the buffer so we can use the end of it to store the up coming bits
-					while (to_be_red--) {
+					while (fixed_buff.size() > current_index) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
 
@@ -227,7 +227,7 @@ void breep::tcp::io_manager<T>::process_read(peernm& peer, boost::system::error_
 					uint8_t count{0};
 					--current_index;
 					// shifting the buffer so we can use the end of it to store the up coming bits
-					while (to_be_red--) {
+					while (fixed_buff.size() > current_index) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
 
