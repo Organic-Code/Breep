@@ -157,13 +157,12 @@ breep::peer<breep::tcp::io_manager<T>> breep::tcp::io_manager<T>::connect(const 
 	} while (len <= buffer[0]);
 
 	std::string input;
-	input.reserve(len - 1 - buffer[1]);
-	little_endian(detail::unowning_linear_container(buffer.data() + 2, len - 2 - buffer[1]),
-	              std::back_inserter(input));
+	detail::unmake_little_endian(detail::unowning_linear_container(buffer.data() + 3, len - 3), input);
 
 	return peernm(
 			boost::uuids::string_generator{}(input),
 			boost::asio::ip::address(address),
+			static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
 			std::move(socket)
 	);
 }
@@ -200,11 +199,7 @@ inline void breep::tcp::io_manager<T>::owner(network_manager<io_manager<T>>* own
 	if (m_owner == nullptr) {
 		m_owner = owner;
 
-		std::string id_str(boost::uuids::to_string(m_owner->self().id()));
-		m_id_packet.clear();
-		m_id_packet.push_back(0);
-		detail::make_little_endian(id_str, m_id_packet);
-		m_id_packet[0] = static_cast<char>(m_id_packet.size() - 1);
+		make_id_packet();
 
 		m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<T>::accept, this, _1));
 		boost::asio::ip::v6_only v6_only;
@@ -372,10 +367,7 @@ inline void breep::tcp::io_manager<T>::accept(boost::system::error_code ec) {
 			} while (len <= buffer[0]);
 
 			std::string input;
-			input.reserve(len - 1 - buffer[1]);
-			little_endian(detail::unowning_linear_container(buffer.data() + 2, len - 2 - buffer[1]),
-			              std::back_inserter(input));
-
+			detail::unmake_little_endian(detail::unowning_linear_container(buffer.data() + 3, len - 3), input);
 			boost::asio::write(*m_socket, boost::asio::buffer(m_id_packet));
 
 			detail::network_attorney_client<io_manager<T>>::peer_connected(
@@ -383,6 +375,7 @@ inline void breep::tcp::io_manager<T>::accept(boost::system::error_code ec) {
 					peernm(
 						boost::uuids::string_generator{}(input),
 						boost::asio::ip::address(m_socket->remote_endpoint().address()),
+						static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
 						m_socket
 					)
 			);

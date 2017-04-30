@@ -82,6 +82,8 @@ namespace breep::tcp {
 	private:
 
 		void port(unsigned short port) {
+			make_id_packet();
+
 			m_acceptor.close();
 			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port)};
 			m_acceptor.async_accept(*m_socket, boost::bind(&io_manager<BUFFER_LENGTH>::accept, this, _1));
@@ -102,6 +104,17 @@ namespace breep::tcp {
 		void write_done(const peernm& peer) const;
 
 		void accept(boost::system::error_code ec);
+
+		void make_id_packet() {
+			std::string id_str(boost::uuids::to_string(m_owner->self().id()));
+			m_id_packet.clear();
+			m_id_packet.resize(3, 0);
+			detail::make_little_endian(id_str, m_id_packet);
+
+			m_id_packet[0] = static_cast<char>(m_id_packet.size() - 1);
+			m_id_packet[1] = static_cast<uint8_t>(m_owner->port() >> 8) & std::numeric_limits<uint8_t>::max();
+			m_id_packet[2] = static_cast<uint8_t>(m_owner->port() & std::numeric_limits<uint8_t>::max());
+		}
 
 		network_manager<io_manager<BUFFER_LENGTH>>* m_owner;
 		mutable boost::asio::io_service m_io_service;

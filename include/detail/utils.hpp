@@ -17,6 +17,8 @@
  * @author Lucas Lazare
  */
 
+#include <limits>
+
 
 namespace breep::detail {
 
@@ -49,18 +51,15 @@ namespace breep::detail {
 		str[idx] = static_cast<char>(str.size() - idx - 1 - container.size()); // number of trailing 0 introduced by the endianness change.
 	};
 
-	template <typename ValueType>
-	inline void unmake_little_endian(const std::vector<ValueType>& container, std::vector<ValueType>& vect) {
+	template <typename LinearContainer, typename ValueType>
+	inline void unmake_little_endian(const LinearContainer& container, std::vector<ValueType>& vect) {
 		vect.reserve(container.size() - 1 - container[0]);
 		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
 		              std::back_inserter(vect));
-		for (size_t val = container.size() - vect.size() - container[0] - 1 ; val-- > 0 ;) { // locally introduced trailing 0s
-			vect.pop_back();
-		}
 	};
 
-	template <typename ValueType>
-	inline void unmake_little_endian(const std::vector<ValueType>& container, std::string& str) {
+	template <typename LinearContainer>
+	inline void unmake_little_endian(const LinearContainer& container, std::string& str) {
 		str.reserve(container.size() - 1 - container[0]);
 		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
 		              std::back_inserter(str));
@@ -84,7 +83,7 @@ namespace breep::detail {
 	template <typename... T>
 	struct dependent_false { static constexpr bool value = false; };
 
-	struct unused{ constexpr unused() {}};
+	using unused = std::array<uint8_t, 1>;
 
 	struct unowning_linear_container {
 		typedef uint8_t value_type;
@@ -93,6 +92,10 @@ namespace breep::detail {
 			: data_(data)
 			, size_(size)
 		{}
+
+		const uint8_t* data() const {
+			return data_;
+		}
 
 		uint8_t operator[](size_t index) const {
 			return data_[index];

@@ -24,6 +24,8 @@
 #include <memory>
 #include <utility>
 
+#include "commands.hpp"
+
 namespace breep {
 
 	/**
@@ -39,11 +41,12 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address,
+		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, unsigned short port = 0,
 		     std::shared_ptr<typename network_manager::socket_type> socket = std::shared_ptr<typename network_manager::socket_type>(nullptr))
 			: peer(
 				boost::uuids::uuid(id),
 				boost::asio::ip::address(address),
+				port,
 				std::shared_ptr<typename network_manager::socket_type>(socket)
 			)
 		{}
@@ -51,10 +54,11 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address,
+		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, unsigned short port,
 		     std::shared_ptr<typename network_manager::socket_type>&& socket)
 				: m_id(std::move(id))
 				, m_address(std::move(address))
+				, m_port(port)
 				, m_socket(std::move(socket))
 				, m_fixed_buffer(std::make_shared<std::array<uint8_t, network_manager::buffer_length>>())
 				, m_dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
@@ -70,6 +74,7 @@ namespace breep {
 		peer(const peer<network_manager>& p)
 			: m_id(p.m_id)
 			, m_address(p.m_address)
+			, m_port(p.m_port)
 			, m_socket(p.m_socket)
 			, m_fixed_buffer(p.m_fixed_buffer)
 			, m_dynamic_buffer(p.m_dynamic_buffer)
@@ -110,13 +115,19 @@ namespace breep {
 			m_distance = d;
 		}
 
-		unsigned short remote_port() const {
-			return m_socket->remote_endpoint().port();
+		void connection_port(unsigned short port) {
+			m_port = port;
+		}
+
+		unsigned short connection_port() const {
+			return m_port;
 		}
 
 	private:
 		const boost::uuids::uuid m_id;
 		const boost::asio::ip::address m_address;
+
+		unsigned short m_port;
 
 		/**
 		 * m_socket must be set by the \em network_manager class
@@ -149,7 +160,7 @@ namespace breep {
 	namespace constant {
 		template<typename T>
 		static const peer<T> bad_peer =
-				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address(), std::shared_ptr<typename T::socket_type>());
+				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address(), 0, std::shared_ptr<typename T::socket_type>());
 	}
 
 #include "impl/peer.tcc"

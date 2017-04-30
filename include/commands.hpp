@@ -102,22 +102,29 @@ namespace breep {
 		 */
 		update_distance,
 		/**
-		 * @brief     Command to ask a peer to send its distances (number of links)
-		 *            between him and all other peers.
+		 * @brief     Command to ask a peer to send its distance from another peer.
+		 * @details   Must be followed by a peer (id).
 		 * @sa        commands::update_distance
-		 * @sa        commands::peers_list
 		 *
 		 * @since 0.1.0
 		 */
 		retrieve_distance,
 		/**
+		 * @brief     Command to ask a peer to send the list of peers.
+		 * @sa        commands::update_distance
+		 * @sa        commands::peers_list
+		 *
+		 * @since 0.1.0
+		 */
+		retrieve_peers,
+		/**
 		 * @brief     Command to send peers list (omitting yourself).
-		 * @details   Answer to \em retrieve_distance.
+		 * @details   Answer to \em retrieve_peers.
 		 *            Format : [number of peers (2octets)],[peer1],[peer2],...<br>
 		 *            with: peerN = [peerN port (2octets)], [peerN id size (in octets, on 1 octet)], [peerN id],
 		 *                          [peerN address size (in octets, on 1 octet)], [peerN address]
 		 *
-		 * @sa        commands::retrieve_distance.
+		 * @sa        commands::retrieve_peers.
 		 *
 		 * @since 0.1.0
 		 */

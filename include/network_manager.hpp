@@ -316,9 +316,12 @@ namespace breep {
 
 	private:
 
-		void peer_connected(peer<io_manager>&& p, unsigned char distance);
+		void peer_connected(peer<io_manager>&& p);
+		void peer_connected(peer<io_manager>&& p, unsigned char distance, peer<io_manager>& bridge);
 		void peer_disconnected(const peer<io_manager>& p);
 		void data_received(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
+
+		void update_distance(const peer<io_manager>& concerned_peer);
 
 		void forward_if_needed(const peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
@@ -339,6 +342,7 @@ namespace breep {
 		void successfully_connected_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void update_distance_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void retrieve_distance_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
+		void retrieve_peers_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void peers_list_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void new_peer_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peer<io_manager>& peer, const std::vector<uint8_t>& data);
@@ -350,6 +354,7 @@ namespace breep {
 
 		local_peer<io_manager> m_me;
 		boost::uuids::string_generator m_uuid_gen;
+		std::vector<std::unique_ptr<peer<io_manager>>> m_failed_connections;
 
 		io_manager m_manager;
 
@@ -376,7 +381,7 @@ namespace breep {
 		network_attorney_client() = delete;
 
 		inline static void peer_connected(network_manager<T>& object, peer<T>&& p) {
-			object.peer_connected(std::move(p), 0);
+			object.peer_connected(std::move(p));
 		}
 
 		inline static void peer_disconnected(network_manager<T>& object, const peer<T>& p) {
