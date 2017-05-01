@@ -35,8 +35,9 @@ void disconnection(breep::tcp::default_network_manager&, const breep::tcp::defau
 }
 
 int main(int argc, char* argv[]) {
+
 	if (argc < 2) {
-		std::cout << "Usage: chat.elf <hosting port> [target ip] [target port]" << std::endl;
+		std::cout << "Usage: chat.elf <hosting port> [<target ip> <target port>]" << std::endl;
 		return 1;
 	}
 
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]) {
 		boost::asio::ip::address address = boost::asio::ip::address::from_string(argv[2]);
 		network.connect(address, static_cast<unsigned short>(atoi(argv[3])));
 	} else {
-		std::cout << "Usage: chat.elf <hosting port> [target ip] [target port]" << std::endl;
+		std::cout << "Usage: chat.elf <hosting port> [<target ip> <target port>]" << std::endl;
 		return 1;
 	}
 

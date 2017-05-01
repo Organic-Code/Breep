@@ -34,7 +34,7 @@ namespace breep {
 	 * @brief This class represents a network's member
 	 * @since 0.1.0
 	 */
-	template <typename network_manager>
+	template <typename io_manager>
 	class peer {
 	public:
 
@@ -42,12 +42,12 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, unsigned short port = 0,
-		     std::shared_ptr<typename network_manager::socket_type> socket = std::shared_ptr<typename network_manager::socket_type>(nullptr))
+		     const typename io_manager::data_type& data = typename io_manager::data_type())
 			: peer(
 				boost::uuids::uuid(id),
 				boost::asio::ip::address(address),
 				port,
-				std::shared_ptr<typename network_manager::socket_type>(socket)
+			    typename io_manager::data_type(data)
 			)
 		{}
 
@@ -55,37 +55,29 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, unsigned short port,
-		     std::shared_ptr<typename network_manager::socket_type>&& socket)
+		     typename io_manager::data_type&& data)
 				: m_id(std::move(id))
 				, m_address(std::move(address))
 				, m_port(port)
-				, m_socket(std::move(socket))
-				, m_fixed_buffer(std::make_shared<std::array<uint8_t, network_manager::buffer_length>>())
-				, m_dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
-				, m_last_received_command(commands::null_command)
 				, m_distance()
-		{
-			m_dynamic_buffer->reserve(network_manager::buffer_length);
-		}
+				, io_data(std::move(data))
+		{}
 
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const peer<network_manager>& p)
+		peer(const peer<io_manager>& p)
 			: m_id(p.m_id)
 			, m_address(p.m_address)
 			, m_port(p.m_port)
-			, m_socket(p.m_socket)
-			, m_fixed_buffer(p.m_fixed_buffer)
-			, m_dynamic_buffer(p.m_dynamic_buffer)
-			, m_last_received_command(p.m_last_received_command)
 			, m_distance(p.m_distance)
+			, io_data(p.io_data)
 		{}
 
 		/**
 		 * @since 0.1.0
 		 */
-		peer(peer<network_manager>&&) = default;
+		peer(peer<io_manager>&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -99,9 +91,9 @@ namespace breep {
 		 */
 		const boost::asio::ip::address& address() const noexcept;
 
-		bool operator==(const peer<network_manager>& lhs) const;
+		bool operator==(const peer<io_manager>& lhs) const;
 
-		bool operator!=(const peer<network_manager>& lhs) const;
+		bool operator!=(const peer<io_manager>& lhs) const;
 
 		/**
 		 * @return The distance from you to the peer.
@@ -130,37 +122,22 @@ namespace breep {
 		unsigned short m_port;
 
 		/**
-		 * m_socket must be set by the \em network_manager class
-		 */
-		std::shared_ptr<typename network_manager::socket_type> m_socket;
-
-		/**
-		 * fixed size buffer unused by this class, left to use for network_manager
-		 */
-		mutable std::shared_ptr<std::array<uint8_t, network_manager::buffer_length>> m_fixed_buffer;
-
-		/**
-		 * dynamic buffer unused by this class, left to use for network_manager
-		 */
-		mutable std::shared_ptr<std::vector<uint8_t>> m_dynamic_buffer;
-
-		/**
-		 * variable unused by this class, left to use for network_manager.
-		 */
-		mutable commands m_last_received_command;
-
-		/**
 		 * Distance from here to the other peers.
 		 */
 		unsigned char m_distance;
 
-		friend network_manager;
+		/**
+		 * Datas to be used by the io_manager class
+		 */
+		typename io_manager::data_type io_data;
+
+		friend io_manager;
 	};
 
 	namespace constant {
 		template<typename T>
 		static const peer<T> bad_peer =
-				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address(), 0, std::shared_ptr<typename T::socket_type>());
+				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address());
 	}
 
 #include "impl/peer.tcc"

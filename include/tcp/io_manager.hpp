@@ -16,6 +16,7 @@
  * @author Lucas Lazare
  */
 
+#include <cstdint>
 #include <iostream>
 #include <unordered_map>
 #include <queue>
@@ -36,6 +37,47 @@ namespace breep {
 
 namespace breep::tcp {
 
+
+	/**
+	 * io_manager_data, to be stored in peer<tcp::io_manager>.
+	 */
+	template <unsigned int BUFFER_LENGTH>
+	struct io_manager_data final {
+
+		io_manager_data()
+				: socket(std::shared_ptr<boost::asio::ip::tcp::socket>(nullptr))
+				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
+				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+	            , last_command(commands::null_command)
+		{}
+
+		io_manager_data(const std::shared_ptr<boost::asio::ip::tcp::socket>& socket_sptr)
+				: socket(socket_sptr)
+				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
+				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+				, last_command(commands::null_command)
+		{}
+
+		io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>&& socket_sptr)
+				: socket(std::move(socket_sptr))
+				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
+				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+				, last_command(commands::null_command)
+		{}
+
+		~io_manager_data() = default;
+
+		io_manager_data(const io_manager_data&) = default;
+		io_manager_data(io_manager_data&&) = default;
+		io_manager_data& operator=(const io_manager_data&) = default;
+
+		std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+		std::shared_ptr<std::array<uint8_t, BUFFER_LENGTH>> fixed_buffer;
+		std::shared_ptr<std::vector<uint8_t>> dynamic_buffer;
+
+		commands last_command;
+	};
+
 	/**
 	 * @brief reference tcp network_manager implementation
 	 *
@@ -51,10 +93,8 @@ namespace breep::tcp {
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
 
-		static constexpr std::size_t buffer_length = BUFFER_LENGTH;
-
 		using peernm = peer<io_manager<BUFFER_LENGTH>>;
-		typedef boost::asio::ip::tcp::socket socket_type;
+		using data_type = io_manager_data<BUFFER_LENGTH>;
 
 		explicit io_manager(unsigned short port);
 
