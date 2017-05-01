@@ -19,7 +19,18 @@ inline void breep::detail::little_endian(const Container& container, OutputItera
 	using std::iterator_traits;
 	static_assert(sizeof(typename Container::value_type) == 1);
 	static_assert(sizeof(typename OutputIterator::container_type::value_type) == 1);
+
 #ifdef BOOST_BIG_ENDIAN
+	#ifndef BREEP_NOWARNING
+		#ifdef _MSC_VER
+			#pragma message ("This library as not been tested for big endian architectures, and is probably not working on such device. Feedback is very welcome.")
+			#pragma message ("Note: to disable this warning, define the macro BREEP_NOWARNING before including breep's headers.")
+		#else
+			#warning "This library as not been tested for big endian architectures, and is probably not working on such device. Feedback is very welcome."
+			#warning "Note: to disable this warning, define the macro BREEP_NOWARNING before including breep's headers."
+		#endif
+	#endif
+
 	size_t max = container.size() - container.size() % sizeof(uintmax_t);
 	for(size_t i{0} ; i < max ; i += sizeof(uintmax_t)) {
 		for (uint_fast8_t j{sizeof(uintmax_t)} ; j-- ;) {
