@@ -1,5 +1,5 @@
-#ifndef BREEP_PEER_HPP
-#define BREEP_PEER_HPP
+#ifndef BREEP_BASIC_PEER_HPP
+#define BREEP_BASIC_PEER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -35,15 +35,15 @@ namespace breep {
 	 * @since 0.1.0
 	 */
 	template <typename io_manager>
-	class peer {
+	class basic_peer {
 	public:
 
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, unsigned short port = 0,
+		basic_peer(const boost::uuids::uuid& id, const boost::asio::ip::address& address, unsigned short port = 0,
 		     const typename io_manager::data_type& data = typename io_manager::data_type())
-			: peer(
+			: basic_peer(
 				boost::uuids::uuid(id),
 				boost::asio::ip::address(address),
 				port,
@@ -54,7 +54,7 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, unsigned short port,
+		basic_peer(boost::uuids::uuid&& id, boost::asio::ip::address&& address, unsigned short port,
 		     typename io_manager::data_type&& data)
 				: m_id(std::move(id))
 				, m_address(std::move(address))
@@ -66,7 +66,7 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		peer(const peer<io_manager>& p)
+		basic_peer(const basic_peer<io_manager>& p)
 			: m_id(p.m_id)
 			, m_address(p.m_address)
 			, m_port(p.m_port)
@@ -77,7 +77,7 @@ namespace breep {
 		/**
 		 * @since 0.1.0
 		 */
-		peer(peer<io_manager>&&) = default;
+		basic_peer(basic_peer<io_manager>&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -91,9 +91,9 @@ namespace breep {
 		 */
 		const boost::asio::ip::address& address() const noexcept;
 
-		bool operator==(const peer<io_manager>& lhs) const;
+		bool operator==(const basic_peer<io_manager>& lhs) const;
 
-		bool operator!=(const peer<io_manager>& lhs) const;
+		bool operator!=(const basic_peer<io_manager>& lhs) const;
 
 		/**
 		 * @return The distance from you to the peer.
@@ -115,6 +115,10 @@ namespace breep {
 			return m_port;
 		}
 
+		bool is_connected() const {
+			return m_distance != std::numeric_limits<unsigned char>::max(); // todo.
+		}
+
 	private:
 		const boost::uuids::uuid m_id;
 		const boost::asio::ip::address m_address;
@@ -134,14 +138,8 @@ namespace breep {
 		friend io_manager;
 	};
 
-	namespace constant {
-		template<typename T>
-		static const peer<T> bad_peer =
-				peer<T>(boost::uuids::nil_uuid(), boost::asio::ip::address());
-	}
-
-#include "impl/peer.tcc"
+#include "impl/basic_peer.tcc"
 }
 
 
-#endif //BREEP_PEER_HPP
+#endif //BREEP_BASIC_PEER_HPP

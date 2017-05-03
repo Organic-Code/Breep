@@ -18,9 +18,13 @@
  */
 
 #include <limits>
+#include <boost/optional.hpp>
 
 
 namespace breep::detail {
+
+	template <typename T>
+	using optional = boost::optional<T>;
 
 	struct unowning_linear_container;
 

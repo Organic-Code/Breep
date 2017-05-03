@@ -8,24 +8,24 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "basic_peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 template <typename T>
-inline const boost::uuids::uuid& breep::peer<T>::id() const noexcept {
+inline const boost::uuids::uuid& breep::basic_peer<T>::id() const noexcept {
 	return m_id;
 }
 
 template <typename T>
-inline const boost::asio::ip::address& breep::peer<T>::address() const noexcept {
+inline const boost::asio::ip::address& breep::basic_peer<T>::address() const noexcept {
 	return m_address;
 }
 
 template <typename T>
-inline bool breep::peer<T>::operator==(const peer<T>& lhs) const {
+inline bool breep::basic_peer<T>::operator==(const basic_peer<T>& lhs) const {
 	return this->m_address == lhs.m_address && this->m_id == lhs.m_id;
 }
 
 template <typename T>
-inline bool breep::peer<T>::operator!=(const peer<T>& lhs) const {
+inline bool breep::basic_peer<T>::operator!=(const basic_peer<T>& lhs) const {
 	return this->m_address != lhs.m_address || this->m_id != lhs.m_id;
 }

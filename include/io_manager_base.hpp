@@ -33,10 +33,10 @@ namespace boost::asio::ip {
 namespace breep {
 
 	template <typename T>
-	class network_manager;
+	class basic_network_manager;
 
 	template <typename T>
-	class peer;
+	class basic_peer;
 
 	/**
 	 * @class network_manager_base network_manager_base.hpp
@@ -69,7 +69,7 @@ namespace breep {
 		 * @param peer the peer to whom to send the data.
 		 */
 		template <typename data_container>
-		void send(commands command, const data_container& data, const peer<io_manager>& peer) const {
+		void send(commands command, const data_container& data, const basic_peer<io_manager>& peer) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_container>::value, "Send called without specialisation.");
 		}
 
@@ -87,7 +87,7 @@ namespace breep {
 		 * @param peer of the peer to whom to send the data.
 		 */
 		template <typename data_iterator, typename  size_type>
-		void send(commands command, data_iterator begin, size_type size, const peer<io_manager>& peer) const {
+		void send(commands command, data_iterator begin, size_type size, const basic_peer<io_manager>& peer) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 
@@ -96,12 +96,12 @@ namespace breep {
 		 *
 		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
 		 */
-		virtual peer<io_manager> connect(const boost::asio::ip::address&, unsigned short port) = 0;
+		virtual detail::optional<basic_peer<io_manager>> connect(const boost::asio::ip::address&, unsigned short port) = 0;
 
 		/**
 		 * @brief performs any required action after a peer connection.
 		 */
-		virtual void process_connected_peer(peer<io_manager>& peer) = 0;
+		virtual void process_connected_peer(basic_peer<io_manager>& peer) = 0;
 
 		/**
 		 * @brief disconnects from the network
@@ -125,9 +125,9 @@ namespace breep {
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.
 		 */
-		virtual void owner(network_manager<io_manager>* owner) = 0;
+		virtual void owner(basic_network_manager<io_manager>* owner) = 0;
 
-		friend class network_manager<io_manager>;
+		friend class basic_network_manager<io_manager>;
 	};
 }
 

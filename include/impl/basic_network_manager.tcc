@@ -8,7 +8,7 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "network_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "basic_network_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 #include <thread>
 #include <iostream>
@@ -19,7 +19,7 @@
 #include "detail/utils.hpp"
 
 template <typename T>
-breep::network_manager<T>::network_manager(T&& io_manager, unsigned short port) noexcept
+breep::basic_network_manager<T>::basic_network_manager(T&& io_manager, unsigned short port) noexcept
 	: m_peers{}
 	, m_co_listener{}
 	, m_data_r_listener{}
@@ -40,30 +40,30 @@ breep::network_manager<T>::network_manager(T&& io_manager, unsigned short port) 
 	static_assert(std::is_base_of<breep::io_manager_base<T>, T>::value, "Specified type not derived from breep::io_manager_base");
 	static_cast<io_manager_base<T>*>(&m_manager)->owner(this);
 
-	m_command_handlers[static_cast<uint8_t>(commands::send_to)]                = &breep::network_manager<T>::send_to_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::send_to_all)]            = &breep::network_manager<T>::send_to_all_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::forward_to)]             = &breep::network_manager<T>::forward_to_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::stop_forwarding)]        = &breep::network_manager<T>::stop_forwarding_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::forwarding_to)]          = &breep::network_manager<T>::forwarding_to_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::connect_to)]             = &breep::network_manager<T>::connect_to_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::cant_connect)]           = &breep::network_manager<T>::cant_connect_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::successfully_connected)] = &breep::network_manager<T>::successfully_connected_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::update_distance)]        = &breep::network_manager<T>::update_distance_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::retrieve_distance)]      = &breep::network_manager<T>::retrieve_distance_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::retrieve_peers)]         = &breep::network_manager<T>::retrieve_peers_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::peers_list)]             = &breep::network_manager<T>::peers_list_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::new_peer)]               = &breep::network_manager<T>::new_peer_handler;
-	m_command_handlers[static_cast<uint8_t>(commands::peer_disconnection)]     = &breep::network_manager<T>::peer_disconnection_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::send_to)]                = &breep::basic_network_manager<T>::send_to_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::send_to_all)]            = &breep::basic_network_manager<T>::send_to_all_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::forward_to)]             = &breep::basic_network_manager<T>::forward_to_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::stop_forwarding)]        = &breep::basic_network_manager<T>::stop_forwarding_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::forwarding_to)]          = &breep::basic_network_manager<T>::forwarding_to_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::connect_to)]             = &breep::basic_network_manager<T>::connect_to_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::cant_connect)]           = &breep::basic_network_manager<T>::cant_connect_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::successfully_connected)] = &breep::basic_network_manager<T>::successfully_connected_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::update_distance)]        = &breep::basic_network_manager<T>::update_distance_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::retrieve_distance)]      = &breep::basic_network_manager<T>::retrieve_distance_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::retrieve_peers)]         = &breep::basic_network_manager<T>::retrieve_peers_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::peers_list)]             = &breep::basic_network_manager<T>::peers_list_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::new_peer)]               = &breep::basic_network_manager<T>::new_peer_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::peer_disconnection)]     = &breep::basic_network_manager<T>::peer_disconnection_handler;
 }
 
 template <typename T>
 template <typename data_container>
-inline void breep::network_manager<T>::send_to_all(const data_container& data) const {
+inline void breep::basic_network_manager<T>::send_to_all(const data_container& data) const {
 
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(data, sendable_data);
 
-	for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
+	for (const std::pair<boost::uuids::uuid, breep::basic_peer<T>>& pair : m_peers) {
 		if (pair.second.distance() == 0) {
 			m_manager.send(commands::send_to_all, sendable_data, pair.second);
 		}
@@ -72,7 +72,7 @@ inline void breep::network_manager<T>::send_to_all(const data_container& data) c
 
 template <typename T>
 template <typename data_container>
-inline void breep::network_manager<T>::send_to(const peer<T>& p, const data_container& data) const {
+inline void breep::basic_network_manager<T>::send_to(const basic_peer<T>& p, const data_container& data) const {
 	const std::string& id_string = m_me.id_as_string();
 
 	std::vector<uint8_t> processed_data;
@@ -89,13 +89,13 @@ inline void breep::network_manager<T>::send_to(const peer<T>& p, const data_cont
 }
 
 template <typename T>
-inline void breep::network_manager<T>::run() {
+inline void breep::basic_network_manager<T>::run() {
 	require_non_running();
-	std::thread(&network_manager<T>::run_sync, this).detach();
+	std::thread(&basic_network_manager<T>::run_sync, this).detach();
 }
 
 template <typename T>
-inline void breep::network_manager<T>::run_sync() {
+inline void breep::basic_network_manager<T>::run_sync() {
 	require_non_running();
 	m_running = true;
 	m_manager.run();
@@ -103,63 +103,63 @@ inline void breep::network_manager<T>::run_sync() {
 }
 
 template <typename T>
-inline void breep::network_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
+inline void breep::basic_network_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
 	require_non_running();
-	std::thread(&network_manager<T>::connect_sync_impl, this, address, port_).detach();
+	std::thread(&basic_network_manager<T>::connect_sync_impl, this, address, port_).detach();
 }
 
 template <typename T>
-inline bool breep::network_manager<T>::connect_sync(const boost::asio::ip::address& address, unsigned short port_) {
+inline bool breep::basic_network_manager<T>::connect_sync(const boost::asio::ip::address& address, unsigned short port_) {
 	return connect_sync_impl(address, port_);
 }
 
 template <typename T>
-void breep::network_manager<T>::disconnect() {
-	std::thread(&network_manager<T>::disconnect_sync, this).detach();
+void breep::basic_network_manager<T>::disconnect() {
+	std::thread(&basic_network_manager<T>::disconnect_sync, this).detach();
 }
 
 template <typename T>
-void breep::network_manager<T>::disconnect_sync() {
-	for (std::pair<boost::uuids::uuid, breep::peer<T>> pair : m_peers) {
+void breep::basic_network_manager<T>::disconnect_sync() {
+	for (std::pair<boost::uuids::uuid, breep::basic_peer<T>> pair : m_peers) {
 		m_manager.disconnect(pair.second);
 	}
-	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
-	std::unordered_map<boost::uuids::uuid, breep::peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
-	std::unordered_map<boost::uuids::uuid, std::vector<breep::peer<T>>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
+	std::unordered_map<boost::uuids::uuid, breep::basic_peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_peers); // clear and shrink
+	std::unordered_map<boost::uuids::uuid, breep::basic_peer<T>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.path_to_passing_by());
+	std::unordered_map<boost::uuids::uuid, std::vector<breep::basic_peer<T>>, boost::hash<boost::uuids::uuid>>{}.swap(m_me.bridging_from_to());
 }
 
 template <typename T>
-inline breep::listener_id breep::network_manager<T>::add_connection_listener(connection_listener listener) {
+inline breep::listener_id breep::basic_network_manager<T>::add_connection_listener(connection_listener listener) {
 	m_co_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline breep::listener_id breep::network_manager<T>::add_data_listener(data_received_listener listener){
+inline breep::listener_id breep::basic_network_manager<T>::add_data_listener(data_received_listener listener){
 	m_data_r_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline breep::listener_id breep::network_manager<T>::add_disconnection_listener(disconnection_listener listener){
+inline breep::listener_id breep::basic_network_manager<T>::add_disconnection_listener(disconnection_listener listener){
 	m_dc_listener.emplace(m_id_count, listener);
 	return m_id_count++;
 }
 
 template <typename T>
-inline bool breep::network_manager<T>::remove_connection_listener(listener_id id) {
+inline bool breep::basic_network_manager<T>::remove_connection_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	return m_co_listener.erase(id) > 0;
 }
 
 template <typename T>
-inline bool breep::network_manager<T>::remove_disconnection_listener(listener_id id) {
+inline bool breep::basic_network_manager<T>::remove_disconnection_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
 	return m_dc_listener.erase(id) > 0;
 }
 
 template <typename T>
-inline bool breep::network_manager<T>::remove_data_listener(listener_id id) {
+inline bool breep::basic_network_manager<T>::remove_data_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 	return m_data_r_listener.erase(id) > 0;
 }
@@ -167,54 +167,54 @@ inline bool breep::network_manager<T>::remove_data_listener(listener_id id) {
 /* PRIVATE */
 
 template <typename T>
-inline void breep::network_manager<T>::peer_connected(peer<T>&& p) {
+inline void breep::basic_network_manager<T>::peer_connected(basic_peer<T>&& p) {
 	boost::uuids::uuid id = p.id();
 	m_peers_mutex.lock();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
 	m_peers_mutex.unlock();
 
-	std::pair<boost::uuids::uuid, const breep::peer<T>*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
+	std::pair<boost::uuids::uuid, const breep::basic_peer<T>*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
 	m_me.path_to_passing_by().insert(pair_wptr);
 
-	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const breep::peer<T>*>{}));
+	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const breep::basic_peer<T>*>{}));
 
 
-	peer<T>& new_peer = m_peers.at(id);
+	basic_peer<T>& new_peer = m_peers.at(id);
 	new_peer.distance(0);
 	m_manager.process_connected_peer(new_peer);
 
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	for(auto& l : m_co_listener) {
-		l.second(*this, p, 0);
+		l.second(*this, p);
 	}
 }
 
 template <typename T>
-inline void breep::network_manager<T>::peer_connected(peer<T>&& p, unsigned char distance, peer<T>& bridge) {
+inline void breep::basic_network_manager<T>::peer_connected(basic_peer<T>&& p, unsigned char distance, basic_peer<T>& bridge) {
 
 	boost::uuids::uuid id = p.id();
 	m_peers_mutex.lock();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
 	m_peers_mutex.unlock();
 
-	std::pair<boost::uuids::uuid, const breep::peer<T>*> pair_wptr = std::make_pair(id, &bridge);
+	std::pair<boost::uuids::uuid, const breep::basic_peer<T>*> pair_wptr = std::make_pair(id, &bridge);
 	m_me.path_to_passing_by().insert(pair_wptr);
-	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const breep::peer<T>*>{}));
+	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const breep::basic_peer<T>*>{}));
 
-	peer<T>& new_peer = m_peers.at(id);
+	basic_peer<T>& new_peer = m_peers.at(id);
 	new_peer.distance(distance);
 	m_manager.process_connected_peer(new_peer);
 
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	for(auto& l : m_co_listener) {
-		l.second(*this, p, distance);
+		l.second(*this, p);
 	}
 
 	update_distance(p);
 }
 
 template <typename T>
-inline void breep::network_manager<T>::peer_disconnected(const peer<T>& p) {
+inline void breep::basic_network_manager<T>::peer_disconnected(const basic_peer<T>& p) {
 	m_me.path_to_passing_by().erase(p.id());
 	m_me.bridging_from_to().erase(p.id());
 
@@ -229,12 +229,12 @@ inline void breep::network_manager<T>::peer_disconnected(const peer<T>& p) {
 }
 
 template <typename T>
-void breep::network_manager<T>::data_received(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::data_received(const basic_peer<T>& source, commands command, const std::vector<uint8_t>& data) {
 	std::invoke(m_command_handlers[static_cast<uint8_t>(command)], *this, source, data);
 }
 
 template <typename T>
-void breep::network_manager<T>::update_distance(const peer<T>& concerned_peer) {
+void breep::basic_network_manager<T>::update_distance(const basic_peer<T>& concerned_peer) {
 	std::vector<uint8_t> data;
 	std::string uuid = boost::uuids::to_string(concerned_peer.id());
 	data.reserve(1 + uuid.size());
@@ -252,25 +252,25 @@ void breep::network_manager<T>::update_distance(const peer<T>& concerned_peer) {
 
 
 template <typename T>
-inline void breep::network_manager<T>::forward_if_needed(const peer<T>& source, commands command, const std::vector<uint8_t>& data) {
-	const std::vector<const breep::peer<T>*>& peers =	m_me.bridging_from_to().at(source.id());
-	for (const peer<T>* peer : peers) {
+inline void breep::basic_network_manager<T>::forward_if_needed(const basic_peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+	const std::vector<const breep::basic_peer<T>*>& peers =	m_me.bridging_from_to().at(source.id());
+	for (const basic_peer<T>* peer : peers) {
 		m_manager.send(command, data, *peer);
 	}
 }
 
 template <typename T>
-bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address address, unsigned short port_) {
+bool breep::basic_network_manager<T>::connect_sync_impl(const boost::asio::ip::address address, unsigned short port_) {
 	// todo: retrieve a list of peers and try to connect to them.
 	/* /!\ todo: what if two peers connect at once on the opposite side of the network? /!\
 	 * (maybe use the ignored commands::successfully_connected command?)
 	 * (care however, as this command is currently being sent > to remove).
 	 */
 	require_non_running();
-	peer<T> new_peer(m_manager.connect(address, port_));
-	if (new_peer != breep::constant::bad_peer<T>) {
-		boost::uuids::uuid uuid = new_peer.id();
-		peer_connected(std::move(new_peer));
+	detail::optional<basic_peer<T>> new_peer(m_manager.connect(address, port_));
+	if (new_peer) {
+		boost::uuids::uuid uuid = new_peer->id();
+		peer_connected(std::move(new_peer.get()));
 
 		m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
 		run_sync();
@@ -281,7 +281,7 @@ bool breep::network_manager<T>::connect_sync_impl(const boost::asio::ip::address
 }
 
 template <typename T>
-void breep::network_manager<T>::send_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::send_to_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> processed_data;
 	detail::unmake_little_endian(data, processed_data);
 
@@ -303,7 +303,7 @@ void breep::network_manager<T>::send_to_handler(const peer<T>& source, const std
 }
 
 template <typename T>
-void breep::network_manager<T>::send_to_all_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::send_to_all_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 
 	forward_if_needed(source, commands::send_to_all, data);
 
@@ -317,13 +317,13 @@ void breep::network_manager<T>::send_to_all_handler(const peer<T>& source, const
 }
 
 template <typename T>
-void breep::network_manager<T>::forward_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::forward_to_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 
 	std::string id;
 	detail::unmake_little_endian(data, id);
 	boost::uuids::uuid uuid = m_uuid_gen(id);
 
-	peer<T>& target = m_peers.at(uuid);
+	basic_peer<T>& target = m_peers.at(uuid);
 	m_me.bridging_from_to().at(uuid).push_back(&source);
 	m_me.bridging_from_to().at(source.id()).push_back(&target);
 
@@ -339,21 +339,21 @@ void breep::network_manager<T>::forward_to_handler(const peer<T>& source, const 
 }
 
 template <typename T>
-void breep::network_manager<T>::stop_forwarding_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::stop_forwarding_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 
 	std::string data_str;
 	detail::unmake_little_endian(data, data_str);
 	boost::uuids::uuid id = m_uuid_gen(data_str);
-	peer<T>& target = m_peers.at(id);
+	basic_peer<T>& target = m_peers.at(id);
 
-	std::vector<const breep::peer<T>*>& v = m_me.bridging_from_to().at(id);
+	std::vector<const breep::basic_peer<T>*>& v = m_me.bridging_from_to().at(id);
 	auto it = std::find(v.begin(), v.end(), &source); // keeping a vector because this code is unlikely to be called.
 	if (it != v.end()) {
 		*it = v.back();
 		v.pop_back();
 	}
 
-	std::vector<const breep::peer<T>*>& v2 = m_me.bridging_from_to().at(source.id());
+	std::vector<const breep::basic_peer<T>*>& v2 = m_me.bridging_from_to().at(source.id());
 	it = std::find(v2.begin(), v2.end(), &target); // keeping a vector because this code is unlikely to be called.
 	if (it != v2.end()) {
 		*it = v2.back();
@@ -362,19 +362,19 @@ void breep::network_manager<T>::stop_forwarding_handler(const peer<T>& source, c
 }
 
 template <typename T>
-void breep::network_manager<T>::forwarding_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::forwarding_to_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	std::string str;
 	detail::unmake_little_endian(data, str);
 	boost::uuids::uuid uuid = m_uuid_gen(str.substr(1));
 
 	unsigned char distance = static_cast<unsigned char>(str[0]);
 	try {
-		peer <T>& target = m_peers.at(uuid);
+		basic_peer<T>& target = m_peers.at(uuid);
 		m_me.path_to(target) = &source;
 		m_me.path_to(source) = &target;
 		target.distance(static_cast<unsigned char>(distance + 1));
 	} catch (std::out_of_range&) {
-		std::unique_ptr<breep::peer<T>>* p = nullptr;
+		std::unique_ptr<breep::basic_peer<T>>* p = nullptr;
 		size_t i{m_failed_connections.size()};
 		while (p == nullptr && i--) {
 			if (m_failed_connections[i]->id() == uuid) {
@@ -391,7 +391,7 @@ void breep::network_manager<T>::forwarding_to_handler(const peer<T>& source, con
 }
 
 template <typename T>
-void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::connect_to_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> ldata;
 	detail::unmake_little_endian(data, ldata);
 	unsigned short remote_port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
@@ -412,13 +412,13 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 		buff2.push_back(ldata[i++]);
 	}
 
-	peer<T> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), remote_port));
+	detail::optional<basic_peer<T>> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), remote_port));
 
 	ldata.clear();
 	detail::make_little_endian(buff, ldata);
 
-	if (p.id() == id) {
-		peer_connected(std::move(p));
+	if (p && p->id() == id) {
+		peer_connected(std::move(p.get()));
 		m_manager.send(commands::successfully_connected, ldata, source);
 	} else {
 		m_manager.send(commands::forward_to, ldata, source);
@@ -426,7 +426,7 @@ void breep::network_manager<T>::connect_to_handler(const peer<T>& source, const 
 }
 
 template <typename T>
-void breep::network_manager<T>::cant_connect_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::cant_connect_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	std::string id_string;
 	detail::unmake_little_endian(data, id_string);
 
@@ -449,7 +449,7 @@ void breep::network_manager<T>::cant_connect_handler(const peer<T>& source, cons
 }
 
 template <typename T>
-void breep::network_manager<T>::successfully_connected_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
+void breep::basic_network_manager<T>::successfully_connected_handler(const basic_peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
 	// Remove this handler & its command ?
 	// see connect_sync_impl.
 
@@ -457,7 +457,7 @@ void breep::network_manager<T>::successfully_connected_handler(const peer<T>& /*
 }
 
 template <typename T>
-void breep::network_manager<T>::update_distance_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::update_distance_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	// todo : network profiling : when should I receive/send this ?
 	commands::update_distance;
 	std::string ldata;
@@ -466,14 +466,14 @@ void breep::network_manager<T>::update_distance_handler(const peer<T>& source, c
 	unsigned char distance = static_cast<unsigned char>(ldata[0]);
 
 	try {
-		peer<T>& p = m_peers.at(uuid);
+		basic_peer<T>& p = m_peers.at(uuid);
 		if (p.distance() > distance + 1) {
 			std::vector<uint8_t> peer_id;
 			detail::make_little_endian(boost::uuids::to_string(uuid), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
 		}
 	} catch (std::out_of_range&) {
-		std::unique_ptr<breep::peer<T>>* p = nullptr;
+		std::unique_ptr<breep::basic_peer<T>>* p = nullptr;
 		size_t i{m_failed_connections.size()};
 		while (p == nullptr && i--) {
 			if (m_failed_connections[i]->id() == uuid) {
@@ -490,7 +490,7 @@ void breep::network_manager<T>::update_distance_handler(const peer<T>& source, c
 }
 
 template <typename T>
-void breep::network_manager<T>::retrieve_distance_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::retrieve_distance_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	std::string id;
 	detail::unmake_little_endian(data, id);
 	boost::uuids::uuid uuid = m_uuid_gen(id);
@@ -501,7 +501,7 @@ void breep::network_manager<T>::retrieve_distance_handler(const peer<T>& source,
 }
 
 template <typename T>
-void breep::network_manager<T>::retrieve_peers_handler(const peer <T>& source, const std::vector<uint8_t>& /*data*/) {
+void breep::basic_network_manager<T>::retrieve_peers_handler(const basic_peer<T>& source, const std::vector<uint8_t>& /*data*/) {
 
 	unsigned short peers_nbr = static_cast<unsigned short>(m_peers.size());
 	assert(peers_nbr == m_peers.size());
@@ -529,11 +529,11 @@ void breep::network_manager<T>::retrieve_peers_handler(const peer <T>& source, c
 }
 
 template <typename T>
-void breep::network_manager<T>::peers_list_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::peers_list_handler(const basic_peer<T>& /*source*/, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> ldata;
 	detail::unmake_little_endian(data, ldata);
 	size_t peers_nbr(ldata[0] << 8 | ldata[1]);
-	std::vector<breep::peer<T>> peers_list;
+	std::vector<breep::basic_peer<T>> peers_list;
 	peers_list.reserve(peers_nbr);
 
 	size_t index = 2;
@@ -564,14 +564,14 @@ void breep::network_manager<T>::peers_list_handler(const peer<T>& /*source*/, co
 			}
 
 			if (not_found) {
-				peer <T> new_peer(m_manager.connect(address, remote_port));
-				if (new_peer != constant::bad_peer<T>) {
-					if (new_peer.id() != uuid) {
-						m_failed_connections.push_back(std::make_unique<breep::peer<T>>(uuid, address, remote_port));
+				detail::optional<basic_peer<T>> new_peer(m_manager.connect(address, remote_port));
+				if (new_peer) {
+					if (new_peer->id() != uuid) {
+						m_failed_connections.push_back(std::make_unique<breep::basic_peer<T>>(uuid, address, remote_port));
 					}
-					peers_list.emplace_back(std::move(new_peer));
+					peers_list.emplace_back(std::move(new_peer.get()));
 				} else {
-					m_failed_connections.push_back(std::make_unique<breep::peer<T>>(uuid, address, remote_port));
+					m_failed_connections.push_back(std::make_unique<breep::basic_peer<T>>(uuid, address, remote_port));
 				}
 			} else {
 				not_found = true;
@@ -581,7 +581,7 @@ void breep::network_manager<T>::peers_list_handler(const peer<T>& /*source*/, co
 					}
 				}
 				if (not_found) {
-					m_failed_connections.push_back(std::make_unique<breep::peer<T>>(uuid, address, remote_port));
+					m_failed_connections.push_back(std::make_unique<breep::basic_peer<T>>(uuid, address, remote_port));
 				}
 			}
 		}
@@ -592,11 +592,11 @@ void breep::network_manager<T>::peers_list_handler(const peer<T>& /*source*/, co
 	}
 
 	std::vector<uint8_t> vect;
-	for (std::unique_ptr<breep::peer<T>>& peer : m_failed_connections) {
+	for (std::unique_ptr<breep::basic_peer<T>>& peer : m_failed_connections) {
 		peer->distance(std::numeric_limits<unsigned char>::max());
 		detail::make_little_endian(boost::uuids::to_string(peer->id()), vect);
 
-		for (const std::pair<boost::uuids::uuid, breep::peer<T>>& pair : m_peers) {
+		for (const std::pair<boost::uuids::uuid, breep::basic_peer<T>>& pair : m_peers) {
 			if (pair.second.distance() == 0) {
 				m_manager.send(commands::retrieve_distance, vect, pair.second);
 			}
@@ -606,13 +606,13 @@ void breep::network_manager<T>::peers_list_handler(const peer<T>& /*source*/, co
 }
 
 template <typename T>
-void breep::network_manager<T>::new_peer_handler(const peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
+void breep::basic_network_manager<T>::new_peer_handler(const basic_peer<T>& /*source*/, const std::vector<uint8_t>& /*data*/) {
 	// todo : extract trailing 0
 	// todo
 }
 
 template <typename T>
-void breep::network_manager<T>::peer_disconnection_handler(const peer<T>& source, const std::vector<uint8_t>& data) {
+void breep::basic_network_manager<T>::peer_disconnection_handler(const basic_peer<T>& source, const std::vector<uint8_t>& data) {
 	// todo : extract trailing 0
 	// todo
 	// todo: check for forwarding and delete that guy everywhere
