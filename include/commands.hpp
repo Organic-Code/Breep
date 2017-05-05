@@ -87,14 +87,6 @@ namespace breep {
 		 */
 		cant_connect,
 		/**
-		 * @brief     Command to indicate a peer that a connection request succeeded.
-		 * @details   Possible answer to \em connect_to. Must be followed by a peer
-		 *            (id).
-		 *
-		 * @since 0.1.0
-		 */
-		successfully_connected,
-		/**
 		 * @brief     Command to update its distances (number of links) between a peer.
 		 * @details   Format : [new distance (on 1 octet)],[peer id]
 		 *
@@ -129,15 +121,6 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		peers_list,
-		/**
-		 * @brief     Command to indicate the connection of a new peer
-		 * @details   Must be followed by the new peer (id + ip).
-		 *
-		 * @sa        commands::peer_disconnection
-		 *
-		 * @since 0.1.0
-		 */
-		new_peer,
 		/**
 		 * @brief     Command to indicate the disconnection of a peer
 		 * @details   Must be followed by the peer (id).

@@ -18,25 +18,38 @@
 
 #define forever for(;;)
 
-void message_received(breep::tcp::network_manager&, const breep::tcp::peer& source, breep::uint8_random_iterator data, size_t size, bool) {
+void message_received(breep::tcp::network_manager&, const breep::tcp::peer&, breep::uint8_random_iterator, size_t, bool);
+void connection(breep::tcp::network_manager&, const breep::tcp::peer&);
+void disconnection(breep::tcp::network_manager&, const breep::tcp::peer&);
+void connection_disconnection(breep::tcp::network_manager&, const breep::tcp::peer&);
+
+void message_received(breep::tcp::network_manager&, const breep::tcp::peer& source, breep::uint8_random_iterator data, size_t size, bool /**/) {
 	std::cout << '\r' << boost::uuids::to_string(source.id()).substr(0,4) << ": ";
-	while (size--) {
+	for (; size > 0 ; --size) {
 		std::cout << static_cast<char>(*data++);
 	}
 	std::cout << std::endl;
 }
 
-void connection(breep::tcp::network_manager&, const breep::tcp::peer& new_peer) { // todo: merge
-	std::cout << "SYSTEM: " << boost::uuids::to_string(new_peer.id()).substr(0,4) << " connected!" << std::endl;
+void connection(breep::tcp::network_manager&, const breep::tcp::peer&) {
+	std::cout << "Connection." << std::endl;
 }
 
-void disconnection(breep::tcp::network_manager&, const breep::tcp::peer& peer) {
-	std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0,4) << " disconnected" << std::endl;
+void disconnection(breep::tcp::network_manager&, const breep::tcp::peer&) {
+	std::cout << "Disconnection." << std::endl;
+}
+
+void connection_disconnection(breep::tcp::network_manager&, const breep::tcp::peer& peer) {
+	if (peer.is_connected()) {
+		std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0, 4) << " connected!" << std::endl;
+	} else {
+		std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0,4) << " disconnected" << std::endl;
+	}
 }
 
 int main(int argc, char* argv[]) {
 
-	if (argc < 2) {
+	if (argc != 2 && argc != 4) {
 		std::cout << "Usage: chat.elf <hosting port> [<target ip> <target port>]" << std::endl;
 		return 1;
 	}
@@ -47,22 +60,24 @@ int main(int argc, char* argv[]) {
 
 
 	network.add_data_listener(&message_received);
+
 	network.add_connection_listener(&connection);
 	network.add_disconnection_listener(&disconnection);
 
+	network.add_connection_listener(&connection_disconnection);
+	network.add_disconnection_listener(&connection_disconnection);
+
+
 	if (argc == 2) {
 		network.run();
-	} else if (argc == 4){
+	} else {
 		boost::asio::ip::address address = boost::asio::ip::address::from_string(argv[2]);
 		network.connect(address, static_cast<unsigned short>(atoi(argv[3])));
-	} else {
-		std::cout << "Usage: chat.elf <hosting port> [<target ip> <target port>]" << std::endl;
-		return 1;
 	}
 
 	std::string ans;
 	forever {
 		std::getline(std::cin, ans);
 		network.send_to_all(ans);
-	};
+	}
 }

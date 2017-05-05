@@ -51,4 +51,4 @@ inline void breep::detail::little_endian(const Container& container, OutputItera
 #error "Unknown endianness (if endianness is known, please manually define BOOST_LITTLE_ENDIAN or BOOST_BIG_ENDIAN)."
 #error "Middle endian is not supported."
 #endif
-};
+}

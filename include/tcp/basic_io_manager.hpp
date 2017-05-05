@@ -151,7 +151,7 @@ namespace breep::tcp {
 			m_id_packet.resize(3, 0);
 			detail::make_little_endian(id_str, m_id_packet);
 
-			m_id_packet[0] = static_cast<char>(m_id_packet.size() - 1);
+			m_id_packet[0] = static_cast<uint8_t>(m_id_packet.size() - 1);
 			m_id_packet[1] = static_cast<uint8_t>(m_owner->port() >> 8) & std::numeric_limits<uint8_t>::max();
 			m_id_packet[2] = static_cast<uint8_t>(m_owner->port() & std::numeric_limits<uint8_t>::max());
 		}

@@ -248,7 +248,7 @@ void breep::tcp::basic_io_manager<T>::process_read(peernm& peer, boost::system::
 					while (to_be_red--) {
 						dyn_buff.push_back(fixed_buff[current_index++]);
 					}
-					detail::network_attorney_client<basic_io_manager <T>>::data_received(*m_owner, peer, peer.io_data.last_command, dyn_buff);
+					detail::network_attorney_client<tcp::basic_io_manager <T>>::data_received(*m_owner, peer, peer.io_data.last_command, dyn_buff);
 
 					dyn_buff.clear();
 					peer.io_data.last_command = commands::null_command;
@@ -301,7 +301,7 @@ void breep::tcp::basic_io_manager<T>::process_read(peernm& peer, boost::system::
 	} else {
 		// error
 		peer.io_data.socket = std::shared_ptr<boost::asio::ip::tcp::socket>(nullptr);
-		detail::network_attorney_client<basic_io_manager<T>>::peer_disconnected(*m_owner, peer);
+		detail::network_attorney_client<tcp::basic_io_manager<T>>::peer_disconnected(*m_owner, peer);
 	}
 }
 
@@ -370,7 +370,7 @@ inline void breep::tcp::basic_io_manager<T>::accept(boost::system::error_code ec
 			detail::unmake_little_endian(detail::unowning_linear_container(buffer.data() + 3, len - 3), input);
 			boost::asio::write(*m_socket, boost::asio::buffer(m_id_packet));
 
-			detail::network_attorney_client<basic_io_manager<T>>::peer_connected(
+			detail::network_attorney_client<tcp::basic_io_manager<T>>::peer_connected(
 					*m_owner,
 					peernm(
 						boost::uuids::string_generator{}(input),

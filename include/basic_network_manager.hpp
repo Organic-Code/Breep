@@ -318,7 +318,7 @@ namespace breep {
 
 		void peer_connected(basic_peer<io_manager>&& p);
 		void peer_connected(basic_peer<io_manager>&& p, unsigned char distance, basic_peer<io_manager>& bridge);
-		void peer_disconnected(const basic_peer<io_manager>& p);
+		void peer_disconnected(basic_peer<io_manager>& p);
 		void data_received(const basic_peer<io_manager>& source, commands command, const std::vector<uint8_t>& data);
 
 		void update_distance(const basic_peer<io_manager>& concerned_peer);
@@ -339,12 +339,10 @@ namespace breep {
 		void forwarding_to_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void connect_to_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void cant_connect_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
-		void successfully_connected_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void update_distance_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void retrieve_distance_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void retrieve_peers_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void peers_list_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
-		void new_peer_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const basic_peer<io_manager>& peer, const std::vector<uint8_t>& data);
 
 		std::unordered_map<boost::uuids::uuid, basic_peer<io_manager>, boost::hash<boost::uuids::uuid>> m_peers;
@@ -384,7 +382,7 @@ namespace breep {
 			object.peer_connected(std::move(p));
 		}
 
-		inline static void peer_disconnected(basic_network_manager<T>& object, const basic_peer<T>& p) {
+		inline static void peer_disconnected(basic_network_manager<T>& object, basic_peer<T>& p) {
 			object.peer_disconnected(p);
 		}
 

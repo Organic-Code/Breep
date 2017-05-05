@@ -44,7 +44,7 @@ namespace breep::detail {
 		vect.push_back(0);
 		little_endian(container, std::back_inserter(vect));
 		vect[idx] = static_cast<ValueType>(vect.size() - 1 - container.size()); // number of trailing 0 introduced by the endianness change.
-	};
+	}
 
 	template <typename Container>
 	inline void make_little_endian(const Container& container, std::string& str) {
@@ -53,21 +53,21 @@ namespace breep::detail {
 		str.push_back(0);
 		little_endian(container, std::back_inserter(str));
 		str[idx] = static_cast<char>(str.size() - idx - 1 - container.size()); // number of trailing 0 introduced by the endianness change.
-	};
+	}
 
 	template <typename LinearContainer, typename ValueType>
 	inline void unmake_little_endian(const LinearContainer& container, std::vector<ValueType>& vect) {
 		vect.reserve(container.size() - 1 - container[0]);
 		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
 		              std::back_inserter(vect));
-	};
+	}
 
 	template <typename LinearContainer>
 	inline void unmake_little_endian(const LinearContainer& container, std::string& str) {
 		str.reserve(container.size() - 1 - container[0]);
 		little_endian(detail::unowning_linear_container(container.data() + 1, container.size() - 1 - container[0]),
 		              std::back_inserter(str));
-	};
+	}
 
 	template <typename Container>
 	inline void insert_uint16(Container& container, uint16_t uint16) {
