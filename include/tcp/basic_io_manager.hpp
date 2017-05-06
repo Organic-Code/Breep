@@ -32,11 +32,10 @@
 
 namespace breep {
 	template <typename T>
-	class basic_network_manager;
+	class basic_peer_manager;
 }
 
 namespace breep::tcp {
-
 
 	/**
 	 * io_manager_data, to be stored in peer<tcp::io_manager>.
@@ -135,7 +134,7 @@ namespace breep::tcp {
 			}
 		}
 
-		void owner(basic_network_manager<basic_io_manager<BUFFER_LENGTH>>* owner) override;
+		void owner(basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* owner) override;
 
 		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);
 
@@ -156,7 +155,7 @@ namespace breep::tcp {
 			m_id_packet[2] = static_cast<uint8_t>(m_owner->port() & std::numeric_limits<uint8_t>::max());
 		}
 
-		basic_network_manager<basic_io_manager<BUFFER_LENGTH>>* m_owner;
+		basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* m_owner;
 		mutable boost::asio::io_service m_io_service;
 		boost::asio::ip::tcp::acceptor m_acceptor;
 		boost::asio::ip::tcp::acceptor* m_acceptor_v4;
@@ -167,9 +166,11 @@ namespace breep::tcp {
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
 
+	// todo externalize
 	typedef basic_io_manager<1024> io_manager;
-	typedef basic_network_manager<io_manager> network_manager;
+	typedef basic_peer_manager<io_manager> peer_manager;
 	typedef basic_peer<io_manager> peer;
+	//typedef basic_network<io_manager> network;
 }
 
 #include "tcp/impl/basic_io_manager.tcc"

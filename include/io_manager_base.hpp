@@ -33,7 +33,7 @@ namespace boost::asio::ip {
 namespace breep {
 
 	template <typename T>
-	class basic_network_manager;
+	class basic_peer_manager;
 
 	template <typename T>
 	class basic_peer;
@@ -125,9 +125,9 @@ namespace breep {
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.
 		 */
-		virtual void owner(basic_network_manager<io_manager>* owner) = 0;
+		virtual void owner(basic_peer_manager<io_manager>* owner) = 0;
 
-		friend class basic_network_manager<io_manager>;
+		friend class basic_peer_manager<io_manager>;
 	};
 }
 

@@ -1,5 +1,5 @@
-#ifndef BREEP_BASIC_NETWORK_MANAGER_HPP
-#define BREEP_BASIC_NETWORK_MANAGER_HPP
+#ifndef BREEP_BASIC_PEER_MANAGER_HPP
+#define BREEP_BASIC_PEER_MANAGER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -38,7 +38,7 @@ namespace breep {
 
 	namespace detail {
 		template<typename T>
-		class network_attorney_client;
+		class peer_manager_attorney;
 	}
 
 	/**
@@ -58,7 +58,7 @@ namespace breep {
 	 * @since 0.1.0
 	 */
 	template <typename io_manager>
-	class basic_network_manager {
+	class basic_peer_manager {
 	public:
 		/**
 		 * Peer type used by this class
@@ -66,54 +66,54 @@ namespace breep {
 		using peernm = basic_peer<io_manager>;
 
 		static const unsigned short default_port = 3479;
-		using network_command_handler = void (basic_network_manager<io_manager>::*)(const peernm&, const std::vector<uint8_t>&);
+		using network_command_handler = void (basic_peer_manager<io_manager>::*)(const peernm&, const std::vector<uint8_t>&);
 
 		/**
 		 * Type representing a connection listener
-		 * The function should take \em this instance of \em network<network_manager>, the newly connected peer,
-		 * and the distance (number of peers bridging from the \em user to the newly connected peer) as parameters.
+		 * The function should take \em this instance of \em basic_peer_manager<io_manager>,
+		 * and the newly connected peer as parameters.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using connection_listener = std::function<void(breep::basic_network_manager<io_manager>& network, const peernm& new_peer)>;
+		using connection_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& new_peer)>;
 
 		/**
 		 * Type representing a data listener.
-		 * The function should take \em this instance of \em network<network_manager>, the peer that
+		 * The function should take \em this instance of \em basic_peer_manager<io_manager>, the peer that
 		 * sent the data, the data itself, and a boolean (set to true if the data was sent to
 		 * all the network and false if it was sent only to you) as parameter.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::basic_network_manager<io_manager>& network, const peernm& received_from, uint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& received_from, uint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
-		 * The function should take \em this instance of \em network<network_manager> and the
+		 * The function should take \em this instance of \em basic_peer_manager<io_manager> and the
 		 * disconnected peer as parameter.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using disconnection_listener = std::function<void(breep::basic_network_manager<io_manager>& network, const peernm& disconnected_peer)>;
+		using disconnection_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& disconnected_peer)>;
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit basic_network_manager(unsigned short port = default_port) noexcept
-				: basic_network_manager(io_manager{port}, port)
+		explicit basic_peer_manager(unsigned short port = default_port) noexcept
+				: basic_peer_manager(io_manager{port}, port)
 		{}
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit basic_network_manager(const io_manager& manager, unsigned short port = default_port) noexcept
-				: basic_network_manager(io_manager(manager), port)
+		explicit basic_peer_manager(const io_manager& manager, unsigned short port = default_port) noexcept
+				: basic_peer_manager(io_manager(manager), port)
 		{}
 
 		/**
 		 * @since 0.1.0
 		 */
-		explicit basic_network_manager(io_manager&& manager, unsigned short port = default_port) noexcept;
+		explicit basic_peer_manager(io_manager&& manager, unsigned short port = default_port) noexcept;
 
 		/**
 		 * @brief Sends data to all members of the network
@@ -362,25 +362,25 @@ namespace breep {
 		mutable std::mutex m_data_mutex;
 		mutable std::mutex m_peers_mutex;
 
-		friend class detail::network_attorney_client<io_manager>;
+		friend class detail::peer_manager_attorney<io_manager>;
 	};
 
 	namespace detail {
 
 	template <typename T>
-	class network_attorney_client {
+	class peer_manager_attorney {
 
-		network_attorney_client() = delete;
+		peer_manager_attorney() = delete;
 
-		inline static void peer_connected(basic_network_manager<T>& object, basic_peer<T>&& p) {
+		inline static void peer_connected(basic_peer_manager<T>& object, basic_peer<T>&& p) {
 			object.peer_connected(std::move(p));
 		}
 
-		inline static void peer_disconnected(basic_network_manager<T>& object, basic_peer<T>& p) {
+		inline static void peer_disconnected(basic_peer_manager<T>& object, basic_peer<T>& p) {
 			object.peer_disconnected(p);
 		}
 
-		inline static void data_received(basic_network_manager<T>& object, const basic_peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+		inline static void data_received(basic_peer_manager<T>& object, const basic_peer<T>& source, commands command, const std::vector<uint8_t>& data) {
 			object.data_received(source, command, data);
 		}
 
@@ -392,4 +392,4 @@ namespace breep {
 
 #include "impl/basic_network_manager.tcc"
 
-#endif //BREEP_BASIC_NETWORK_MANAGER_HPP
+#endif //BREEP_BASIC_PEER_MANAGER_HPP
