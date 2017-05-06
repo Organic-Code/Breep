@@ -179,11 +179,6 @@ void breep::tcp::basic_io_manager<T>::process_connected_peer(peernm& peer) {
 template <unsigned int T>
 inline void breep::tcp::basic_io_manager<T>::disconnect() {
 	m_io_service.stop();
-	for (auto it = m_owner->peers().begin(), end = m_owner->peers().end() ; it != end ; ++it) {
-		it->second.io_data.socket.reset();
-		it->second.io_data.last_command = commands::null_command;
-		it->second.io_data.dynamic_buffer->clear();
-	}
 	m_io_service.reset();
 }
 

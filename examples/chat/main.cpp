@@ -78,6 +78,12 @@ int main(int argc, char* argv[]) {
 	std::string ans;
 	forever {
 		std::getline(std::cin, ans);
-		network.send_to_all(ans);
+		if (ans == "/q") {
+			std::cout << "Leaving..." << std::endl;
+			network.disconnect();
+			break;
+		} else {
+			network.send_to_all(ans);
+		}
 	}
 }
