@@ -37,14 +37,11 @@
  *  @see breep::networking_traits
  */
 #define BREEP_DECLARE_TYPE(T) \
-	namespace breep { \
+	namespace breep::detail { \
 		template <> \
-		struct networking_traits<T> { /* If you have an error here, you should probably declare T with BREEP_DECLARE_TEMPLATE instead of BREEP_DECLARE_TYPE*/\
-			static const std::string universal_name; \
-			static const uint64_t hash_code; \
+		struct networking_traits_impl<T> { /* If you have an error here, you should probably declare T with BREEP_DECLARE_TEMPLATE instead of BREEP_DECLARE_TYPE*/\
+			const std::string universal_name = std::string(#T); \
 		}; \
-		const std::string networking_traits<T>::universal_name = std::string(#T); \
-		const uint64_t networking_traits<T>::hash_code = detail::hash(networking_traits<T>::universal_name); \
 	}
 
 /**
@@ -56,46 +53,17 @@
  *  @see breep::networking_traits
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
-	namespace breep { \
+	namespace breep::detail { \
 	    template <typename... T> \
-	    struct networking_traits<TType<T...>> { \
-	        static const std::string universal_name; \
-			static const uint64_t hash_code; \
+	    struct networking_traits_impl<TType<T...>> { \
+			networking_traits_impl(); \
+	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; /* if you have an error here, you probably forgot to declare the type T (breep::networking_traits<breep::T>) with BREEP_DECLARE_TYPE(T) or BREEP_DECLARE_TEMPLATE(T). */\
 	    }; \
-	    template <typename... T> \
-	    const std::string networking_traits<TType<T...>>::universal_name = std::string(#TType"<") + networking_traits<typename std::tuple_element<0, std::tuple<T...>>::type>::universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>::value + ">"; /* if you have an error here, you probably forgot to declare the type T (breep::networking_traits<breep::T>) with BREEP_DECLARE_TYPE(T) or BREEP_DECLARE_TEMPLATE(T). */\
-	    template <typename... T> \
-		const uint64_t networking_traits<TType<T...>>::hash_code = detail::hash(networking_traits<TType<T...>>::universal_name); \
+		template <typename... T> /* it's ok if this constructor is not inline */ \
+		networking_traits_impl<TType<T...>>::networking_traits_impl() {}\
 	}
 
 namespace breep {
-
-	/**
-	 * @brief structure holding information about the type
-	 * @details If a call to BREEP_DECLARE_TYPE or BREEP_DECLARE_TEMPLATE has been previously made for the template type,
-	 *          the static const variables ::universal_name (std::string) and ::hash_code (uint64_t) are available.
-	 *
-	 * @note When computing hash_code ':' '>' ',' and '<' are all ignored.
-	 *
-	 * @see BREEP_DECLARE_TYPE
-	 * @see BREEP_DECLARE_TEMPLATE
-	 */
-	template <typename>
-	struct networking_traits {
-        /**
-         * holds the name of the template class (unmangled), including namespace and template parameters.
-         */
-        //static const std::string universal_name;
-
-        /**
-         * holds an hash of the class universal_name (ignoring '>' '<' ',' ':').
-         * It is guaranteed that networking_traits<T>::hash_code == networking_traits<U>::hash_code if T == U
-         * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
-         *       The hashing function was choosen because of its good performance regarding collision avoidance.
-         */
-        //static const uint64_t hash_code;
-    };
-
 
     // define BREEP_MODIFIER_AWARE_IDENTIFIER before including this file if you want modifiers to affect the generated
     // universal_name and hash_code.
@@ -115,59 +83,40 @@ namespace breep {
 
 	namespace detail {
 		uint64_t hash(const std::string& str);
+
+		template <typename>
+		struct networking_traits_impl {};
+
+		// Partial specialization for references.
+		template<typename T>
+		struct networking_traits_impl<T&> {
+			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_REF_STRING;
+		};
+
+		// Partial specialization for pointers.
+		template<typename T>
+		struct networking_traits_impl<T*> {
+			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_PTR_STRING;
+		};
+
+		// Partial specialization for const types.
+		template<typename T>
+		struct networking_traits_impl<const T> {
+			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_CST_STRING;
+		};
+
+		// Partial specialization for rvalue references.
+		template<typename T>
+		struct networking_traits_impl<T&&> {
+			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_RVL_STRING;
+		};
+
+		// Partial specialization for volatile.
+		template<typename T>
+		struct networking_traits_impl<volatile T> {
+			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_VLT_STRING;
+		};
 	}
-
-	// Partial specialization for references.
-	template <typename T>
-	struct networking_traits<T&> {
-		static const std::string universal_name;
-	};
-	template <typename T>
-	const std::string networking_traits<T&>::universal_name = networking_traits<T>::universal_name + BREEP_REF_STRING;
-
-	// Partial specialization for pointers.
-	template <typename T>
-	struct networking_traits<T*> {
-		static const std::string universal_name;
-		static const uint64_t hash_code;
-	};
-	template <typename T>
-	const std::string networking_traits<T*>::universal_name = networking_traits<T>::universal_name + BREEP_PTR_STRING;
-	template <typename T>
-	 const uint64_t networking_traits<T*>::hash_code = detail::hash(networking_traits<T*>::universal_name);
-
-	// Partial specialization for const types.
-	template <typename T>
-	struct networking_traits<const T> {
-		static const std::string universal_name;
-		static const uint64_t hash_code;
-	};
-	template <typename T>
-	const std::string networking_traits<const T>::universal_name = networking_traits<T>::universal_name + BREEP_CST_STRING;
-	template <typename T>
-	const uint64_t networking_traits<const T>::hash_code = detail::hash(networking_traits<const T>::universal_name);
-
-	// Partial specialization for rvalue references.
-	template <typename T>
-	struct networking_traits<T&&> {
-		static const std::string universal_name;
-		static const uint64_t hash_code;
-	};
-	template <typename T>
-	const std::string networking_traits<T&&>::universal_name = networking_traits<T>::universal_name + BREEP_RVL_STRING;
-	template <typename T>
-	const uint64_t networking_traits<T&&>::hash_code = detail::hash(networking_traits<T&&>::universal_name);
-
-	// Partial specialization for volatile.
-	template <typename T>
-	struct networking_traits<volatile T> {
-		static const std::string universal_name;
-		static const uint64_t hash_code;
-	};
-	template <typename T>
-	const std::string networking_traits<volatile T>::universal_name = networking_traits<T>::universal_name + BREEP_VLT_STRING;
-	template <typename T>
-	const uint64_t networking_traits<volatile T>::hash_code = detail::hash(networking_traits<volatile T>::universal_name);
 
 #undef BREEP_REF_STRING
 #undef BREEP_PTR_STRING
@@ -175,6 +124,41 @@ namespace breep {
 #undef BREEP_CST_STRING
 #undef BREEP_VLT_STRING
 
+
+	template <typename>
+	struct universal_name {};
+
+	/**
+	 * @brief structure holding information about the type
+	 * @details If a call to BREEP_DECLARE_TYPE or BREEP_DECLARE_TEMPLATE has been previously made for the template type,
+	 *          the static const variables ::universal_name (std::string) and ::hash_code (uint64_t) are available.
+	 *
+	 * @note When computing hash_code ':' '>' ',' and '<' are all ignored.
+	 *
+	 * @see BREEP_DECLARE_TYPE
+	 * @see BREEP_DECLARE_TEMPLATE
+	 */
+	template <typename T>
+	struct networking_traits {
+		/**
+		 * holds the name of the template class (unmangled), including namespace and template parameters.
+		 */
+		static const std::string& universal_name(){
+			static const std::string name = detail::networking_traits_impl<T>().universal_name;
+			return name;
+		}
+
+		/**
+		 * holds an hash of the class universal_name (ignoring '>' '<' ',' ':').
+		 * It is guaranteed that networking_traits<T>::hash_code == networking_traits<U>::hash_code if T == U
+		 * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
+		 *       The hashing function was choosen because of its good performance regarding collision avoidance.
+		 */
+		static const uint64_t hash_code() {
+			static const uint64_t hash = detail::hash(universal_name());
+			return hash;
+		}
+	};
 
 	namespace detail {
 
@@ -216,7 +200,7 @@ namespace breep {
 		};
 		template<typename... T>
 		const std::string identifier_from_tuple<std::tuple<T...>>::value =
-				"," + networking_traits<typename std::tuple_element<0, std::tuple<T...>>::type>::universal_name +
+				"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
 				identifier_from_tuple<remove_type<0, T...>>::value; // if you have an error here, you probably forgot to declare the type T<template...> (breep::networking_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
 	}
 }
