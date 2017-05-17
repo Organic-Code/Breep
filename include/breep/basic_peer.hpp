@@ -24,7 +24,7 @@
 #include <memory>
 #include <utility>
 
-#include "commands.hpp"
+#include "breep/commands.hpp"
 
 namespace breep {
 

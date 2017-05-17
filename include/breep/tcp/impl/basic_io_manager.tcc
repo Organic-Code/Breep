@@ -9,7 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "tcp/basic_io_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "../basic_io_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 #include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -22,10 +22,10 @@
 #include <memory>
 #include <string>
 
-#include "detail/utils.hpp"
-#include "basic_peer_manager.hpp"
-#include "basic_peer.hpp"
-#include "exceptions.hpp"
+#include "breep/detail/utils.hpp"
+#include "breep/basic_peer_manager.hpp"
+#include "breep/basic_peer.hpp"
+#include "breep/exceptions.hpp"
 
 
 template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_millis, unsigned long U, unsigned long timeout_chk_interval>

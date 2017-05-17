@@ -25,7 +25,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/functional/hash.hpp>
 
-#include "basic_peer.hpp"
+#include "breep/basic_peer.hpp"
 
 namespace breep {
 

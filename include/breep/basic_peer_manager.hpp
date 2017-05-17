@@ -24,11 +24,11 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
-#include "commands.hpp"
-#include "basic_peer.hpp"
-#include "local_peer.hpp"
-#include "io_manager_base.hpp"
-#include "exceptions.hpp"
+#include "breep/commands.hpp"
+#include "breep/basic_peer.hpp"
+#include "breep/local_peer.hpp"
+#include "breep/io_manager_base.hpp"
+#include "breep/exceptions.hpp"
 
 namespace breep {
 

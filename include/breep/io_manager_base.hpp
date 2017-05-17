@@ -23,8 +23,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
-#include "commands.hpp"
-#include "detail/utils.hpp"
+#include "breep/commands.hpp"
+#include "breep/detail/utils.hpp"
 
 namespace boost::asio::ip {
 	class address;

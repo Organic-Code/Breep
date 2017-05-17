@@ -27,8 +27,9 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
-#include "io_manager_base.hpp"
-#include "exceptions.hpp"
+#include "breep/io_manager_base.hpp"
+#include "breep/exceptions.hpp"
+#include "breep/commands.hpp"
 
 
 namespace breep {
@@ -92,7 +93,7 @@ namespace breep::tcp {
 	 *
 	 * @since 0.1.0
 	 */
-	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis = 5000, unsigned long timeout_millis = 1200000, unsigned long timeout_check_interval_millis = timeout_millis / 5>
+	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis = 5000, unsigned long timeout_millis = 120000, unsigned long timeout_check_interval_millis = timeout_millis / 5>
 	class basic_io_manager final: public io_manager_base<basic_io_manager<BUFFER_LENGTH>> {
 	public:
 
@@ -203,6 +204,6 @@ namespace breep::tcp {
 	//typedef basic_network<io_manager> network;
 }
 
-#include "tcp/impl/basic_io_manager.tcc"
+#include "impl/basic_io_manager.tcc"
 
 #endif //BREEP_TCP_BASIC_IO_MANAGER

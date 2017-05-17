@@ -13,8 +13,8 @@
 #include <vector>
 #include <boost/uuid/uuid_io.hpp>
 
-#include <basic_peer_manager.hpp>
-#include <tcp/basic_io_manager.hpp>
+#include <breep/basic_peer_manager.hpp>
+#include <breep/tcp/basic_io_manager.hpp>
 
 #define forever for(;;)
 
