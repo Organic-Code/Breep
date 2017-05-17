@@ -120,6 +120,9 @@ namespace breep::detail {
 		uint8_t const * const data_;
 		const size_t size_;
 	};
+
+	template <typename T>
+	bool constexpr is_const_ref = std::is_lvalue_reference<T>::value && std::is_const<typename std::remove_reference<T>::type>::value;
 }
 
 namespace breep::constant {

@@ -46,8 +46,8 @@ namespace breep {
 	 * @brief                  This class is used to manage a peer to peer network.
 	 * @tparam io_manager      Manager used to manage input and ouput operations of (including connection & disconection) the network
 	 *                         This class should inherit from \em breep::network_manager_base
-	 *                         see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
-	 *                         network_manager::socket_type must also be defined.
+	 *                                see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
+	 *                                network_manager::socket_type must also be defined.
 	 *
 	 * @note A \em const \em network is a network with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
@@ -349,6 +349,7 @@ namespace breep {
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
 
 		local_peer<io_manager> m_me;
+		// todo: use .data instead of stringifying it.
 		boost::uuids::string_generator m_uuid_gen;
 		std::vector<std::unique_ptr<peernm>> m_failed_connections;
 
