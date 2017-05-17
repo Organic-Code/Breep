@@ -23,6 +23,7 @@
 #include <vector>
 #include <memory>
 #include <limits>
+#include <chrono>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
@@ -48,6 +49,7 @@ namespace breep::tcp {
 				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
 				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
 	            , last_command(commands::null_command)
+				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
 		io_manager_data(const std::shared_ptr<boost::asio::ip::tcp::socket>& socket_sptr)
@@ -55,6 +57,7 @@ namespace breep::tcp {
 				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
 				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
 				, last_command(commands::null_command)
+				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
 		io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>&& socket_sptr)
@@ -62,9 +65,10 @@ namespace breep::tcp {
 				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
 				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
 				, last_command(commands::null_command)
+				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
-		~io_manager_data() = default;
+		~io_manager_data() {}
 
 		io_manager_data(const io_manager_data&) = default;
 		io_manager_data(io_manager_data&&) = default;
@@ -75,16 +79,20 @@ namespace breep::tcp {
 		std::shared_ptr<std::vector<uint8_t>> dynamic_buffer;
 
 		commands last_command;
+
+		std::chrono::milliseconds timestamp;
 	};
 
 	/**
 	 * @brief reference tcp network_manager implementation
 	 *
-	 * @tparam BUFFER_LENGTH size of the local buffer
+	 * @tparam BUFFER_LENGTH          Length of the local buffer
+	 * @tparam keep_alive_send_millis Time interval indicating the sending of keep_alive packets frequency (in milliseconds).
+	 * @tparam timeout_millis         Time interval after which a peer should be considered dead if no packets have been received from him (in milliseconds).
 	 *
 	 * @since 0.1.0
 	 */
-	template <unsigned int BUFFER_LENGTH>
+	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis = 5000, unsigned long timeout_millis = 1200000, unsigned long timeout_check_interval_millis = timeout_millis / 5>
 	class basic_io_manager final: public io_manager_base<basic_io_manager<BUFFER_LENGTH>> {
 	public:
 
@@ -134,6 +142,25 @@ namespace breep::tcp {
 			}
 		}
 
+		void keep_alive_impl() {
+			for (const auto& peers_pair : m_owner->peers()) {
+				send(commands::keep_alive, constant::unused_param, peers_pair.second);
+			}
+			m_keepalive_dlt.expires_from_now(boost::posix_time::millisec(keep_alive_send_millis));
+			m_keepalive_dlt.async_wait(boost::bind(&basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>::keep_alive_impl, this));
+		}
+
+		void timeout_impl() {
+			std::chrono::milliseconds time_now =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+			for (const auto& peers_pair : m_owner->peers()) {
+				if (time_now - peers_pair.second.io_data.timestamp > std::chrono::milliseconds(timeout_millis)) {
+					peers_pair.second.io_data.socket->close();
+				}
+			}
+			m_timeout_dlt.expires_from_now(boost::posix_time::millisec(timeout_check_interval_millis));
+			m_timeout_dlt.async_wait(boost::bind(&basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>::timeout_impl, this));
+		}
+
 		void owner(basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* owner) override;
 
 		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);
@@ -162,6 +189,9 @@ namespace breep::tcp {
 		std::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
 
 		std::string m_id_packet;
+
+		boost::asio::deadline_timer m_timeout_dlt;
+		boost::asio::deadline_timer m_keepalive_dlt;
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};

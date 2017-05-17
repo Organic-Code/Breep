@@ -130,6 +130,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		peer_disconnection,
+		// ignored by peer_manager.
+		keep_alive,
 		null_command
 	};
 }

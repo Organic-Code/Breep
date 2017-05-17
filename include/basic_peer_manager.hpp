@@ -277,8 +277,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>> peers() const {
-			std::lock_guard<std::mutex> lock_guard(m_peers_mutex);
+		const std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>>& peers() const {
 			return m_peers;
 		}
 
@@ -304,6 +303,9 @@ namespace breep {
 			}
 		}
 
+		/**
+		 * @return a peer represeting the local computer on the network.
+		 */
 		const local_peer<io_manager>& self() const {
 			return m_me;
 		}
@@ -338,6 +340,8 @@ namespace breep {
 		void retrieve_peers_handler(const peernm& peer, const std::vector<uint8_t>& data);
 		void peers_list_handler(const peernm& peer, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peernm& peer, const std::vector<uint8_t>& data);
+		void keep_alive_handler(const peernm&, const std::vector<uint8_t>&) {
+		}
 
 		std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
@@ -360,7 +364,6 @@ namespace breep {
 		mutable std::mutex m_co_mutex;
 		mutable std::mutex m_dc_mutex;
 		mutable std::mutex m_data_mutex;
-		mutable std::mutex m_peers_mutex;
 
 		friend class detail::peer_manager_attorney<io_manager>;
 	};
