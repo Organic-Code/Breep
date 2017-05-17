@@ -34,7 +34,6 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	, m_co_mutex{}
 	, m_dc_mutex{}
 	, m_data_mutex{}
-	, m_peers_mutex{}
 
 {
 	static_assert(std::is_base_of<breep::io_manager_base<T>, T>::value, "Specified type not derived from breep::io_manager_base");
@@ -52,6 +51,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	m_command_handlers[static_cast<uint8_t>(commands::retrieve_peers)]         = &breep::basic_peer_manager<T>::retrieve_peers_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::peers_list)]             = &breep::basic_peer_manager<T>::peers_list_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::peer_disconnection)]     = &breep::basic_peer_manager<T>::peer_disconnection_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::keep_alive)]             = &breep::basic_peer_manager<T>::keep_alive_handler;
 }
 
 template <typename T>
@@ -161,9 +161,7 @@ inline bool breep::basic_peer_manager<T>::remove_data_listener(listener_id id) {
 template <typename T>
 inline void breep::basic_peer_manager<T>::peer_connected(peernm&& p) {
 	boost::uuids::uuid id = p.id();
-	m_peers_mutex.lock();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
-	m_peers_mutex.unlock();
 
 	std::pair<boost::uuids::uuid, const peernm*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
 	m_me.path_to_passing_by().insert(pair_wptr);
@@ -192,9 +190,7 @@ template <typename T>
 inline void breep::basic_peer_manager<T>::peer_connected(peernm&& p, unsigned char distance, peernm& bridge) {
 
 	boost::uuids::uuid id = p.id();
-	m_peers_mutex.lock();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
-	m_peers_mutex.unlock();
 
 	std::pair<boost::uuids::uuid, const peernm*> pair_wptr = std::make_pair(id, &bridge);
 	m_me.path_to_passing_by().insert(pair_wptr);
@@ -224,9 +220,7 @@ inline void breep::basic_peer_manager<T>::peer_disconnected(peernm& p) {
 	m_me.path_to_passing_by().erase(p.id());
 	m_me.bridging_from_to().erase(p.id());
 
-	m_peers_mutex.lock();
 	m_peers.erase(p.id());
-	m_peers_mutex.unlock();
 
 	p.distance(std::numeric_limits<unsigned char>::max());
 	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);

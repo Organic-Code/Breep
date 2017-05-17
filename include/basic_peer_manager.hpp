@@ -390,6 +390,6 @@ namespace breep {
 	}
 }
 
-#include "impl/basic_network_manager.tcc"
+#include "impl/basic_peer_manager.tcc"
 
 #endif //BREEP_BASIC_PEER_MANAGER_HPP
