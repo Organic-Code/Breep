@@ -30,7 +30,6 @@
 #include "breep/basic_peer.hpp"
 #include "breep/basic_peer_manager.hpp"
 
-#include <bitset>
 namespace breep {
 
 	namespace detail {
@@ -38,6 +37,21 @@ namespace breep {
 		auto make_obj_pair(std::shared_ptr<object_builder<T,U>> ptr);
 	}
 
+	/**
+	 * @class basic_network basic_network.hpp
+	 * @brief A advanced basic_peer_manager.
+	 * @detail This class represents and manages the network. It is an advanced version of the basic_peer_manager that
+	 *                         allows you to send instanciated objects directly and to register listeners for a specific type.
+	 * @tparam io_manager      Manager used to manage input and ouput operations of (including connection & disconection) the network
+	 *                         This class should inherit from \em breep::network_manager_base
+	 *                                see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
+	 *                                network_manager::socket_type must also be defined.
+	 *
+	 * @note A \em const \em basic_network is a basic_network with whom you can only send data,
+	 *       and you can't proceed to a connection / disconnection.
+	 *
+	 * @since 0.1.0
+	 */
 	template <typename io_manager>
 	class basic_network {
 	public:
@@ -49,8 +63,14 @@ namespace breep {
 
 		/**
 		 * Type representing a connection listener
-		 * The function should take \em this instance of \em network<network_manager>, the newly connected peer,
-		 * and the distance (number of peers bridging from the \em user to the newly connected peer) as parameters.
+		 * The function should take \em this instance of \em basic_network<io_manager>
+		 * and the newly connected peer as parameters.
+		 *
+		 * @note connection_listeners are also eligible to be disconnection_listeners
+		 *
+		 * @sa data_received_listener
+		 * @sa disconnection_listener
+		 * @sa unlistened_type_listener
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -59,9 +79,15 @@ namespace breep {
 
 		/**
 		 * Type representing a data listener.
-		 * The function should take an instance of \em network<network_manager>, the peer that
+		 * The function should take an instance of \em basic_network<io_manager>, the peer that
 		 * sent the data, the data itself, and a boolean (set to true if the data was sent to
 		 * all the network and false if it was sent only to you) as parameter.
+		 *
+		 * @note for now, you may take a T, const T, const T& or T& type as parameter, but this may be removed in the future (letting only const T&)
+		 *
+		 * @sa connection_listener
+		 * @sa disconnection_listener
+		 * @sa unlistened_type_listener
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -70,22 +96,36 @@ namespace breep {
 
 		/**
 		 * Type representing a disconnection listener.
-		 * The function should take \em this instance of \em network<network_manager> and the
+		 * The function should take \em this instance of \em network<io_manager> and the
 		 * disconnected peer as parameter.
 		 *
+		 * @note disconnection_listeners are also eligible to be connection_listeners
+		 *
+		 * @sa data_received_listener
+		 * @sa connection_listener
+		 * @sa unlistened_type_listener
 	 	 * @since 0.1.0
 		 */
 		using disconnection_listener = std::function<void(network& network, const peer& disconnected_peer)>;
 
 		/**
 		 * Type representing an unlistened type listener.
-		 * The type_hash is the hash returned by networking_traits<Unlistened_type>::hash_code()
+		 * It may be used to set a listener that will get called whenever \em this instance receives a type that is not listened for
+		 *
+		 * @note The type_hash is the hash returned by networking_traits<Unlistened_type>::hash_code()
+		 *
 		 * @since 0.1.0
 		 */
 		using unlistened_type_listener = std::function<void(network& network, const peer& source, boost::archive::binary_iarchive& data, bool sent_to_all, uint64_t type_hash)>;
 
+		/**
+		 * internally used.
+		 */
 		using object_builder_caller = std::function<bool(network& network, const peer& received_from, boost::archive::binary_iarchive& data, bool sent_to_all)>;
 
+		/**
+		 * @since 0.1.0
+		 */
 		explicit basic_network(unsigned short port_ = peer_manager::default_port)
 				: m_manager(port_)
 				, m_id_count{}
@@ -115,7 +155,7 @@ namespace breep {
 
 
 		/**
-		 * @brief Sends data to all members of the network
+		 * @brief Sends raw data to all members of the network
 		 * @tparam data_container Type representing data. Exact definition
 		 *                        is to be defined by \em network_manager::send_to
 		 * @param data Data to be sent
@@ -131,7 +171,7 @@ namespace breep {
 		}
 
 		/**
-		 * Sends data to a specific member of the network
+		 * Sends raw data to a specific member of the network
 		 * @tparam data_container Type representing data. Exact definition
 		 *                        is to be defined by \em network_manager_base::send
 		 * @param p Target peer
@@ -150,13 +190,17 @@ namespace breep {
 		/**
 		 * @brief Sends an object to all members of the network
 		 *
+		 * @tparam Serialiseable  Serialisable must meet the requirements of boost serialization (for now)
+		 *
 		 * @sa basic_network::send_object_to(const peer&, const data_container&) const
 		 * @sa basic_network::send_raw(const data_container&) const
+		 *
+		 * @note datas are passed by copy and not by const reference because of the way boost serialization works.
+		 * 				It might change to a const ref on future updates.
 		 *
 	 	 * @since 0.1.0
 		 */
 		template <typename Serialiseable>
-//todo: why no const ref (explain)
 		void send_object(Serialiseable data) const {
 			std::ostringstream oss;
 			uint64_t hash_code = networking_traits<Serialiseable>::hash_code();
@@ -178,10 +222,12 @@ namespace breep {
 		 * @sa basic_network::send_object(const data_container&) const
 		 * @sa basic_network::send_raw_to(const peer&, const data_container&) const
 		 *
+		 * @note datas are passed by copy and not by const reference because of the way boost serialization works.
+		 * 				It might change to a const ref on future updates.
+		 *
 	 	 * @since 0.1.0
 		 */
 		template <typename Serialiseable>
-//todo: why no const ref (explain)
 		void send_object_to(const peer& p, Serialiseable data) const {
 			std::ostringstream oss;
 			boost::archive::binary_oarchive ar(oss, boost::archive::no_header);
@@ -197,7 +243,7 @@ namespace breep {
 		}
 
 		/**
-		 * Starts a new network. Same as run(), excepts it is a blocking method.
+		 * Starts a new network. Same as run(), excepts it a will blocks until the network is closed.
 		 */
 		void sync_awake() {
 			m_manager.sync_run();
@@ -205,7 +251,8 @@ namespace breep {
 
 		/**
 		 * @brief asynchronically connects to a peer to peer network, given the ip of one peer
-		 * @note  it is not possible to be connected to more than one network at the same time.
+		 * @note it is not possible to be connected to more than one network at the same time.
+		 * @note Calling this method will trigger \em this instance awakening (if the connection was successful).
 		 *
 		 * @param address Address of a member
 		 * @param port Target port. Defaults to the local listening port.
@@ -245,8 +292,6 @@ namespace breep {
 		/**
 		 * @brief disconnects from the network
 		 *
-		 * @sa network::disconnect_sync()
-		 *
 	 	 * @since 0.1.0
 	 	 */
 		void disconnect() {
@@ -259,10 +304,12 @@ namespace breep {
 		 *          the method passed as a parameter is called, with
 		 *          parameters specified in \em network::connection_listener
 		 * @param listener The new listener
-		 * @return An id used to remove the listener
+		 * @return An id that may be used to remove the listener
 		 *
 		 * @sa network::connection_listener
 		 * @sa network::remove_connection_listener(listener_id)
+		 * @sa network::add_disconnection_listener(disconnection_listener)
+		 * @sa network::add_data_listener(data_listener<T>)
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -279,8 +326,10 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::data_received_listener
 		 * @sa network::remove_disconnection_listener(listener_id)
+		 * @sa network::add_connection_listener(connection_listener)
+		 * @sa network::remove_disconnection_listener(listener_id)
+		 * @sa network::add_data_listener(data_listener<T>)
 		 *
 		 * @since 0.1.0
 		 */
@@ -291,6 +340,7 @@ namespace breep {
 
 		/**
 		 * @brief Removes a listener
+		 * @details Stops the listener from being called
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
 		 *
@@ -302,6 +352,7 @@ namespace breep {
 
 		/**
 		 * @brief Removes a listener
+		 * @details Stops the listener from being called
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
 		 *
@@ -314,11 +365,11 @@ namespace breep {
 		/**
 		 * @return The list of connected peers
 		 *
-		 * @details Returned by copy to avoid data race.
+		 * @attention Accessing a value from this map from a thread other that the network's thread (accessible through listeners) is NOT safe.
 		 *
 		 * @since 0.1.0
 		 */
-		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> peers() const {
+		const std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>& peers() const {
 			return m_manager.peers();
 		}
 
@@ -334,16 +385,31 @@ namespace breep {
 		/**
 		 * @brief Changes the port to which the object is mapped
 		 * @param port the new port
-		 * @attention If the port is changed while there are ongoing connections, breep::invalid_state exception is raised.
+		 * @attention If the port is changed while the network is awake, breep::invalid_state exception is raised.
 		 */
 		void port(unsigned short port) {
 			m_manager.port(port);
 		}
 
+		/**
+		 * @return A peer representing the local instance on the global network
+		 */
 		const local_peer<io_manager>& self() const {
 			return m_manager.self();
 		}
 
+		/**
+		 * @brief Adds a data listener
+		 *
+		 * @tparam T type you want to listen
+		 * @param listener Listener to add to the listeners list
+		 * @return An id that may be used to remove the listener
+		 *
+		 * @sa network::data_received_listener
+		 * @sa network::remove_data_listener(listener_id)
+		 * @sa network::add_disconnection_listener(disconnection_listener)
+		 * @sa network::add_connection_listener(connection_listener)
+		 */
 		template <typename T>
 		listener_id add_data_listener(data_received_listener<T> listener) {
 
@@ -359,8 +425,14 @@ namespace breep {
 			}
 		}
 
-
-
+		/**
+		 * @brief Removes a listener
+		 * @details Stops the listener from being called
+		 *
+		 * @tparam T Type listened by the concerned listener
+		 * @param id ID of the concerned listener
+		 * @return true if a listener was removed, false otherwise
+		 */
 		template <typename T>
 		bool remove_data_listener(listener_id id) {
 			auto associated_listener = m_data_listeners.find(networking_traits<T>::hash_code());
@@ -372,6 +444,10 @@ namespace breep {
 			}
 		}
 
+		/**
+		 * @brief Sets the listener for unlistened types.
+		 * @sa unlistened_type_listener
+		 */
 		void set_unlistened_type_listener(unlistened_type_listener listener) {
 			m_unlistened_listener = listener;
 		}

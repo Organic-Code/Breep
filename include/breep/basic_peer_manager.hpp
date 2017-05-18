@@ -44,14 +44,14 @@ namespace breep {
 	}
 
 	/**
-	 * @class network network.hpp
-	 * @brief                  This class is used to manage a peer to peer network.
-	 * @tparam io_manager      Manager used to manage input and ouput operations of (including connection & disconection) the network
+	 * @class basic_peer_manager basic_peer_manager.hpp
+	 * @brief                  This class is used to manage basic interactions with peers.
+	 * @tparam io_manager      Manager used to manage input and ouput operations (including connection & disconection) for the network
 	 *                         This class should inherit from \em breep::network_manager_base
 	 *                                see \em breep::tcp_nmanager and \em breep::udp_nmanager for examples of implementation.
 	 *                                network_manager::socket_type must also be defined.
 	 *
-	 * @note A \em const \em network is a network with whom you can only send datas,
+	 * @note A \em const \em basic_peer_manager is a basic_peer_manager with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
 	 *
 	 * @sa breep::tcp_network
@@ -275,8 +275,6 @@ namespace breep {
 		/**
 		 * @return The list of connected peers
 		 *
-		 * @details Returned by copy to avoid data race.
-		 *
 		 * @since 0.1.0
 		 */
 		const std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>>& peers() const {
@@ -306,7 +304,7 @@ namespace breep {
 		}
 
 		/**
-		 * @return a peer represeting the local computer on the network.
+		 * @return a peer representing the local computer on the network.
 		 */
 		const local_peer<io_manager>& self() const {
 			return m_me;

@@ -29,7 +29,7 @@
 namespace breep {
 
 	/**
-	 * @class peer peer.hpp
+	 * @class basic_peer basic_peer.hpp
 	 *
 	 * @brief This class represents a network's member
 	 * @since 0.1.0

@@ -33,8 +33,8 @@
  *  Please use BREEP_DECLARE_TEMPLATE instead.
  *
  *  @since 0.1.0
- *  @see BREEP_DECLARE_TEMPLATE
- *  @see breep::networking_traits
+ *  @sa BREEP_DECLARE_TEMPLATE
+ *  @sa breep::networking_traits
  */
 #define BREEP_DECLARE_TYPE(T) \
 	namespace breep::detail { \
@@ -49,8 +49,8 @@
  *  @details Specialises networking_traits<T>, giving access to ::universal_name (unmangled) and ::hash_code
  *
  *  @attention When using BREEP_DECLARE_TEMPLATE, no template parameter of the passed class must be a value.
- *  @see BREEP_DECLARE_TYPE
- *  @see breep::networking_traits
+ *  @sa BREEP_DECLARE_TYPE
+ *  @sa breep::networking_traits
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
 	namespace breep::detail { \
@@ -135,8 +135,8 @@ namespace breep {
 	 *
 	 * @note When computing hash_code ':' '>' ',' and '<' are all ignored.
 	 *
-	 * @see BREEP_DECLARE_TYPE
-	 * @see BREEP_DECLARE_TEMPLATE
+	 * @sa BREEP_DECLARE_TYPE
+	 * @sa BREEP_DECLARE_TEMPLATE
 	 */
 	template <typename T>
 	struct networking_traits {
