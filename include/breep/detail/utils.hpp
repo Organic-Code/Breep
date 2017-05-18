@@ -19,12 +19,20 @@
 
 #include <limits>
 #include <boost/optional.hpp>
+#include <boost/any.hpp>
 
 
 namespace breep::detail {
 
 	template <typename T>
 	using optional = boost::optional<T>;
+
+	using any = boost::any;
+
+	template <typename T>
+	auto any_cast(any& lany) {
+		return boost::any_cast<T>(lany);
+	}
 
 	struct unowning_linear_container;
 

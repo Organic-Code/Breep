@@ -39,6 +39,8 @@ namespace breep {
 	namespace detail {
 		template<typename T>
 		class peer_manager_attorney;
+		template<typename T>
+		class peer_manager_master_listener;
 	}
 
 	/**
@@ -340,13 +342,17 @@ namespace breep {
 		void retrieve_peers_handler(const peernm& peer, const std::vector<uint8_t>& data);
 		void peers_list_handler(const peernm& peer, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void keep_alive_handler(const peernm&, const std::vector<uint8_t>&) {
+		void keep_alive_handler(const peernm&, const std::vector<uint8_t>&) { /* ignored */}
+
+		void set_master_listener(std::function<void(breep::basic_peer_manager<io_manager>&, const peernm&, char*, size_t, bool)> listener) {
+			m_master_listener = listener;
 		}
 
 		std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
+		std::function<void(breep::basic_peer_manager<io_manager>&, const peernm&, char*, size_t, bool)> m_master_listener;
 
 		local_peer<io_manager> m_me;
 		// todo: use .data instead of stringifying it.
@@ -367,9 +373,26 @@ namespace breep {
 		mutable std::mutex m_data_mutex;
 
 		friend class detail::peer_manager_attorney<io_manager>;
+		friend class detail::peer_manager_master_listener<io_manager>;
 	};
 
+
+	template <typename T>
+	class basic_network;
+
 	namespace detail {
+
+	template<typename T>
+	class peer_manager_master_listener {
+
+		peer_manager_master_listener() = delete;
+
+		inline static void set_master_listener(basic_peer_manager<T>& object, std::function<void(breep::basic_peer_manager<T>&, const basic_peer<T>&, char*, size_t, bool)> listener) {
+			object.set_master_listener(listener);
+		}
+
+		friend basic_network<T>;
+	};
 
 	template <typename T>
 	class peer_manager_attorney {

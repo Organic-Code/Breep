@@ -26,6 +26,7 @@
 #include <chrono>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "breep/io_manager_base.hpp"
 #include "breep/exceptions.hpp"

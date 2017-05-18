@@ -24,6 +24,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	, m_co_listener{}
 	, m_data_r_listener{}
 	, m_dc_listener{}
+	, m_master_listener{}
 	, m_me{}
     , m_uuid_gen{}
 	, m_failed_connections{}
@@ -300,6 +301,9 @@ void breep::basic_peer_manager<T>::send_to_handler(const peernm& source, const s
 
 	if (m_me.id_as_string() == id) {
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+		if (m_master_listener) {
+			m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()) + id_size, processed_data.size() - id_size, false);
+		}
 		for (auto& l : m_data_r_listener) {
 			try {
 				l.second(*this, source, processed_data.data() + id_size, processed_data.size() - id_size, false);
@@ -324,6 +328,9 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peernm& source, con
 	detail::unmake_little_endian(data, processed_data);
 
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+	if (m_master_listener) {
+		m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()), processed_data.size(), false);
+	}
 	for (auto& l : m_data_r_listener) {
 		try {
 			l.second(*this, source, processed_data.data(), processed_data.size(), true);
