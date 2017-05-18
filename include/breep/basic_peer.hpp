@@ -60,6 +60,7 @@ namespace breep {
 				, m_address(std::move(address))
 				, m_port(port)
 				, m_distance()
+				, m_id_as_string(boost::uuids::to_string(id))
 				, io_data(std::move(data))
 		{}
 
@@ -71,6 +72,7 @@ namespace breep {
 			, m_address(p.m_address)
 			, m_port(p.m_port)
 			, m_distance(p.m_distance)
+			, m_id_as_string(p.m_id_as_string)
 			, io_data(p.io_data)
 		{}
 
@@ -119,6 +121,10 @@ namespace breep {
 			return m_distance != std::numeric_limits<unsigned char>::max(); // todo.
 		}
 
+		const std::string& id_as_string() const {
+			return m_id_as_string;
+		}
+
 	private:
 		const boost::uuids::uuid m_id;
 		const boost::asio::ip::address m_address;
@@ -129,6 +135,8 @@ namespace breep {
 		 * Distance from here to the other peers.
 		 */
 		unsigned char m_distance;
+
+		const std::string m_id_as_string;
 
 		/**
 		 * Datas to be used by the io_manager class

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
 	breep::tcp::peer_manager network((unsigned short)atoi(argv[1]));
 
-	std::cout << "SYSTEM: " << boost::uuids::to_string(network.self().id()) << " is your identity" << std::endl;
+	std::cout << "SYSTEM: " << network.self().id_as_string() << " is your identity" << std::endl;
 
 
 	network.add_data_listener(&message_received);

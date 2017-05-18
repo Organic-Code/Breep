@@ -45,7 +45,6 @@ namespace breep {
 				                              boost::asio::ip::address_v4::loopback())
 				, m_bridging_from_to{}
 				, m_path_to_passing_by{}
-				, m_id_as_string{boost::uuids::to_string(basic_peer<io_manager>::id())}
 		{}
 
 		/**
@@ -94,10 +93,6 @@ namespace breep {
 		const std::unordered_map<boost::uuids::uuid, std::vector<const breep::basic_peer<io_manager>*>, boost::hash<boost::uuids::uuid>>&
 		bridging_from_to() const noexcept;
 
-		const std::string& id_as_string() const {
-			return m_id_as_string;
-		}
-
 	private:
 		/**
 		 * @brief   Map representing links.
@@ -144,8 +139,6 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		std::unordered_map<boost::uuids::uuid, const breep::basic_peer<io_manager>*, boost::hash<boost::uuids::uuid>> m_path_to_passing_by;
-
-		const std::string m_id_as_string;
 	};
 
 }
