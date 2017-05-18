@@ -32,7 +32,7 @@
 
 namespace breep {
 
-	using uint8_random_iterator = const uint8_t*;
+	using cuint8_random_iterator = const uint8_t*;
 
 	typedef unsigned long listener_id;
 
@@ -85,7 +85,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& received_from, uint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
+		using data_received_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& received_from, cuint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.

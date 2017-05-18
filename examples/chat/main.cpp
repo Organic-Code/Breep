@@ -18,12 +18,12 @@
 
 #define forever for(;;)
 
-void message_received(breep::tcp::peer_manager&, const breep::tcp::peer&, breep::uint8_random_iterator, size_t, bool);
+void message_received(breep::tcp::peer_manager&, const breep::tcp::peer&, breep::cuint8_random_iterator, size_t, bool);
 void connection(breep::tcp::peer_manager&, const breep::tcp::peer&);
 void disconnection(breep::tcp::peer_manager&, const breep::tcp::peer&);
 void connection_disconnection(breep::tcp::peer_manager&, const breep::tcp::peer&);
 
-void message_received(breep::tcp::peer_manager&, const breep::tcp::peer& source, breep::uint8_random_iterator data, size_t size, bool /**/) {
+void message_received(breep::tcp::peer_manager&, const breep::tcp::peer& source, breep::cuint8_random_iterator data, size_t size, bool /**/) {
 	std::cout << '\r' << boost::uuids::to_string(source.id()).substr(0,4) << ": ";
 	for (; size > 0 ; --size) {
 		std::cout << static_cast<char>(*data++);
