@@ -345,6 +345,8 @@ namespace breep {
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
 		 *
+		 * @attention Results in a dead lock if called from a connection listener, from the network's thread
+		 *
 		 * @since 0.1.0
 		 */
 		bool remove_connection_listener(listener_id id) {
@@ -356,6 +358,8 @@ namespace breep {
 		 * @details Stops the listener from being called
 		 * @param id id of the listener to remove
 		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @attention Results in a dead lock if called from a connection listener, from the network's thread
 		 *
 		 * @since 0.1.0
 		 */
@@ -433,6 +437,10 @@ namespace breep {
 		 * @tparam T Type listened by the concerned listener
 		 * @param id ID of the concerned listener
 		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @note contrary to remove_connection_listener and remove_disconnetion_listener,
+		 *       does NOT result in a dead lock if called from a data_listener in the
+		 *       network's thread.
 		 */
 		template <typename T>
 		bool remove_data_listener(listener_id id) {

@@ -41,6 +41,8 @@ namespace breep { namespace detail {
 
 		object_builder()
 				: m_listeners{}
+				, m_to_add{}
+			    , m_to_remove{}
 				, m_mutex{}
 		{}
 
@@ -53,12 +55,21 @@ namespace breep { namespace detail {
 		object_builder& operator=(const object_builder<T,network>&) = delete;
 
 		bool build_and_call(network& lnetwork, const typename network::peer& received_from, boost::archive::binary_iarchive& data, bool sent_to_all) {
+
+			m_mutex.lock();
+			for (auto& pair : m_to_add) {
+				m_listeners.emplace(std::move(pair));
+			}
+			for (auto& id : m_to_remove) {
+				m_listeners.erase(id);
+			}
+			m_mutex.unlock();
+
 			if (m_listeners.empty()) {
 				return false;
 			} else {
 				T object;
 				data >> object;
-				std::lock_guard<std::mutex> lock_guard(m_mutex);
 				for (auto& listeners_pair : m_listeners) {
 					listeners_pair.second(lnetwork, received_from, object, sent_to_all);
 				}
@@ -68,18 +79,34 @@ namespace breep { namespace detail {
 
 		listener_id add_listener(listener_id id, data_received_listener<T> l) {
 			std::lock_guard<std::mutex> lock_guard(m_mutex);
-			m_listeners.insert(std::pair<listener_id, data_received_listener<T>>(id, l));
+			m_to_add.push_back(std::pair<listener_id, data_received_listener<T>>(id, l));
 			return id;
 		}
 
 		bool remove_listener(listener_id id) {
-			std::lock_guard<std::mutex> lock_guard(m_mutex);
-			return m_listeners.erase(id) > 0;
+			if (m_listeners.count(id)) {
+				std::lock_guard<std::mutex> lock_guard(m_mutex);
+				if (std::find_if(m_to_remove.cbegin(), m_to_remove.cend(), [id](auto l_id) -> bool { return l_id == id; }) == m_to_remove.cend()) {
+					m_to_remove.push_back(id);
+					return true;
+				}
+			} else {
+				std::lock_guard<std::mutex> lock_guard(m_mutex);
+				auto it = std::find_if(m_to_add.begin(), m_to_add.end(), [id](auto l_it) -> bool { return l_it.first == id; });
+				if (it != m_to_add.cend()) {
+					*it = m_to_add.back();
+					m_to_add.pop_back();
+					return true;
+				}
+			}
+			return false;
 		}
 
 
 	private:
 		std::unordered_map<listener_id, data_received_listener<T>> m_listeners;
+		std::vector<std::pair<listener_id, data_received_listener<T>>> m_to_add;
+		std::vector<listener_id> m_to_remove;
 		std::mutex m_mutex;
 	};
 }}
