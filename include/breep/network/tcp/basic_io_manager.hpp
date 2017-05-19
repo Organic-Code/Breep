@@ -45,39 +45,32 @@ namespace breep { namespace tcp {
 	template <unsigned int BUFFER_LENGTH>
 	struct io_manager_data final {
 
-		io_manager_data()
-				: socket(std::shared_ptr<boost::asio::ip::tcp::socket>(nullptr))
-				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
-				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
-	            , last_command(commands::null_command)
-				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
-		{}
+		io_manager_data() = delete;
 
-		explicit io_manager_data(const std::shared_ptr<boost::asio::ip::tcp::socket>& socket_sptr)
-				: socket(socket_sptr)
-				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
-				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+		explicit io_manager_data(boost::asio::ip::tcp::socket&& socket_)
+				: socket(std::move(socket_))
+				, fixed_buffer()
+				, dynamic_buffer()
 				, last_command(commands::null_command)
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
-		io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>&& socket_sptr)
-				: socket(std::move(socket_sptr))
-				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
-				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
+		explicit io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>& socket_ptr)
+				: socket(std::move(*socket_ptr.get()))
+				, fixed_buffer()
+				, dynamic_buffer()
 				, last_command(commands::null_command)
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
 		~io_manager_data() {}
 
-		io_manager_data(const io_manager_data&) = default;
-		io_manager_data(io_manager_data&&) = default;
-		io_manager_data& operator=(const io_manager_data&) = default;
+		io_manager_data(const io_manager_data&) = delete;
+		io_manager_data& operator=(const io_manager_data&) = delete;
 
-		std::shared_ptr<boost::asio::ip::tcp::socket> socket;
-		std::shared_ptr<std::array<uint8_t, BUFFER_LENGTH>> fixed_buffer;
-		std::shared_ptr<std::vector<uint8_t>> dynamic_buffer;
+		boost::asio::ip::tcp::socket socket;
+		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer;
+		std::vector<uint8_t> dynamic_buffer;
 
 		commands last_command;
 
@@ -101,9 +94,9 @@ namespace breep { namespace tcp {
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
 
-		using data_type = io_manager_data<BUFFER_LENGTH>;
 		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
 		using peer = basic_peer<io_manager>;
+		using data_type = std::shared_ptr<io_manager_data<BUFFER_LENGTH>>;
 
 		explicit basic_io_manager(unsigned short port);
 
@@ -149,14 +142,14 @@ namespace breep { namespace tcp {
 				send(commands::keep_alive, constant::unused_param, peers_pair.second);
 			}
 			m_keepalive_dlt.expires_from_now(boost::posix_time::millisec(keep_alive_send_millis));
-			m_keepalive_dlt.async_wait(boost::bind(&basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>::keep_alive_impl, this));
+			m_keepalive_dlt.async_wait(boost::bind(&io_manager::keep_alive_impl, this));
 		}
 
 		void timeout_impl() {
 			std::chrono::milliseconds time_now =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 			for (const auto& peers_pair : m_owner->peers()) {
-				if (time_now - peers_pair.second.io_data.timestamp > std::chrono::milliseconds(timeout_millis)) {
-					peers_pair.second.io_data.socket->close();
+				if (time_now - peers_pair.second.io_data->timestamp > std::chrono::milliseconds(timeout_millis)) {
+					peers_pair.second.io_data->socket.close();
 				}
 			}
 			m_timeout_dlt.expires_from_now(boost::posix_time::millisec(timeout_check_interval_millis));

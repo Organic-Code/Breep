@@ -80,7 +80,7 @@ breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_inter
 	m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port)};
 
 	if (m_owner != nullptr) {
-		m_acceptor.async_accept(*m_socket, boost::bind(&tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_interval>::accept, this, _1));
+		m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 	}
 }
 
@@ -145,13 +145,13 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
 	auto endpoint_iterator = resolver.resolve({address.to_string(),std::to_string(port)});
-	std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
-	boost::asio::connect(*socket, endpoint_iterator);
+	boost::asio::ip::tcp::socket socket(m_io_service);
+	boost::asio::connect(socket, endpoint_iterator);
 
-	boost::asio::write(*socket, boost::asio::buffer(io_protocol));
+	boost::asio::write(socket, boost::asio::buffer(io_protocol));
 	std::array<uint8_t, 128> buffer;
 	boost::system::error_code error;
-	size_t len = socket->read_some(boost::asio::buffer(buffer), error);
+	size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 	if (error || len != 8) {
 		return detail::optional<peer>();
 	}
@@ -161,10 +161,10 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 		}
 	}
 
-	boost::asio::write(*socket, boost::asio::buffer(m_id_packet));
+	boost::asio::write(socket, boost::asio::buffer(m_id_packet));
 	len = 0;
 	do {
-		len += socket->read_some(boost::asio::buffer(buffer.data() + len, buffer.size() - len), error);
+		len += socket.read_some(boost::asio::buffer(buffer.data() + len, buffer.size() - len), error);
 		if (error) {
 			return detail::optional<peer>();
 		}
@@ -180,16 +180,16 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 			std::move(uuid),
 			boost::asio::ip::address(address),
 			static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
-			data_type(std::move(socket))
+			std::make_shared<tcp::io_manager_data<T>>(std::move(socket))
 	));
 }
 
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 void breep::tcp::basic_io_manager<T,U,V,W>::process_connected_peer(peer& peer) {
 	m_data_queues.insert(std::make_pair(peer.id(), std::queue<std::vector<uint8_t>>()));
-	peer.io_data.socket->async_read_some(
-		boost::asio::buffer(*peer.io_data.fixed_buffer),
-		boost::bind(&basic_io_manager<T>::process_read, this, peer, _1, _2)
+	peer.io_data->socket.async_read_some(
+		boost::asio::buffer(peer.io_data->fixed_buffer),
+		boost::bind(&io_manager::process_read, this, peer, _1, _2)
 	);
 }
 
@@ -233,15 +233,15 @@ template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::system::error_code error, std::size_t read) {
 
 	if (!error) {
-		peer.io_data.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-		std::vector<uint8_t>& dyn_buff = *peer.io_data.dynamic_buffer;
-		std::array<uint8_t, T>& fixed_buff = *peer.io_data.fixed_buffer;
+		peer.io_data->timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+		std::vector<uint8_t>& dyn_buff = peer.io_data->dynamic_buffer;
+		std::array<uint8_t, T>& fixed_buff = peer.io_data->fixed_buffer;
 
 		typename std::array<uint8_t, T>::size_type current_index{0};
-		if (peer.io_data.last_command == commands::null_command) {
-			peer.io_data.last_command = static_cast<commands>(fixed_buff[current_index++]);
+		if (peer.io_data->last_command == commands::null_command) {
+			peer.io_data->last_command = static_cast<commands>(fixed_buff[current_index++]);
 			if (read == 1) {
-				peer.io_data.socket->async_read_some(
+				peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data(), fixed_buff.size()),
 				        boost::bind(&io_manager::process_read, this, peer, _1, _2)
 				);
@@ -261,11 +261,11 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 					while (to_be_red--) {
 						dyn_buff.push_back(fixed_buff[current_index++]);
 					}
-					detail::peer_manager_attorney<tcp::basic_io_manager <T,U,V,W>>::data_received(*m_owner, peer, peer.io_data.last_command, dyn_buff);
+					detail::peer_manager_attorney<tcp::basic_io_manager <T,U,V,W>>::data_received(*m_owner, peer, peer.io_data->last_command, dyn_buff);
 
 					dyn_buff.clear();
-					peer.io_data.last_command = commands::null_command;
-					peer.io_data.socket->async_read_some(
+					peer.io_data->last_command = commands::null_command;
+					peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data(), fixed_buff.size()),
 						boost::bind(&io_manager::process_read, this, peer, _1, _2)
 					);
@@ -280,7 +280,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
 
-					peer.io_data.socket->async_read_some(
+					peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
 						boost::bind(&basic_io_manager::process_read, this, peer, _1, _2)
 					);
@@ -303,7 +303,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
 
-					peer.io_data.socket->async_read_some(
+					peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
 						boost::bind(&io_manager::process_read, this, peer, _1, _2)
 					);
@@ -313,8 +313,8 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 		} while (has_work);
 	} else {
 		// error
-		peer.io_data.socket = std::shared_ptr<boost::asio::ip::tcp::socket>(nullptr);
-		detail::peer_manager_attorney<tcp::basic_io_manager<T,U,V,W>>::peer_disconnected(*m_owner, peer);
+		peer.io_data->socket.close();
+		detail::peer_manager_attorney<io_manager>::peer_disconnected(*m_owner, peer);
 	}
 }
 
@@ -323,7 +323,7 @@ template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 inline void breep::tcp::basic_io_manager<T,U,V,W>::write(const peer& peer) const {
 	auto& buffers = m_data_queues.at(peer.id());
 	boost::asio::async_write(
-			*peer.io_data.socket,
+			peer.io_data->socket,
 	        boost::asio::buffer(buffers.front().data(), buffers.front().size()),
 	        boost::bind(&io_manager::write_done, this, peer)
 	);
@@ -357,13 +357,13 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 			// Reading the protocol ID
 			if (len != 8) {
 				m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
-				m_acceptor.async_accept(*m_socket, boost::bind(&basic_io_manager<T>::accept, this, _1));
+				m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 				return;
 			}
 			while(len--) {
 				if (buffer[len] != protocol_id[len]) {
 					m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
-					m_acceptor.async_accept(*m_socket, boost::bind(&basic_io_manager<T>::accept, this, _1));
+					m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 					return;
 				}
 			}
@@ -374,7 +374,7 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 				len += m_socket->read_some(boost::asio::buffer(buffer.data() + len, buffer.size() - len), ec);
 				if (ec) {
 					m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
-					m_acceptor.async_accept(*m_socket, boost::bind(&basic_io_manager<T>::accept, this, _1));
+					m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 					return;
 				}
 			} while (len <= buffer[0]);
@@ -386,13 +386,14 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 			boost::uuids::uuid uuid;
 			std::copy(input.data(), input.data() + input.size(), uuid.data);
 
-			detail::peer_manager_attorney<tcp::basic_io_manager<T,U,V,W>>::peer_connected(
+			auto addr = m_socket->remote_endpoint().address();
+			detail::peer_manager_attorney<io_manager>::peer_connected(
 					*m_owner,
 					peer(
 						std::move(uuid),
-						boost::asio::ip::address(m_socket->remote_endpoint().address()),
+						std::move(addr),
 						static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
-						data_type(m_socket)
+						std::make_shared<tcp::io_manager_data<T>>(m_socket)
 					)
 			);
 		}
