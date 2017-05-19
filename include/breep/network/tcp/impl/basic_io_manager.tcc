@@ -17,6 +17,7 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -172,8 +173,11 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 	std::string input;
 	detail::unmake_little_endian(detail::unowning_linear_container(buffer.data() + 3, len - 3), input);
 
+	boost::uuids::uuid uuid;
+	std::copy(input.data(), input.data() + input.size(), uuid.data);
+
 	return detail::optional<peer>(peer(
-			boost::uuids::string_generator{}(input),
+			std::move(uuid),
 			boost::asio::ip::address(address),
 			static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
 			data_type(std::move(socket))
@@ -379,10 +383,13 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 			detail::unmake_little_endian(detail::unowning_linear_container(buffer.data() + 3, len - 3), input);
 			boost::asio::write(*m_socket, boost::asio::buffer(m_id_packet));
 
+			boost::uuids::uuid uuid;
+			std::copy(input.data(), input.data() + input.size(), uuid.data);
+
 			detail::peer_manager_attorney<tcp::basic_io_manager<T,U,V,W>>::peer_connected(
 					*m_owner,
 					peer(
-						boost::uuids::string_generator{}(input),
+						std::move(uuid),
 						boost::asio::ip::address(m_socket->remote_endpoint().address()),
 						static_cast<unsigned short>(buffer[1] << 8 | buffer[2]),
 						data_type(m_socket)

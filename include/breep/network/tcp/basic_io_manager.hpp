@@ -173,10 +173,9 @@ namespace breep { namespace tcp {
 		void accept(boost::system::error_code ec);
 
 		void make_id_packet() {
-			std::string id_str(boost::uuids::to_string(m_owner->self().id()));
 			m_id_packet.clear();
 			m_id_packet.resize(3, 0);
-			detail::make_little_endian(id_str, m_id_packet);
+			detail::make_little_endian(detail::unowning_linear_container(m_owner->self().id().data), m_id_packet);
 
 			m_id_packet[0] = static_cast<uint8_t>(m_id_packet.size() - 1);
 			m_id_packet[1] = static_cast<uint8_t>(m_owner->port() >> 8) & std::numeric_limits<uint8_t>::max();

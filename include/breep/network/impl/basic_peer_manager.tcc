@@ -15,7 +15,6 @@
 #include <functional>
 #include <algorithm>
 #include <boost/uuid/string_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
 
 #include "breep/network/detail/utils.hpp"
 
@@ -27,7 +26,6 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	, m_dc_listener{}
 	, m_master_listener{}
 	, m_me{}
-    , m_uuid_gen{}
 	, m_failed_connections{}
 	, m_manager{std::move(io_manager)}
 	, m_id_count{0}
@@ -246,10 +244,10 @@ void breep::basic_peer_manager<T>::data_received(const peer& source, commands co
 template <typename T>
 void breep::basic_peer_manager<T>::update_distance(const peer& concerned_peer) {
 	std::vector<uint8_t> data;
-	std::string uuid = boost::uuids::to_string(concerned_peer.id());
-	data.reserve(1 + uuid.size());
+	const boost::uuids::uuid& uuid = concerned_peer.id();
+	data.reserve(1 + sizeof(uuid.data));
 	data.push_back(concerned_peer.distance());
-	std::copy(uuid.cbegin(), uuid.cend(), std::back_inserter(data));
+	std::copy(uuid.data, uuid.data + sizeof(uuid.data), std::back_inserter(data));
 
 	std::vector<uint8_t> sendable;
 	detail::make_little_endian(data, sendable);
@@ -295,12 +293,15 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 	detail::unmake_little_endian(data, processed_data);
 
 	size_t id_size = processed_data[0];
-	std::string id;
-	id.reserve(id_size);
+	std::string id_as_str;
+	id_as_str.reserve(id_size);
 	++id_size;
-	std::copy(processed_data.cbegin() + 1, processed_data.cbegin() + id_size, std::back_inserter(id));
+	std::copy(processed_data.cbegin() + 1, processed_data.cbegin() + id_size, std::back_inserter(id_as_str));
 
-	if (m_me.id_as_string() == id) {
+	boost::uuids::uuid id;
+	std::copy(id_as_str.data(), id_as_str.data() + id_as_str.size(), id.data);
+
+	if (m_me.id() == id) {
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 		if (m_master_listener) {
 			m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()) + id_size, processed_data.size() - id_size, false);
@@ -316,7 +317,7 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 			}
 		}
 	} else {
-		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(m_uuid_gen(id))));
+		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(id)));
 	}
 }
 
@@ -349,7 +350,8 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 
 	std::string id;
 	detail::unmake_little_endian(data, id);
-	boost::uuids::uuid uuid = m_uuid_gen(id);
+	boost::uuids::uuid uuid;
+	std::copy(id.data(), id.data() + id.size(), uuid.data);
 
 	peer& target = m_peers.at(uuid);
 	m_me.bridging_from_to().at(uuid).push_back(&source);
@@ -357,12 +359,14 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 
 	std::vector<uint8_t> ldata;
 	unsigned char dist = source.distance();
-	detail::make_little_endian(std::string(&dist, &dist + 1) + boost::uuids::to_string(source.id()), ldata);
+	const boost::uuids::uuid& source_id = source.id();
+	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(source_id.data, source_id.data + source_id.size()), ldata);
 	m_manager.send(commands::forwarding_to, ldata, target);
 
 	ldata.clear();
 	dist = target.distance();
-	detail::make_little_endian(std::string(&dist, &dist + 1) + boost::uuids::to_string(target.id()), ldata);
+	const boost::uuids::uuid& target_id = target.id();
+	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(target_id.data, target_id.data + target_id.size()), ldata);
 	m_manager.send(commands::forwarding_to, ldata, source);
 }
 
@@ -371,7 +375,9 @@ void breep::basic_peer_manager<T>::stop_forwarding_handler(const peer& source, c
 
 	std::string data_str;
 	detail::unmake_little_endian(data, data_str);
-	boost::uuids::uuid id = m_uuid_gen(data_str);
+	boost::uuids::uuid id;
+	std::copy(data_str.data(), data_str.data() + data_str.size(), id.data);
+
 	peer& target = m_peers.at(id);
 
 	std::vector<const peer*>& v = m_me.bridging_from_to().at(id);
@@ -393,7 +399,8 @@ template <typename T>
 void breep::basic_peer_manager<T>::forwarding_to_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string str;
 	detail::unmake_little_endian(data, str);
-	boost::uuids::uuid uuid = m_uuid_gen(str.substr(1));
+	boost::uuids::uuid uuid;
+	std::copy(str.data() + 1, str.data() + str.size() - 1, uuid.data);
 
 	unsigned char distance = static_cast<unsigned char>(str[0]);
 	try {
@@ -431,7 +438,8 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 	for (; --id_size; ++i) {
 		buff.push_back(ldata[i]);
 	}
-	boost::uuids::uuid id = m_uuid_gen(buff);
+	boost::uuids::uuid id;
+	std::copy(buff.data(), buff.data() + buff.size(), id.data);
 	id_size = buff.size();
 
 	std::string buff2;
@@ -454,24 +462,25 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 
 template <typename T>
 void breep::basic_peer_manager<T>::cant_connect_handler(const peer& source, const std::vector<uint8_t>& data) {
-	std::string id_string;
-	detail::unmake_little_endian(data, id_string);
+	std::vector<uint8_t> id_vect;
+	detail::unmake_little_endian(data, id_vect);
 
-	boost::uuids::uuid target_id = m_uuid_gen(id_string);
+	boost::uuids::uuid target_id;
+	std::copy(id_vect.data(), id_vect.data() + id_vect.size(), target_id.data);
 
 	std::vector<uint8_t> data_to_send;
-	id_string = boost::uuids::to_string(source.id());
+	const boost::uuids::uuid& source_id = source.id();
 	std::string source_addr = source.address().to_string();
-	data_to_send.reserve(3 + id_string.size() + target_id.size());
+	data_to_send.reserve(3 + source_id.size());
 
 	unsigned short remote_port = source.connection_port();
 	detail::insert_uint16(data_to_send, remote_port);
-	data_to_send.push_back(static_cast<uint8_t>(id_string.size()));
-	std::copy(id_string.cbegin(), id_string.cend(), std::back_inserter(data_to_send));
+	data_to_send.push_back(static_cast<uint8_t>(source_id.size()));
+	std::copy(source_id.data, source_id.data + source_id.size(), std::back_inserter(data_to_send));
 	std::copy(source_addr.cbegin(), source_addr.cend(), std::back_inserter(data_to_send));
 
 	std::vector<uint8_t> buffer;
-	detail::make_little_endian(data, buffer);
+	detail::make_little_endian(data_to_send, buffer);
 	m_manager.send(commands::connect_to, buffer, m_peers.at(target_id));
 }
 
@@ -479,17 +488,18 @@ template <typename T>
 void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string ldata;
 	detail::unmake_little_endian(data, ldata);
-	boost::uuids::uuid uuid = m_uuid_gen(ldata.substr(1));
+	boost::uuids::uuid uuid;
+	std::copy(ldata.data() + 1, ldata.data() + ldata.size() - 1, uuid.data);
 	unsigned char distance = static_cast<unsigned char>(ldata[0] + 1);
 
 	try {
 		peer& p = m_peers.at(uuid);
 		if (p.distance() > distance) {
 			std::vector<uint8_t> peer_id;
-			detail::make_little_endian(boost::uuids::to_string(uuid), peer_id);
+			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
 			std::vector<uint8_t> sendable;
-			detail::make_little_endian(std::string(&distance, &distance + 1) + boost::uuids::to_string(uuid), sendable);
+			detail::make_little_endian(std::string(&distance, &distance + 1) + std::string(uuid.data, uuid.data + uuid.size()), sendable);
 			for (const auto& peer_p : m_peers) {
 				if (peer_p.second.distance() == 0) {
 					m_manager.send(commands::update_distance, sendable, peer_p.second);
@@ -507,10 +517,10 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 
 		if (p != nullptr) {
 			std::vector<uint8_t> peer_id;
-			detail::make_little_endian(boost::uuids::to_string(uuid), peer_id);
+			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
 			std::vector<uint8_t> sendable;
-			detail::make_little_endian(std::string(&distance, &distance + 1) + boost::uuids::to_string(uuid), sendable);
+			detail::make_little_endian(std::string(&distance, &distance + 1) + std::string(uuid.data, uuid.data + uuid.size()), sendable);
 			for (const auto& peer_p : m_peers) {
 				if (peer_p.second.distance() == 0) {
 					m_manager.send(commands::update_distance, sendable, peer_p.second);
@@ -524,10 +534,12 @@ template <typename T>
 void breep::basic_peer_manager<T>::retrieve_distance_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string id;
 	detail::unmake_little_endian(data, id);
-	boost::uuids::uuid uuid = m_uuid_gen(id);
+	boost::uuids::uuid uuid;
+	std::copy(id.data(), id.data() + id.size(), uuid.data);
+
 	unsigned char dist = m_peers.at(uuid).distance();
 	std::vector<uint8_t> ldata;
-	detail::make_little_endian(std::string(&dist, &dist + 1) + boost::uuids::to_string(uuid), ldata);
+	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(uuid.data, uuid.data + uuid.size()), ldata);
 	m_manager.send(commands::update_distance, ldata, source);
 }
 
@@ -545,9 +557,9 @@ void breep::basic_peer_manager<T>::retrieve_peers_handler(const peer& source, co
 	for (auto& p : m_peers) {
 		detail::insert_uint16(ans, p.second.connection_port());
 
-		std::string id = boost::uuids::to_string(p.second.id());
-		ans.push_back(static_cast<uint8_t>(id.size()));
-		std::copy(id.cbegin(), id.cend(), std::back_inserter(ans));
+		const boost::uuids::uuid& uuid = p.second.id();
+		ans.push_back(static_cast<uint8_t>(uuid.size()));
+		std::copy(uuid.data, uuid.data + uuid.size(), std::back_inserter(ans));
 
 		std::string addr = p.second.address().to_string();
 		ans.push_back(static_cast<uint8_t>(addr.size()));
@@ -576,7 +588,8 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 		id.reserve(id_size);
 		index += 3;
 		std::copy(ldata.cbegin() + index, ldata.cbegin() + index + id_size, std::back_inserter(id));
-		boost::uuids::uuid uuid = m_uuid_gen(id);
+		boost::uuids::uuid uuid;
+		std::copy(id.data(), id.data() + id.size(), uuid.data);
 		index += id_size;
 
 		uint8_t address_size = ldata[index++];
@@ -625,7 +638,7 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 	std::vector<uint8_t> vect;
 	for (std::unique_ptr<peer>& peer_ptr : m_failed_connections) {
 		peer_ptr->distance(std::numeric_limits<unsigned char>::max());
-		detail::make_little_endian(boost::uuids::to_string(peer_ptr->id()), vect);
+		detail::make_little_endian(detail::unowning_linear_container(peer_ptr->id().data), vect);
 
 		for (const std::pair<boost::uuids::uuid, peer>& pair : m_peers) {
 			if (pair.second.distance() == 0) {
@@ -641,5 +654,8 @@ void breep::basic_peer_manager<T>::peer_disconnection_handler(const peer& source
 	forward_if_needed(source, commands::peer_disconnection, data);
 	std::string local_data;
 	detail::unmake_little_endian(data, local_data);
-	peer_disconnected(m_peers.at(m_uuid_gen(local_data)));
+
+	boost::uuids::uuid uuid;
+	std::copy(local_data.data(), local_data.data() + local_data.size(), uuid.data);
+	peer_disconnected(m_peers.at(uuid));
 }

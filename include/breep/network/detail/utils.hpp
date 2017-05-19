@@ -103,8 +103,14 @@ namespace breep { namespace detail {
 		typedef uint8_t value_type;
 
 		unowning_linear_container(const uint8_t* data, size_t size)
-			: data_(data)
-			, size_(size)
+				: data_(data)
+				, size_(size)
+		{}
+
+		template <size_t N>
+		explicit unowning_linear_container(const uint8_t(&data)[N])
+				: data_(data)
+				, size_(N)
 		{}
 
 		const uint8_t* data() const {

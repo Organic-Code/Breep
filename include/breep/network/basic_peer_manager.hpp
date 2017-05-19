@@ -351,8 +351,6 @@ namespace breep {
 		std::function<void(peer_manager&, const peer&, char*, size_t, bool)> m_master_listener;
 
 		local_peer<io_manager> m_me;
-		// todo: use .data instead of stringifying it.
-		boost::uuids::string_generator m_uuid_gen;
 		std::vector<std::unique_ptr<peer>> m_failed_connections;
 
 		io_manager m_manager;
