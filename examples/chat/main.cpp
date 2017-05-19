@@ -11,38 +11,49 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
 #include <boost/uuid/uuid_io.hpp>
 
 #include <breep/network/tcp.hpp>
 
-#define forever for(;;)
+class timed_message {
+public:
+	timed_message(): m_starting_time{time(0)} {}
 
-void message_received(breep::tcp::peer_manager&, const breep::tcp::peer&, breep::cuint8_random_iterator, size_t, bool);
-void connection(breep::tcp::peer_manager&, const breep::tcp::peer&);
-void disconnection(breep::tcp::peer_manager&, const breep::tcp::peer&);
-void connection_disconnection(breep::tcp::peer_manager&, const breep::tcp::peer&);
+	/*
+	 * Using an operator() overload allows you to pass objects as listeners.
+	 */
+	void operator()(breep::tcp::peer_manager& /* peer_manager */, const breep::tcp::peer& source, breep::cuint8_random_iterator data,
+	                      size_t data_size, bool /* sent_only_to_me */) {
 
-void message_received(breep::tcp::peer_manager&, const breep::tcp::peer& source, breep::cuint8_random_iterator data, size_t size, bool /**/) {
-	std::cout << '\r' << boost::uuids::to_string(source.id()).substr(0,4) << ": ";
-	for (; size > 0 ; --size) {
-		std::cout << static_cast<char>(*data++);
+		// print the time and the name of the buddy that sent me something
+		time_t now = time(0) - m_starting_time;
+		std::cout << '[' << std::string(ctime(&now)).substr(14,5) << "] " << source.id_as_string().substr(0, 4) << ": ";
+
+		// prints what he sent.
+		for (; data_size > 0 ; --data_size) {
+			std::cout << static_cast<char>(*data++);
+		}
+		std::cout << std::endl;
+		// we could reply directly here by using the peer_manager passed as parameter.
+		//ie : peer_manager.send_to_all("reply"); or peer_manager.send_to(source, "reply");
 	}
-	std::cout << std::endl;
-}
 
-void connection(breep::tcp::peer_manager&, const breep::tcp::peer&) {
-	std::cout << "Connection." << std::endl;
-}
+private:
+	const time_t m_starting_time;
+};
 
-void disconnection(breep::tcp::peer_manager&, const breep::tcp::peer&) {
-	std::cout << "Disconnection." << std::endl;
-}
-
-void connection_disconnection(breep::tcp::peer_manager&, const breep::tcp::peer& peer) {
+/*
+ * This method will get called whenever a peer connects // disconnects
+ * (connection listeners can be used as disconnection listeners and vice-versa)
+ */
+void connection_disconnection(breep::tcp::peer_manager& /* peer_manager */, const breep::tcp::peer& peer) {
 	if (peer.is_connected()) {
-		std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0, 4) << " connected!" << std::endl;
+		// someone connected
+		std::cout << peer.id_as_string().substr(0, 4) << " connected!" << std::endl;
 	} else {
-		std::cout << "SYSTEM: " << boost::uuids::to_string(peer.id()).substr(0,4) << " disconnected" << std::endl;
+		// someone disconnected
+		std::cout << peer.id_as_string().substr(0, 4) << " disconnected" << std::endl;
 	}
 }
 
@@ -53,36 +64,42 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	breep::tcp::peer_manager network((unsigned short)atoi(argv[1]));
+	// taking the local hosting port as parameter.
+	breep::tcp::peer_manager peer_manager(static_cast<unsigned short>(atoi(argv[1])));
 
-	std::cout << "SYSTEM: " << network.self().id_as_string() << " is your identity" << std::endl;
+	std::cout << "you are " << peer_manager.self().id_as_string() << "." << std::endl;
 
-
-	network.add_data_listener(&message_received);
-
-	network.add_connection_listener(&connection);
-	network.add_disconnection_listener(&disconnection);
-
-	network.add_connection_listener(&connection_disconnection);
-	network.add_disconnection_listener(&connection_disconnection);
+	// adding listeners. Of course, more listeners could be added.
+	breep::listener_id da_listener_id = peer_manager.add_data_listener(timed_message());
+	breep::listener_id co_listener_id = peer_manager.add_connection_listener(&connection_disconnection);
+	breep::listener_id dc_listener_id = peer_manager.add_disconnection_listener(&connection_disconnection);
 
 
 	if (argc == 2) {
-		network.run();
+		// only hosting
+		peer_manager.run();
 	} else {
+		// connecting to a remote peer.                                           v− address in string format (v4 or v6)
 		boost::asio::ip::address address = boost::asio::ip::address::from_string(argv[2]);
-		network.connect(address, static_cast<unsigned short>(atoi(argv[3])));
+		//                                                    target port -v
+		peer_manager.connect(address, static_cast<unsigned short>(atoi(argv[3])));
 	}
 
+
 	std::string ans;
-	forever {
+	while(true) {
 		std::getline(std::cin, ans);
 		if (ans == "/q") {
 			std::cout << "Leaving..." << std::endl;
-			network.disconnect();
+			peer_manager.disconnect();
 			break;
 		} else {
-			network.send_to_all(ans);
+			peer_manager.send_to_all(ans);
 		}
 	}
+
+	// this is not obligatory, as the peer_manager is going out of scope anyway
+	peer_manager.remove_data_listener(da_listener_id);
+	peer_manager.remove_connection_listener(co_listener_id);
+	peer_manager.remove_disconnection_listener(dc_listener_id);
 }

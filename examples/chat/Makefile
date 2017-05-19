@@ -65,9 +65,9 @@ EXCLUDEDSPEC    =
 
 #--Directories should be empty or end by '/'--
 #Directory for the final executable
-BUILDDIR        = ./
+BUILDDIR        = ./build/
 #Directory for objects file
-OBJDIR          = /tmp/
+OBJDIR          = ./build/
 #Sources' directories, separated by a space
 SOURCEDIR       = ./
 
