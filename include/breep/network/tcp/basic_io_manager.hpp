@@ -93,25 +93,26 @@ namespace breep { namespace tcp {
 	 *
 	 * @since 0.1.0
 	 */
-	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis = 5000, unsigned long timeout_millis = 120000, unsigned long timeout_check_interval_millis = timeout_millis / 5>
-	class basic_io_manager final: public io_manager_base<basic_io_manager<BUFFER_LENGTH>> {
+	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis, unsigned long timeout_millis, unsigned long timeout_check_interval_millis>
+	class basic_io_manager final: public io_manager_base<basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>> {
 	public:
 
 		// The protocol ID should be changed at each compatibility break.
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
 
-		using peer = basic_peer<basic_io_manager<BUFFER_LENGTH>>;
 		using data_type = io_manager_data<BUFFER_LENGTH>;
+		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
+		using peer = basic_peer<io_manager>;
 
 		explicit basic_io_manager(unsigned short port);
 
-		basic_io_manager(basic_io_manager<BUFFER_LENGTH>&& other);
+		basic_io_manager(io_manager&& other);
 
 		~basic_io_manager();
 
-		basic_io_manager(const basic_io_manager<BUFFER_LENGTH>&) = delete;
-		basic_io_manager<BUFFER_LENGTH>& operator=(const basic_io_manager<BUFFER_LENGTH>&) = delete;
+		basic_io_manager(const io_manager&) = delete;
+		io_manager& operator=(const io_manager&) = delete;
 
 		template <typename Container>
 		void send(commands command, const Container& data, const peer& peer) const;
@@ -119,7 +120,7 @@ namespace breep { namespace tcp {
 		template <typename InputIterator, typename size_type>
 		void send(commands command, InputIterator begin, size_type size, const peer& peer) const;
 
-		detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port);
+		detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port) override;
 
 		void process_connected_peer(peer& peer) override;
 
@@ -134,12 +135,12 @@ namespace breep { namespace tcp {
 
 			m_acceptor.close();
 			m_acceptor = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port)};
-			m_acceptor.async_accept(*m_socket, boost::bind(&basic_io_manager<BUFFER_LENGTH>::accept, this, _1));
+			m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 
 			if (m_acceptor_v4 != nullptr) {
 				m_acceptor_v4->close();
 				*m_acceptor_v4 = {m_io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)};
-				m_acceptor_v4->async_accept(*m_socket, boost::bind(&basic_io_manager<BUFFER_LENGTH>::accept, this, _1));
+				m_acceptor_v4->async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 			}
 		}
 
@@ -159,10 +160,10 @@ namespace breep { namespace tcp {
 				}
 			}
 			m_timeout_dlt.expires_from_now(boost::posix_time::millisec(timeout_check_interval_millis));
-			m_timeout_dlt.async_wait(boost::bind(&basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>::timeout_impl, this));
+			m_timeout_dlt.async_wait(boost::bind(&io_manager::timeout_impl, this));
 		}
 
-		void owner(basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* owner) override;
+		void owner(basic_peer_manager<io_manager>* owner) override;
 
 		void process_read(peer& peer, boost::system::error_code error, std::size_t read);
 
@@ -182,7 +183,7 @@ namespace breep { namespace tcp {
 			m_id_packet[2] = static_cast<uint8_t>(m_owner->port() & std::numeric_limits<uint8_t>::max());
 		}
 
-		basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* m_owner;
+		basic_peer_manager<io_manager>* m_owner;
 		mutable boost::asio::io_service m_io_service;
 		boost::asio::ip::tcp::acceptor m_acceptor;
 		boost::asio::ip::tcp::acceptor* m_acceptor_v4;
