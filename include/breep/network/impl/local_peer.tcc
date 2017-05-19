@@ -8,7 +8,7 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "breep/network/local_peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/local_peer.hpp" // allows my IDE to work
 
 template <typename T>
 inline const breep::basic_peer<T>*& breep::local_peer<T>::path_to(const basic_peer<T>& p) {

@@ -156,40 +156,6 @@ namespace breep {
 			});
 		}
 
-
-		/**
-		 * @brief Sends raw data to all members of the network
-		 * @tparam data_container Type representing data. Exact definition
-		 *                        is to be defined by \em network_manager::send_to
-		 * @param data Data to be sent
-		 *
-		 * @sa basic_network::send_raw_to(const peer&, const data_container&) const
-		 * @sa basic_network::send_object(const Serialiseable&) const
-		 *
-	 	 * @since 0.1.0
-		 */
-		template <typename data_container>
-		void send_raw(const data_container& data) const {
-			m_manager.send_to_all(data);
-		}
-
-		/**
-		 * Sends raw data to a specific member of the network
-		 * @tparam data_container Type representing data. Exact definition
-		 *                        is to be defined by \em network_manager_base::send
-		 * @param p Target peer
-		 * @param data Data to be sent
-		 *
-		 * @sa basic_network::send_raw(const data_container&) const
-		 * @sa basic_network::send_object_to(const Serialiseable&) const
-		 *
-	 	 * @since 0.1.0
-		 */
-		template <typename data_container>
-		void send_raw_to(const peer& p, const data_container& data) const {
-			m_manager.send_to(p, data);
-		}
-
 		/**
 		 * @brief Sends an object to all members of the network
 		 *

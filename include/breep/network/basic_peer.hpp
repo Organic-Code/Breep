@@ -116,7 +116,7 @@ namespace breep {
 		}
 
 		bool is_connected() const {
-			return m_distance != std::numeric_limits<unsigned char>::max(); // todo.
+			return m_distance != std::numeric_limits<unsigned char>::max();
 		}
 
 		const std::string& id_as_string() const {

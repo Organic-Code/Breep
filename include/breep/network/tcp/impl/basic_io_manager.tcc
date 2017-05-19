@@ -9,7 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "breep/network/tcp/basic_io_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/tcp/basic_io_manager.hpp" // allows my IDE to work
 
 #include <vector>
 #include <queue>
@@ -50,7 +50,7 @@ breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_inter
 	boost::system::error_code ec;
 	m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
 	if (ec) {
-		std::clog << "IP dual stack is unsupported on your system.\n"; // todo: set an easy way to programmatically get this error
+		std::clog << "IP dual stack is unsupported on your system.\n";
 		std::clog << "Adding ipv4 listener.\n\n";
 	}
 

@@ -8,7 +8,7 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "breep/network/basic_peer_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/basic_peer_manager.hpp" // allows my IDE to work
 
 #include <thread>
 #include <iostream>

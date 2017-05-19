@@ -8,7 +8,7 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "breep/network/basic_peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/basic_peer.hpp" // allows my IDE to work
 
 template <typename T>
 inline const boost::uuids::uuid& breep::basic_peer<T>::id() const noexcept {

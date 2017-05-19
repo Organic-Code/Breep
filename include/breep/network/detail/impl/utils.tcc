@@ -12,8 +12,6 @@
 #include <utility>
 #include <boost/detail/endian.hpp>
 
-#include "breep/network/detail/utils.hpp" // TODO: remove
-
 template <typename Container, typename OutputIterator>
 inline void breep::detail::little_endian(const Container& container, OutputIterator outputIterator) {
 	using std::iterator_traits;
