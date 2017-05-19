@@ -1,5 +1,5 @@
-#ifndef BREEP_COMMANDS_HPP
-#define BREEP_COMMANDS_HPP
+#ifndef BREEP_NETWORK_COMMANDS_HPP
+#define BREEP_NETWORK_COMMANDS_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -136,4 +136,4 @@ namespace breep {
 	};
 }
 
-#endif //BREEP_COMMANDS_HPP
+#endif //BREEP_NETWORK_COMMANDS_HPP

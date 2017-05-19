@@ -1,5 +1,5 @@
-#ifndef BREEP_BASIC_PEER_MANAGER_HPP
-#define BREEP_BASIC_PEER_MANAGER_HPP
+#ifndef BREEP_NETWORK_BASIC_PEER_MANAGER_HPP
+#define BREEP_NETWORK_BASIC_PEER_MANAGER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -17,6 +17,7 @@
  * @author Lucas Lazare
  */
 
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <functional>
@@ -24,17 +25,14 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
-#include "breep/commands.hpp"
-#include "breep/basic_peer.hpp"
-#include "breep/local_peer.hpp"
-#include "breep/io_manager_base.hpp"
-#include "breep/exceptions.hpp"
+#include "breep/network/typedefs.hpp"
+#include "breep/network/detail/commands.hpp"
+#include "basic_peer.hpp"
+#include "local_peer.hpp"
+#include "io_manager_base.hpp"
+#include "breep/util/exceptions.hpp"
 
 namespace breep {
-
-	using cuint8_random_iterator = const uint8_t*;
-
-	typedef unsigned long listener_id;
 
 	namespace detail {
 		template<typename T>
@@ -417,4 +415,4 @@ namespace breep {
 
 #include "impl/basic_peer_manager.tcc"
 
-#endif //BREEP_BASIC_PEER_MANAGER_HPP
+#endif //BREEP_NETWORK_BASIC_PEER_MANAGER_HPP

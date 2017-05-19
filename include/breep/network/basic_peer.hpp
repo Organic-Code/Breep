@@ -1,5 +1,5 @@
-#ifndef BREEP_BASIC_PEER_HPP
-#define BREEP_BASIC_PEER_HPP
+#ifndef BREEP_NETWORK_BASIC_PEER_HPP
+#define BREEP_NETWORK_BASIC_PEER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -16,15 +16,13 @@
  * @author Lucas Lazare
  */
 
+#include <utility>
 #include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include <cstdint>
-#include <vector>
-#include <memory>
-#include <utility>
 
-#include "breep/commands.hpp"
+#include "breep/network/detail/commands.hpp"
 
 namespace breep {
 
@@ -150,4 +148,4 @@ namespace breep {
 }
 
 
-#endif //BREEP_BASIC_PEER_HPP
+#endif //BREEP_NETWORK_BASIC_PEER_HPP

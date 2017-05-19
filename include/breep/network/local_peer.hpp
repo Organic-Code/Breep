@@ -1,5 +1,5 @@
-#ifndef BREEP_LOCAL_PEER_HPP
-#define BREEP_LOCAL_PEER_HPP
+#ifndef BREEP_NETWORK_LOCAL_PEER_HPP
+#define BREEP_NETWORK_LOCAL_PEER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -19,13 +19,12 @@
  */
 
 #include <vector>
-#include <string>
 #include <unordered_map>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/functional/hash.hpp>
 
-#include "breep/basic_peer.hpp"
+#include "basic_peer.hpp"
 
 namespace breep {
 
@@ -145,4 +144,4 @@ namespace breep {
 
 #include "impl/local_peer.tcc"
 
-#endif //BREEP_LOCAL_PEER_HPP
+#endif //BREEP_NETWORK_LOCAL_PEER_HPP

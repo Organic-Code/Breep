@@ -8,15 +8,16 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "../basic_peer_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/basic_peer_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
 #include <thread>
 #include <iostream>
 #include <functional>
+#include <algorithm>
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "breep/detail/utils.hpp"
+#include "breep/network/detail/utils.hpp"
 
 template <typename T>
 breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short port) noexcept

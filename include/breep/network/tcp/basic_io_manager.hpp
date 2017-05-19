@@ -1,5 +1,5 @@
-#ifndef BREEP_TCP_BASIC_IO_MANAGER
-#define BREEP_TCP_BASIC_IO_MANAGER
+#ifndef BREEP_NETWORK_TCP_BASIC_IO_MANAGER_HPP
+#define BREEP_NETWORK_TCP_BASIC_IO_MANAGER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -17,7 +17,6 @@
  */
 
 #include <cstdint>
-#include <iostream>
 #include <unordered_map>
 #include <queue>
 #include <vector>
@@ -28,9 +27,9 @@
 #include <boost/bind.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "breep/io_manager_base.hpp"
-#include "breep/exceptions.hpp"
-#include "breep/commands.hpp"
+#include "breep/network/io_manager_base.hpp"
+#include "breep/util/exceptions.hpp"
+#include "breep/network/detail/commands.hpp"
 
 
 namespace breep {
@@ -205,6 +204,6 @@ namespace breep { namespace tcp {
 	//typedef basic_network<io_manager> network;
 }}
 
-#include "impl/basic_io_manager.tcc"
+#include "breep/network/tcp/impl/basic_io_manager.tcc"
 
-#endif //BREEP_TCP_BASIC_IO_MANAGER
+#endif //BREEP_NETWORK_TCP_BASIC_IO_MANAGER_HPP

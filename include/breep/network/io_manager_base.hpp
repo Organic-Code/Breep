@@ -1,5 +1,5 @@
-#ifndef BREEP_IO_MANAGER_BASE_HPP
-#define BREEP_IO_MANAGER_BASE_HPP
+#ifndef BREEP_NETWORK_IO_MANAGER_BASE_HPP
+#define BREEP_NETWORK_IO_MANAGER_BASE_HPP
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,11 +20,10 @@
  * @since 0.1.0
  */
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/functional/hash.hpp>
+#include <boost/asio/ip/address.hpp>
 
-#include "breep/commands.hpp"
-#include "breep/detail/utils.hpp"
+#include "breep/network/detail/commands.hpp"
+#include "breep/network/detail/utils.hpp"
 
 namespace boost { namespace asio { namespace ip {
 	class address;
@@ -131,4 +130,4 @@ namespace breep {
 	};
 }
 
-#endif //BREEP_IO_MANAGER_BASE_HPP
+#endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP

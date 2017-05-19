@@ -1,5 +1,5 @@
-#ifndef BREEP_BASIC_NETWORK_HPP
-#define BREEP_BASIC_NETWORK_HPP
+#ifndef BREEP_NETWORK_BASIC_NETWORK_HPP
+#define BREEP_NETWORK_BASIC_NETWORK_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -17,18 +17,19 @@
  * @author Lucas Lazare
  */
 
-#include <algorithm>
 #include <sstream>
+#include <utility>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "breep/detail/utils.hpp"
-#include "breep/object_builder.hpp"
-#include "breep/networking_traits.hpp"
-#include "breep/basic_peer.hpp"
-#include "breep/basic_peer_manager.hpp"
+#include "breep/network/typedefs.hpp"
+#include "breep/network/detail/utils.hpp"
+#include "breep/network/detail/object_builder.hpp"
+#include "breep/util/type_traits.hpp"
+#include "basic_peer.hpp"
+#include "basic_peer_manager.hpp"
 
 namespace breep {
 
@@ -205,7 +206,7 @@ namespace breep {
 		template <typename Serialiseable>
 		void send_object(Serialiseable data) const {
 			std::ostringstream oss;
-			uint64_t hash_code = networking_traits<Serialiseable>::hash_code();
+			uint64_t hash_code = type_traits<Serialiseable>::hash_code();
 			uint8_t* hash_8b = reinterpret_cast<uint8_t*>(&hash_code);
 
 			for (uint_fast8_t i{sizeof(uint64_t) / sizeof(uint8_t)} ; i-- ;) {
@@ -419,10 +420,10 @@ namespace breep {
 		template <typename T>
 		listener_id add_data_listener(data_received_listener<T> listener) {
 
-			auto associated_listener = m_data_listeners.find(networking_traits<T>::hash_code());
+			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
 				std::shared_ptr<detail::object_builder<io_manager,T>> builder_ptr = std::make_shared<detail::object_builder<io_manager, T>>();
-				m_data_listeners.emplace(networking_traits<T>::hash_code(), detail::make_obj_pair(builder_ptr));
+				m_data_listeners.emplace(type_traits<T>::hash_code(), detail::make_obj_pair(builder_ptr));
 
 				return builder_ptr->add_listener(m_id_count++, listener);
 			} else {
@@ -445,7 +446,7 @@ namespace breep {
 		 */
 		template <typename T>
 		bool remove_data_listener(listener_id id) {
-			auto associated_listener = m_data_listeners.find(networking_traits<T>::hash_code());
+			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
 				return false;
 			} else {
@@ -509,4 +510,4 @@ namespace breep {
 }
 
 
-#endif //BREEP_BASIC_NETWORK_HPP
+#endif //BREEP_NETWORK_BASIC_NETWORK_HPP

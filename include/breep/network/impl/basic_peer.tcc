@@ -1,6 +1,3 @@
-#ifndef BREEP_UDP_IO_MANAGER_NETWORK_HPP
-#define BREEP_UDP_IO_MANAGER_NETWORK_HPP
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
 // Copyright 2017 Lucas Lazare.                                                                  //
@@ -11,12 +8,24 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "breep/io_manager_base.hpp"
+#include "breep/network/basic_peer.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
-namespace breep::udp {
-	class io_manager: public io_manager_base<io_manager> {
-
-	};
+template <typename T>
+inline const boost::uuids::uuid& breep::basic_peer<T>::id() const noexcept {
+	return m_id;
 }
 
-#endif //BREEP_UDP_IO_MANAGER_NETWORK_HPP
+template <typename T>
+inline const boost::asio::ip::address& breep::basic_peer<T>::address() const noexcept {
+	return m_address;
+}
+
+template <typename T>
+inline bool breep::basic_peer<T>::operator==(const basic_peer<T>& lhs) const {
+	return this->m_address == lhs.m_address && this->m_id == lhs.m_id;
+}
+
+template <typename T>
+inline bool breep::basic_peer<T>::operator!=(const basic_peer<T>& lhs) const {
+	return this->m_address != lhs.m_address || this->m_id != lhs.m_id;
+}

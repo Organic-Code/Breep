@@ -9,23 +9,24 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "../basic_io_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
+#include "breep/network/tcp/basic_io_manager.hpp" // TODO: remove [Seems useless, but allows my IDE to work]
 
-#include <boost/asio.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp> // boost::uuids::to_string
-#include <boost/array.hpp>
-#include <boost/uuid/string_generator.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
+#include <queue>
 #include <limits>
+#include <array>
 #include <memory>
 #include <string>
+#include <boost/asio.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/array.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "breep/detail/utils.hpp"
-#include "breep/basic_peer_manager.hpp"
-#include "breep/basic_peer.hpp"
-#include "breep/exceptions.hpp"
+#include "breep/network/detail/utils.hpp"
+#include "breep/network/basic_peer_manager.hpp"
+#include "breep/network/basic_peer.hpp"
+#include "breep/util/exceptions.hpp"
 
 
 template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_millis, unsigned long U, unsigned long timeout_chk_interval>

@@ -1,5 +1,5 @@
-#ifndef BREEP_OBJECT_BUILDER_HPP
-#define BREEP_OBJECT_BUILDER_HPP
+#ifndef BREEP_NETWORK_OBJECT_BUILDER_HPP
+#define BREEP_NETWORK_OBJECT_BUILDER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -21,6 +21,8 @@
 #include <functional>
 #include <unordered_map>
 #include <boost/archive/binary_iarchive.hpp>
+
+#include "breep/network/typedefs.hpp"
 
 namespace breep {
 	template <typename>
@@ -112,4 +114,4 @@ namespace breep { namespace detail {
 }}
 
 
-#endif //BREEP_OBJECT_BUILDER_HPP
+#endif //BREEP_NETWORK_OBJECT_BUILDER_HPP

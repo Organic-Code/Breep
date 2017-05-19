@@ -1,6 +1,5 @@
-#ifndef BREEP_EXCEPTIONS_HPP
-#define BREEP_EXCEPTIONS_HPP
-
+#ifndef BREEP_NETWORK_TYPEDEFS_HPP
+#define BREEP_NETWORK_TYPEDEFS_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -14,35 +13,15 @@
 
 
 /**
- * @file invalid_state.hpp
+ * @file typedefs.hpp
  * @author Lucas Lazare
  */
 
-#include <stdexcept>
+#include <cstdint>
 
 namespace breep {
 
-	/**
-	 * @class invalid_state invalid_state.hpp
-	 * @brief exception thrown whenever a method is called when it shouldn't be
-	 *
-	 * @details thrown by \em breep::network::connect, \em breep::network::connect_sync
-	 *
-	 * @since 0.1.0
-	 */
-	class invalid_state: public std::logic_error {
-
-	public:
-		explicit invalid_state(const std::string& what_arg): logic_error(what_arg) {}
-		explicit invalid_state(const char* what_arg): logic_error(what_arg) {}
-	};
-
-	class unsupported_system: public std::runtime_error {
-
-	public:
-		explicit unsupported_system(const std::string& what_arg): runtime_error(what_arg) {}
-		explicit unsupported_system(const char* what_arg): runtime_error(what_arg) {}
-	};
+	typedef const uint8_t* cuint8_random_iterator;
+	typedef unsigned long listener_id;
 }
-
-#endif //BREEP_EXCEPTIONS_HPP
+#endif //BREEP_NETWORK_TYPEDEFS_HPP

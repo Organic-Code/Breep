@@ -18,9 +18,11 @@
  */
 
 #include <limits>
+#include <vector>
+#include <string>
+#include <array>
 #include <boost/optional.hpp>
 #include <boost/any.hpp>
-
 
 namespace breep { namespace detail {
 
@@ -137,6 +139,6 @@ namespace breep { namespace constant {
 	constexpr detail::unused unused_param{};
 }}
 
-#include "impl/utils.tcc"
+#include "breep/network/detail/impl/utils.tcc"
 
-#endif //BREEP_UTILS_HPP
+#endif //BREEP_NETWORK_DETAIL_UTILS_HPP
