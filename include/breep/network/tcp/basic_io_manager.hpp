@@ -196,12 +196,6 @@ namespace breep { namespace tcp {
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
-
-	// todo externalize
-	typedef basic_io_manager<1024> io_manager;
-	typedef basic_peer_manager<io_manager> peer_manager;
-	typedef basic_peer<io_manager> peer;
-	//typedef basic_network<io_manager> network;
 }}
 
 #include "breep/network/tcp/impl/basic_io_manager.tcc"
