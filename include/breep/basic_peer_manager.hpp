@@ -62,41 +62,41 @@ namespace breep {
 	template <typename io_manager>
 	class basic_peer_manager {
 	public:
-		/**
-		 * Peer type used by this class
-		 */
-		using peernm = basic_peer<io_manager>;
+
+		using inner_io_manager = io_manager;
+		using peer = typename io_manager::peer;
+		using peer_manager = basic_peer_manager<io_manager>;
 
 		static const unsigned short default_port = 3479;
-		using network_command_handler = void (basic_peer_manager<io_manager>::*)(const peernm&, const std::vector<uint8_t>&);
+		using network_command_handler = void (peer_manager::*)(const peer&, const std::vector<uint8_t>&);
 
 		/**
 		 * Type representing a connection listener
-		 * The function should take \em this instance of \em basic_peer_manager<io_manager>,
+		 * The function should take \em this instance of \em peer_manager,
 		 * and the newly connected peer as parameters.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using connection_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& new_peer)>;
+		using connection_listener = std::function<void(peer_manager& network, const peer& new_peer)>;
 
 		/**
 		 * Type representing a data listener.
-		 * The function should take \em this instance of \em basic_peer_manager<io_manager>, the peer that
+		 * The function should take \em this instance of \em peer_manager, the peer that
 		 * sent the data, the data itself, and a boolean (set to true if the data was sent to
 		 * all the network and false if it was sent only to you) as parameter.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using data_received_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& received_from, cuint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
+		using data_received_listener = std::function<void(peer_manager& network, const peer& received_from, cuint8_random_iterator random_iterator, size_t data_size, bool sent_to_all)>;
 
 		/**
 		 * Type representing a disconnection listener.
-		 * The function should take \em this instance of \em basic_peer_manager<io_manager> and the
+		 * The function should take \em this instance of \em peer_manager and the
 		 * disconnected peer as parameter.
 		 *
 	 	 * @since 0.1.0
 		 */
-		using disconnection_listener = std::function<void(breep::basic_peer_manager<io_manager>& network, const peernm& disconnected_peer)>;
+		using disconnection_listener = std::function<void(peer_manager& network, const peer& disconnected_peer)>;
 
 		/**
 		 * @since 0.1.0
@@ -142,13 +142,13 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send_to(const peernm& p, const data_container& data) const;
+		void send_to(const peer& p, const data_container& data) const;
 
 		/**
 		 * @copydoc network::send_to(const peer&, const data_container&) const;
 		 */
 		template <typename data_container>
-		void send_to(const peernm& p, data_container&& data) const;
+		void send_to(const peer& p, data_container&& data) const;
 
 		/**
 		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
@@ -277,7 +277,7 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		const std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>>& peers() const {
+		const std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>& peers() const {
 			return m_peers;
 		}
 
@@ -312,14 +312,14 @@ namespace breep {
 
 	private:
 
-		void peer_connected(peernm&& p);
-		void peer_connected(peernm&& p, unsigned char distance, peernm& bridge);
-		void peer_disconnected(peernm& p);
-		void data_received(const peernm& source, commands command, const std::vector<uint8_t>& data);
+		void peer_connected(peer&& p);
+		void peer_connected(peer&& p, unsigned char distance, peer& bridge);
+		void peer_disconnected(peer& p);
+		void data_received(const peer& source, commands command, const std::vector<uint8_t>& data);
 
-		void update_distance(const peernm& concerned_peer);
+		void update_distance(const peer& concerned_peer);
 
-		void forward_if_needed(const peernm& source, commands command, const std::vector<uint8_t>& data);
+		void forward_if_needed(const peer& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
 			if (m_running)
 				invalid_state("Already running.");
@@ -328,34 +328,34 @@ namespace breep {
 		bool sync_connect_impl(const boost::asio::ip::address address, unsigned short port);
 
 		/* command handlers */
-		void send_to_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void send_to_all_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void forward_to_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void stop_forwarding_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void forwarding_to_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void connect_to_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void cant_connect_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void update_distance_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void retrieve_distance_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void retrieve_peers_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void peers_list_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void peer_disconnection_handler(const peernm& peer, const std::vector<uint8_t>& data);
-		void keep_alive_handler(const peernm&, const std::vector<uint8_t>&) { /* ignored */}
+		void send_to_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void send_to_all_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void forward_to_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void stop_forwarding_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void forwarding_to_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void connect_to_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void cant_connect_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void update_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void retrieve_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void retrieve_peers_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void peers_list_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void peer_disconnection_handler(const peer& peer, const std::vector<uint8_t>& data);
+		void keep_alive_handler(const peer&, const std::vector<uint8_t>&) { /* ignored */}
 
-		void set_master_listener(std::function<void(breep::basic_peer_manager<io_manager>&, const peernm&, char*, size_t, bool)> listener) {
+		void set_master_listener(std::function<void(peer_manager&, const peer&, char*, size_t, bool)> listener) {
 			m_master_listener = listener;
 		}
 
-		std::unordered_map<boost::uuids::uuid, peernm, boost::hash<boost::uuids::uuid>> m_peers;
+		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
-		std::function<void(breep::basic_peer_manager<io_manager>&, const peernm&, char*, size_t, bool)> m_master_listener;
+		std::function<void(peer_manager&, const peer&, char*, size_t, bool)> m_master_listener;
 
 		local_peer<io_manager> m_me;
 		// todo: use .data instead of stringifying it.
 		boost::uuids::string_generator m_uuid_gen;
-		std::vector<std::unique_ptr<peernm>> m_failed_connections;
+		std::vector<std::unique_ptr<peer>> m_failed_connections;
 
 		io_manager m_manager;
 

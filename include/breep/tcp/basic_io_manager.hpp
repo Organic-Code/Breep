@@ -54,7 +54,7 @@ namespace breep { namespace tcp {
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
-		io_manager_data(const std::shared_ptr<boost::asio::ip::tcp::socket>& socket_sptr)
+		explicit io_manager_data(const std::shared_ptr<boost::asio::ip::tcp::socket>& socket_sptr)
 				: socket(socket_sptr)
 				, fixed_buffer(std::make_shared<std::array<uint8_t, BUFFER_LENGTH>>())
 				, dynamic_buffer(std::make_shared<std::vector<uint8_t>>())
@@ -102,7 +102,7 @@ namespace breep { namespace tcp {
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
 
-		using peernm = basic_peer<basic_io_manager<BUFFER_LENGTH>>;
+		using peer = basic_peer<basic_io_manager<BUFFER_LENGTH>>;
 		using data_type = io_manager_data<BUFFER_LENGTH>;
 
 		explicit basic_io_manager(unsigned short port);
@@ -115,14 +115,14 @@ namespace breep { namespace tcp {
 		basic_io_manager<BUFFER_LENGTH>& operator=(const basic_io_manager<BUFFER_LENGTH>&) = delete;
 
 		template <typename Container>
-		void send(commands command, const Container& data, const peernm& peer) const;
+		void send(commands command, const Container& data, const peer& peer) const;
 
 		template <typename InputIterator, typename size_type>
-		void send(commands command, InputIterator begin, size_type size, const peernm& peer) const;
+		void send(commands command, InputIterator begin, size_type size, const peer& peer) const;
 
-		detail::optional<peernm> connect(const boost::asio::ip::address&, unsigned short port);
+		detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port);
 
-		void process_connected_peer(peernm& peer) override;
+		void process_connected_peer(peer& peer) override;
 
 		void disconnect() override;
 
@@ -165,11 +165,11 @@ namespace breep { namespace tcp {
 
 		void owner(basic_peer_manager<basic_io_manager<BUFFER_LENGTH>>* owner) override;
 
-		void process_read(peernm& peer, boost::system::error_code error, std::size_t read);
+		void process_read(peer& peer, boost::system::error_code error, std::size_t read);
 
-		void write(const peernm& peer) const;
+		void write(const peer& peer) const;
 
-		void write_done(const peernm& peer) const;
+		void write_done(const peer& peer) const;
 
 		void accept(boost::system::error_code ec);
 

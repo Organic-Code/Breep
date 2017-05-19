@@ -56,6 +56,7 @@ namespace breep {
 	class basic_network {
 	public:
 
+		using inner_io_manager = io_manager;
 		using peer = basic_peer<io_manager>;
 		using peer_manager = basic_peer_manager<io_manager>;
 		using network = basic_network<io_manager>;
