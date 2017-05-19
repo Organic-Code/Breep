@@ -22,7 +22,7 @@
 #include <boost/any.hpp>
 
 
-namespace breep::detail {
+namespace breep { namespace detail {
 
 	template <typename T>
 	using optional = boost::optional<T>;
@@ -79,7 +79,7 @@ namespace breep::detail {
 
 	template <typename Container>
 	inline void insert_uint16(Container& container, uint16_t uint16) {
-		static_assert(sizeof(typename Container::value_type) == 1);
+		static_assert(sizeof(typename Container::value_type) == 1, "Invalid container type.");
 		container.push_back(static_cast<uint8_t>(uint16 >> 8) & std::numeric_limits<uint8_t>::max());
 		container.push_back(static_cast<uint8_t>(uint16 & std::numeric_limits<uint8_t>::max()));
 	}
@@ -131,11 +131,11 @@ namespace breep::detail {
 
 	template <typename T>
 	bool constexpr is_const_ref = std::is_lvalue_reference<T>::value && std::is_const<typename std::remove_reference<T>::type>::value;
-}
+}}
 
-namespace breep::constant {
+namespace breep { namespace constant {
 	constexpr detail::unused unused_param{};
-}
+}}
 
 #include "impl/utils.tcc"
 

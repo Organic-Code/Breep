@@ -37,12 +37,12 @@
  *  @sa breep::networking_traits
  */
 #define BREEP_DECLARE_TYPE(T) \
-	namespace breep::detail { \
+	namespace breep { namespace detail { \
 		template <> \
 		struct networking_traits_impl<T> { /* If you have an error here, you should probably declare T with BREEP_DECLARE_TEMPLATE instead of BREEP_DECLARE_TYPE*/\
 			const std::string universal_name = std::string(#T); \
 		}; \
-	}
+	}}
 
 /**
  *  @brief Used to declare a templatized class, so that it can be sent through the network. Must be called from the global namespace
@@ -53,7 +53,7 @@
  *  @sa breep::networking_traits
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
-	namespace breep::detail { \
+	namespace breep { namespace detail { \
 	    template <typename... T> \
 	    struct networking_traits_impl<TType<T...>> { \
 			networking_traits_impl(); \
@@ -61,7 +61,7 @@
 	    }; \
 		template <typename... T> /* it's ok if this constructor is not inline */ \
 		networking_traits_impl<TType<T...>>::networking_traits_impl() {}\
-	}
+	}}
 
 namespace breep {
 
@@ -154,7 +154,7 @@ namespace breep {
 		 * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
 		 *       The hashing function was choosen because of its good performance regarding collision avoidance.
 		 */
-		static const uint64_t hash_code() {
+		static uint64_t hash_code() {
 			static const uint64_t hash = detail::hash(universal_name());
 			return hash;
 		}

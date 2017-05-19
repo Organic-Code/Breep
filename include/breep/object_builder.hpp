@@ -27,7 +27,7 @@ namespace breep {
 	class basic_network;
 }
 
-namespace breep::detail {
+namespace breep { namespace detail {
 
 	template <typename io_manager, typename T>
 	class object_builder {
@@ -82,7 +82,7 @@ namespace breep::detail {
 		std::unordered_map<listener_id, data_received_listener<T>> m_listeners;
 		std::mutex m_mutex;
 	};
-}
+}}
 
 
 #endif //BREEP_OBJECT_BUILDER_HPP

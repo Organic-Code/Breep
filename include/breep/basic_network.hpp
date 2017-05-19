@@ -129,6 +129,7 @@ namespace breep {
 		explicit basic_network(unsigned short port_ = peer_manager::default_port)
 				: m_manager(port_)
 				, m_id_count{}
+				, m_unlistened_listener{}
 				, m_co_listeners{}
 				, m_dc_listeners{}
 				, m_data_listeners{}
@@ -495,7 +496,7 @@ namespace breep {
 				}
 				, ptr.get()
 		);
-	};
+	}
 }
 
 

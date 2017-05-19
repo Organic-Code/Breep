@@ -38,7 +38,7 @@ namespace breep {
 	class basic_peer_manager;
 }
 
-namespace breep::tcp {
+namespace breep { namespace tcp {
 
 	/**
 	 * io_manager_data, to be stored in peer<tcp::io_manager>.
@@ -203,7 +203,7 @@ namespace breep::tcp {
 	typedef basic_peer_manager<io_manager> peer_manager;
 	typedef basic_peer<io_manager> peer;
 	//typedef basic_network<io_manager> network;
-}
+}}
 
 #include "impl/basic_io_manager.tcc"
 

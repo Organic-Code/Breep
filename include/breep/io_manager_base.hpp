@@ -26,9 +26,9 @@
 #include "breep/commands.hpp"
 #include "breep/detail/utils.hpp"
 
-namespace boost::asio::ip {
+namespace boost { namespace asio { namespace ip {
 	class address;
-}
+}}}
 
 namespace breep {
 

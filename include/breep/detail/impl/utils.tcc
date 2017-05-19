@@ -17,8 +17,8 @@
 template <typename Container, typename OutputIterator>
 inline void breep::detail::little_endian(const Container& container, OutputIterator outputIterator) {
 	using std::iterator_traits;
-	static_assert(sizeof(typename Container::value_type) == 1);
-	static_assert(sizeof(typename OutputIterator::container_type::value_type) == 1);
+	static_assert(sizeof(typename Container::value_type) == 1, "Invalid container type.");
+	static_assert(sizeof(typename OutputIterator::container_type::value_type) == 1, "Invalid container type.");
 
 #ifdef BOOST_BIG_ENDIAN
 	#ifndef BREEP_NOWARNING

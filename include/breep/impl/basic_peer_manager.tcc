@@ -239,7 +239,7 @@ inline void breep::basic_peer_manager<T>::peer_disconnected(peernm& p) {
 
 template <typename T>
 void breep::basic_peer_manager<T>::data_received(const peernm& source, commands command, const std::vector<uint8_t>& data) {
-	std::invoke(m_command_handlers[static_cast<uint8_t>(command)], *this, source, data);
+	((*this).*(m_command_handlers[static_cast<uint8_t>(command)]))(source, data);
 }
 
 template <typename T>
