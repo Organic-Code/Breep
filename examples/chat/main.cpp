@@ -82,7 +82,10 @@ int main(int argc, char* argv[]) {
 		// connecting to a remote peer.                                           v− address in string format (v4 or v6)
 		boost::asio::ip::address address = boost::asio::ip::address::from_string(argv[2]);
 		//                                                    target port -v
-		peer_manager.connect(address, static_cast<unsigned short>(atoi(argv[3])));
+		if (!peer_manager.connect(address, static_cast<unsigned short>(atoi(argv[3])))) {
+			std::cout << "Connection failed" << std::endl;
+			return 1;
+		}
 	}
 
 

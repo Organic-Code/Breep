@@ -145,12 +145,6 @@ namespace breep {
 		void send_to(const peer& p, const data_container& data) const;
 
 		/**
-		 * @copydoc network::send_to(const peer&, const data_container&) const;
-		 */
-		template <typename data_container>
-		void send_to(const peer& p, data_container&& data) const;
-
-		/**
 		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
 		 */
 		void run();
@@ -166,16 +160,18 @@ namespace breep {
 		 *
 		 * @param address Address of a member
 		 * @param port Target port. Defaults to the local listening port.
+		 * @return true if the connection was successful, false otherwise.
 		 *
 		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 * @note when \em false is returned, the network's thread is not started.
 		 *
 		 * @sa network::connect_sync(const boost::asio::ip::address&)
 		 *
 	 	 * @since 0.1.0
 		 */
-		void connect(boost::asio::ip::address address, unsigned short port);
-		void connect(const boost::asio::ip::address& address) {
-			connect(address, m_port);
+		bool connect(boost::asio::ip::address address, unsigned short port);
+		bool connect(const boost::asio::ip::address& address) {
+			return connect(address, m_port);
 		}
 
 		/**
@@ -273,7 +269,7 @@ namespace breep {
 		bool remove_disconnection_listener(listener_id id);
 
 		/**
-		 * @return The list of connected peers
+		 * @return The list of connected peers (you excluded)
 		 *
 		 * @since 0.1.0
 		 */
@@ -317,6 +313,8 @@ namespace breep {
 
 	private:
 
+		bool try_connect(const boost::asio::ip::address address, unsigned short port);
+
 		void peer_connected(peer&& p);
 		void peer_connected(peer&& p, unsigned char distance, peer& bridge);
 		void peer_disconnected(peer& p);
@@ -329,8 +327,6 @@ namespace breep {
 			if (m_running)
 				invalid_state("Already running.");
 		}
-
-		bool sync_connect_impl(const boost::asio::ip::address address, unsigned short port);
 
 		/* command handlers */
 		void send_to_handler(const peer& peer, const std::vector<uint8_t>& data);

@@ -113,14 +113,22 @@ inline void breep::basic_peer_manager<T>::sync_run() {
 }
 
 template <typename T>
-inline void breep::basic_peer_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
-	require_non_running();
-	std::thread(&peer_manager::sync_connect_impl, this, address, port_).detach();
+inline bool breep::basic_peer_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
+	if (try_connect(address, port_)) {
+		run();
+		return true;
+	} else {
+		return false;
+	}
 }
 
 template <typename T>
 inline bool breep::basic_peer_manager<T>::sync_connect(const boost::asio::ip::address& address, unsigned short port_) {
-	return sync_connect_impl(address, port_);
+	if (try_connect(address, port_)) {
+		sync_run();
+		return true;
+	}
+	return false;
 }
 
 template <typename T>
@@ -180,6 +188,29 @@ inline bool breep::basic_peer_manager<T>::remove_data_listener(listener_id id) {
 }
 
 /* PRIVATE */
+
+template <typename T>
+bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address address, unsigned short port_){
+	/* /!\ todo: what if two peers connect at once on the opposite side of the network? /!\
+	 * (maybe use the ignored commands::successfully_connected command?)
+	 * (care however, as this command is currently being sent > to remove).
+	 */
+	require_non_running();
+	detail::optional<peer> new_peer(m_manager.connect(address, port_));
+	if (new_peer) {
+		breep::logger<peer_manager>.info
+				("Successfully connected to " + new_peer->id_as_string() + "@" + address.to_string() + ":" + std::to_string(port_));
+		boost::uuids::uuid uuid = new_peer->id();
+		peer_connected(std::move(new_peer.get()));
+
+		m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
+		return true;
+	} else {
+		breep::logger<peer_manager>.warning
+				("Connection to " + address.to_string() + ":" + std::to_string(port_) + " failed");
+		return false;
+	}
+}
 
 template <typename T>
 inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
@@ -299,30 +330,6 @@ inline void breep::basic_peer_manager<T>::forward_if_needed(const peer& source, 
 				("Forwarding " + std::to_string(data.size()) + " octets from " + source.id_as_string() + " to " + peer->id_as_string());
 		m_manager.send(command, data, *peer);
 	}
-}
-
-template <typename T>
-bool breep::basic_peer_manager<T>::sync_connect_impl(const boost::asio::ip::address address, unsigned short port_) {
-	/* /!\ todo: what if two peers connect at once on the opposite side of the network? /!\
-	 * (maybe use the ignored commands::successfully_connected command?)
-	 * (care however, as this command is currently being sent > to remove).
-	 */
-	require_non_running();
-	detail::optional<peer> new_peer(m_manager.connect(address, port_));
-	if (new_peer) {
-		breep::logger<peer_manager>.info
-				("Successfully connected to " + new_peer->id_as_string() + address.to_string() + ":" + std::to_string(port_));
-		boost::uuids::uuid uuid = new_peer->id();
-		peer_connected(std::move(new_peer.get()));
-
-		m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
-		sync_run();
-		return true;
-	} else {
-		breep::logger<peer_manager>.warning
-				("Connection to " + address.to_string() + ":" + std::to_string(port_) + " failed");
-		return false;
-	 }
 }
 
 template <typename T>
