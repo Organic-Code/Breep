@@ -76,14 +76,12 @@ inline void breep::basic_peer_manager<T>::send_to_all(const data_container& data
 template <typename T>
 template <typename data_container>
 inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_container& data) const {
-	const std::string& id_string = m_me.id_as_string();
 
 	std::vector<uint8_t> processed_data;
-	processed_data.reserve(data.size() + m_me.id_as_string().size() + 1);
-	processed_data.push_back(static_cast<uint8_t>(id_string.size()));
-	for (size_t i{0} ; i < id_string.size() ; ++i) {
-		processed_data.emplace_back(id_string[i]);
-	}
+	processed_data.reserve(data.size() + m_me.id().size() * 2 + 1);
+	processed_data.push_back(static_cast<uint8_t>(m_me.id().size()));
+	std::copy(m_me.id().data, m_me.id().data + m_me.id().size(), std::back_inserter(processed_data));
+	std::copy(p.id().data, p.id().data + p.id().size(), std::back_inserter(processed_data));
 	std::copy(data.cbegin(), data.cend(), std::back_inserter(processed_data));
 
 	std::vector<uint8_t> sendable_data;
@@ -96,7 +94,7 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 		breep::logger<peer_manager>.trace("Passing through " + m_me.path_to(p)->id_as_string() + " (no direct connection)");
 	}
 
-	m_manager.send(commands::send_to, sendable_data, m_me.path_to(p));
+	m_manager.send(commands::send_to, sendable_data, *m_me.path_to(p));
 }
 
 template <typename T>
@@ -333,28 +331,25 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 	detail::unmake_little_endian(data, processed_data);
 
 	size_t id_size = processed_data[0];
-	std::string id_as_str;
-	id_as_str.reserve(id_size);
-	++id_size;
-	std::copy(processed_data.cbegin() + 1, processed_data.cbegin() + id_size, std::back_inserter(id_as_str));
 
-	boost::uuids::uuid id;
-	std::copy(id_as_str.data(), id_as_str.data() + id_as_str.size(), id.data);
+	boost::uuids::uuid sender_id, target_id;
+	std::copy(processed_data.data() + 1, processed_data.data() + 1 + id_size, sender_id.data);
+	std::copy(processed_data.data() + 1 + id_size, processed_data.data() + 1 + 2 * id_size, target_id.data);
 
-	// FIXME: source is not the original source !
-	if (m_me.id() == id) {
+	if (m_me.id() == target_id) {
 
+		const peer& sender(m_peers.at(sender_id));
 		breep::logger<peer_manager>.debug
-				("Received " + std::to_string(data.size() - id_size) + " octets in a private message from " + source.id_as_string());
+				("Received " + std::to_string(data.size() - id_size) + " octets in a private message from " + sender.id_as_string());
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 		if (m_master_listener) {
 			breep::logger<peer_manager>.trace("Calling master listener");
-			m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()) + id_size, processed_data.size() - id_size, false);
+			m_master_listener(*this, sender, reinterpret_cast<char*>(processed_data.data()) + 1 + 2 * id_size, processed_data.size() - 1 - 2 * id_size, false);
 		}
 		for (auto& l : m_data_r_listener) {
 			try {
 				breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
-				l.second(*this, source, processed_data.data() + id_size, processed_data.size() - id_size, false);
+				l.second(*this, sender, processed_data.data() + 1 + 2 * id_size, processed_data.size() - 1 - 2 * id_size, false);
 			}  catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 			} catch (std::exception* e) {
@@ -363,8 +358,8 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 			}
 		}
 	} else {
-		breep::logger<peer_manager>.trace("Forwarding private message to " + boost::uuids::to_string(id));
-		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(id)));
+		breep::logger<peer_manager>.trace("Forwarding private message to " + boost::uuids::to_string(sender_id));
+		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(sender_id)));
 	}
 }
 
