@@ -50,8 +50,7 @@ breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_inter
 	boost::system::error_code ec;
 	m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
 	if (ec) {
-		std::clog << "IP dual stack is unsupported on your system.\n";
-		std::clog << "Adding ipv4 listener.\n\n";
+		breep::logger<io_manager>.debug("IP dual stack is unsupported on your system. Adding ipv4 listener.");
 	}
 
 }
@@ -146,7 +145,12 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
 	auto endpoint_iterator = resolver.resolve({address.to_string(),std::to_string(port)});
 	boost::asio::ip::tcp::socket socket(m_io_service);
-	boost::asio::connect(socket, endpoint_iterator);
+
+	boost::system::error_code ec;
+	boost::asio::connect(socket, endpoint_iterator, ec);
+	if (ec) {
+		return detail::optional<peer>();
+	}
 
 	boost::asio::write(socket, boost::asio::buffer(io_protocol));
 	std::array<uint8_t, 128> buffer;
@@ -201,7 +205,9 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::disconnect() {
 
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 inline void breep::tcp::basic_io_manager<T,U,V,W>::run() {
+	breep::logger<io_manager>.info("The network is now online.");
 	m_io_service.run();
+	breep::logger<io_manager>.info("The network is now offline.");
 }
 
 /* PRIVATE */

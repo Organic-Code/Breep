@@ -31,7 +31,7 @@ namespace breep {
 		static std::mutex logging_lock{};
 	}
 
-	enum class logging_severity {
+	enum class log_level {
 		trace,
 		debug,
 		info,
@@ -46,7 +46,7 @@ namespace breep {
 		class logger {
 		public:
 
-			logger() : severity{logging_severity::info}
+			logger() : m_level{log_level::info}
 					, tclass{type_traits<T>::universal_name().substr(0, type_traits<T>::universal_name().find('<'))}
 					, hash{}
 			{}
@@ -56,31 +56,31 @@ namespace breep {
 			}
 
 			void trace(const std::string& str) {
-				if (greater_or_equal(logging_severity::trace, severity)) {
+				if (greater_or_equal(log_level::trace, m_level)) {
 					log_impl("(trace)  ", str);
 				}
 			}
 
 			void debug(const std::string& str) {
-				if (greater_or_equal(logging_severity::debug, severity)) {
+				if (greater_or_equal(log_level::debug, m_level)) {
 					log_impl("(debug)  ", str);
 				}
 			}
 
 			void info(const std::string& str) {
-				if (greater_or_equal(logging_severity::info, severity)) {
+				if (greater_or_equal(log_level::info, m_level)) {
 					log_impl("(info)   ", str);
 				}
 			}
 
 			void warning(const std::string& str) {
-				if (greater_or_equal(logging_severity::warning, severity)) {
+				if (greater_or_equal(log_level::warning, m_level)) {
 					log_impl("(warning)", str);
 				}
 			}
 
 			void error(const std::string& str) {
-				if (greater_or_equal(logging_severity::error, severity)) {
+				if (greater_or_equal(log_level::error, m_level)) {
 					log_impl("(error)  ", str);
 				}
 			}
@@ -90,12 +90,16 @@ namespace breep {
 				abort();
 			}
 
-			void set_severity(logging_severity ls) {
-				severity = ls;
+			void level(log_level ll) {
+				m_level = ll;
+			}
+
+			log_level level() {
+				return m_level;
 			}
 
 		private:
-			bool greater_or_equal(logging_severity lhs, logging_severity rhs) {
+			bool greater_or_equal(log_level lhs, log_level rhs) {
 				return static_cast<int>(lhs) >= static_cast<int>(rhs);
 			}
 
@@ -120,7 +124,7 @@ namespace breep {
 
 			}
 
-			logging_severity severity;
+			log_level m_level;
 			std::string tclass;
 			std::hash<std::thread::id> hash;
 		};

@@ -18,6 +18,7 @@
  * @brief convenience header for breep::tcp.
  */
 
+#include <breep/util/type_traits.hpp>
 #include <breep/network/basic_peer.hpp>
 #include <breep/network/basic_network.hpp>
 #include <breep/network/basic_peer.hpp>
@@ -29,6 +30,9 @@ namespace breep { namespace tcp {
 		typedef basic_peer_manager<io_manager> peer_manager;
 		typedef basic_network<io_manager> network;
 }}
-
+BREEP_DECLARE_TYPE(breep::tcp::io_manager)
+BREEP_DECLARE_TYPE(breep::tcp::peer)
+BREEP_DECLARE_TYPE(breep::tcp::peer_manager)
+BREEP_DECLARE_TYPE(breep::tcp::network)
 
 #endif //BREEP_NETWORK_TCP_HPP

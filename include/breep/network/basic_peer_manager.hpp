@@ -25,12 +25,14 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
+#include "breep/util/exceptions.hpp"
+#include "breep/util/type_traits.hpp"
+#include "breep/util/logger.hpp"
 #include "breep/network/typedefs.hpp"
 #include "breep/network/detail/commands.hpp"
-#include "basic_peer.hpp"
-#include "local_peer.hpp"
-#include "io_manager_base.hpp"
-#include "breep/util/exceptions.hpp"
+#include "breep/network/basic_peer.hpp"
+#include "breep/network/local_peer.hpp"
+#include "breep/network/io_manager_base.hpp"
 
 namespace breep {
 
@@ -308,6 +310,11 @@ namespace breep {
 			return m_me;
 		}
 
+		void set_log_level(log_level ll) const {
+			breep::logger<peer_manager>.level(ll);
+			m_manager.set_log_level(ll);
+		}
+
 	private:
 
 		void peer_connected(peer&& p);
@@ -338,7 +345,9 @@ namespace breep {
 		void retrieve_peers_handler(const peer& peer, const std::vector<uint8_t>& data);
 		void peers_list_handler(const peer& peer, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void keep_alive_handler(const peer&, const std::vector<uint8_t>&) { /* ignored */}
+		void keep_alive_handler(const peer& p, const std::vector<uint8_t>&) {
+			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
+		}
 
 		void set_master_listener(std::function<void(peer_manager&, const peer&, char*, size_t, bool)> listener) {
 			m_master_listener = listener;
@@ -410,6 +419,7 @@ namespace breep {
 
 	}
 }
+BREEP_DECLARE_TEMPLATE(breep::basic_peer_manager);
 
 #include "impl/basic_peer_manager.tcc"
 

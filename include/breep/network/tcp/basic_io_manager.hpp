@@ -119,7 +119,11 @@ namespace breep { namespace tcp {
 
 		void disconnect() override;
 
-		void run() override ;
+		void run() override;
+
+		void set_log_level(log_level ll) const override{
+			breep::logger<io_manager>.level(ll);
+		}
 
 	private:
 
@@ -138,6 +142,7 @@ namespace breep { namespace tcp {
 		}
 
 		void keep_alive_impl() {
+			breep::logger<io_manager>.trace("Sending keep_alives");
 			for (const auto& peers_pair : m_owner->peers()) {
 				send(commands::keep_alive, constant::unused_param, peers_pair.second);
 			}
@@ -149,6 +154,7 @@ namespace breep { namespace tcp {
 			std::chrono::milliseconds time_now =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 			for (const auto& peers_pair : m_owner->peers()) {
 				if (time_now - peers_pair.second.io_data->timestamp > std::chrono::milliseconds(timeout_millis)) {
+					breep::logger<io_manager>.trace(peers_pair.second.id_as_string() + " timed out");
 					peers_pair.second.io_data->socket.close();
 				}
 			}

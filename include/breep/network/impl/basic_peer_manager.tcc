@@ -61,9 +61,14 @@ inline void breep::basic_peer_manager<T>::send_to_all(const data_container& data
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(data, sendable_data);
 
+	breep::logger<peer_manager>.debug("Sending " + std::to_string(data.size()) + " octets");
 	for (const std::pair<boost::uuids::uuid, peer>& pair : m_peers) {
 		if (pair.second.distance() == 0) {
+			breep::logger<peer_manager>.trace("Sending to " + pair.second.id_as_string());
 			m_manager.send(commands::send_to_all, sendable_data, pair.second);
+		} else {
+			breep::logger<peer_manager>.trace
+					("Expecting another peer to forward to " + pair.second.id_as_string() + " (no direct connection)");
 		}
 	}
 }
@@ -83,6 +88,14 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(processed_data, sendable_data);
+
+	breep::logger<peer_manager>.debug("Sending private packet to " + p.id_as_string());
+	breep::logger<peer_manager>.debug("(" + std::to_string(data.size()) + " octets)");
+
+	if (p.distance() != 0) {
+		breep::logger<peer_manager>.trace("Passing through " + m_me.path_to(p)->id_as_string() + " (no direct connection)");
+	}
+
 	m_manager.send(commands::send_to, sendable_data, m_me.path_to(p));
 }
 
@@ -95,6 +108,7 @@ inline void breep::basic_peer_manager<T>::run() {
 template <typename T>
 inline void breep::basic_peer_manager<T>::sync_run() {
 	require_non_running();
+	breep::logger<peer_manager>.info("Starting the network.");
 	m_running = true;
 	m_manager.run();
 	m_running = false;
@@ -113,6 +127,8 @@ inline bool breep::basic_peer_manager<T>::sync_connect(const boost::asio::ip::ad
 
 template <typename T>
 void breep::basic_peer_manager<T>::disconnect() {
+
+	breep::logger<peer_manager>.info("Shutting the network off.");
 	m_manager.disconnect();
 
 	m_peers.clear();
@@ -122,37 +138,46 @@ void breep::basic_peer_manager<T>::disconnect() {
 
 template <typename T>
 inline breep::listener_id breep::basic_peer_manager<T>::add_connection_listener(connection_listener listener) {
+	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	m_co_listener.emplace(m_id_count, listener);
+	breep::logger<peer_manager>.trace("Adding connection listener (id: " + std::to_string(m_id_count) + ")");
 	return m_id_count++;
 }
 
 template <typename T>
 inline breep::listener_id breep::basic_peer_manager<T>::add_data_listener(data_received_listener listener){
+	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 	m_data_r_listener.emplace(m_id_count, listener);
+	breep::logger<peer_manager>.trace("Adding data listener (id: " + std::to_string(m_id_count) + ")");
 	return m_id_count++;
 }
 
 template <typename T>
 inline breep::listener_id breep::basic_peer_manager<T>::add_disconnection_listener(disconnection_listener listener){
+	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
 	m_dc_listener.emplace(m_id_count, listener);
+	breep::logger<peer_manager>.trace("Adding disconnection listener (id: " + std::to_string(m_id_count) + ")");
 	return m_id_count++;
 }
 
 template <typename T>
 inline bool breep::basic_peer_manager<T>::remove_connection_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
+	breep::logger<peer_manager>.trace("Removing connection listener (id: " + std::to_string(m_id_count) + ")");
 	return m_co_listener.erase(id) > 0;
 }
 
 template <typename T>
 inline bool breep::basic_peer_manager<T>::remove_disconnection_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
+	breep::logger<peer_manager>.trace("Removing disconnection listener (id: " + std::to_string(m_id_count) + ")");
 	return m_dc_listener.erase(id) > 0;
 }
 
 template <typename T>
 inline bool breep::basic_peer_manager<T>::remove_data_listener(listener_id id) {
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+	breep::logger<peer_manager>.trace("Removing data listener (id: " + std::to_string(m_id_count) + ")");
 	return m_data_r_listener.erase(id) > 0;
 }
 
@@ -173,9 +198,12 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
 	new_peer.distance(0);
 	m_manager.process_connected_peer(new_peer);
 
+	breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(id) + " connected");
+
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	for(auto& l : m_co_listener) {
 		try {
+			breep::logger<peer_manager>.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
@@ -200,9 +228,12 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 	new_peer.distance(distance);
 	m_manager.process_connected_peer(new_peer);
 
+	breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(id) + " connected");
+
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
 	for(auto& l : m_co_listener) {
 		try {
+			breep::logger<peer_manager>.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
@@ -217,15 +248,14 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 
 template <typename T>
 inline void breep::basic_peer_manager<T>::peer_disconnected(peer& p) {
-	m_me.path_to_passing_by().erase(p.id());
-	m_me.bridging_from_to().erase(p.id());
-
-	m_peers.erase(p.id());
-
 	p.distance(std::numeric_limits<unsigned char>::max());
+
+	breep::logger<peer_manager>.info("Peer " + p.id_as_string() + " disconnected");
+
 	std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
 	for(auto& l : m_dc_listener) {
 		try {
+			breep::logger<peer_manager>.trace("Calling disconnection listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
@@ -234,6 +264,10 @@ inline void breep::basic_peer_manager<T>::peer_disconnected(peer& p) {
 			delete e;
 		}
 	}
+	m_me.path_to_passing_by().erase(p.id());
+	m_me.bridging_from_to().erase(p.id());
+
+	m_peers.erase(p.id());
 }
 
 template <typename T>
@@ -252,7 +286,7 @@ void breep::basic_peer_manager<T>::update_distance(const peer& concerned_peer) {
 	std::vector<uint8_t> sendable;
 	detail::make_little_endian(data, sendable);
 	for (const auto& peer : m_peers) {
-		if (peer.second.distance() == 0) {
+		if (peer.second.distance() == 0 && peer.second.id() != concerned_peer.id()) {
 			m_manager.send(commands::update_distance, sendable, peer.second);
 		}
 	}
@@ -263,6 +297,8 @@ template <typename T>
 inline void breep::basic_peer_manager<T>::forward_if_needed(const peer& source, commands command, const std::vector<uint8_t>& data) {
 	const std::vector<const peer*>& peers =	m_me.bridging_from_to().at(source.id());
 	for (const peer* peer : peers) {
+		breep::logger<peer_manager>.trace
+				("Forwarding " + std::to_string(data.size()) + " octets from " + source.id_as_string() + " to " + peer->id_as_string());
 		m_manager.send(command, data, *peer);
 	}
 }
@@ -276,6 +312,8 @@ bool breep::basic_peer_manager<T>::sync_connect_impl(const boost::asio::ip::addr
 	require_non_running();
 	detail::optional<peer> new_peer(m_manager.connect(address, port_));
 	if (new_peer) {
+		breep::logger<peer_manager>.info
+				("Successfully connected to " + new_peer->id_as_string() + address.to_string() + ":" + std::to_string(port_));
 		boost::uuids::uuid uuid = new_peer->id();
 		peer_connected(std::move(new_peer.get()));
 
@@ -283,8 +321,10 @@ bool breep::basic_peer_manager<T>::sync_connect_impl(const boost::asio::ip::addr
 		sync_run();
 		return true;
 	} else {
+		breep::logger<peer_manager>.warning
+				("Connection to " + address.to_string() + ":" + std::to_string(port_) + " failed");
 		return false;
-	}
+	 }
 }
 
 template <typename T>
@@ -301,13 +341,19 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 	boost::uuids::uuid id;
 	std::copy(id_as_str.data(), id_as_str.data() + id_as_str.size(), id.data);
 
+	// FIXME: source is not the original source !
 	if (m_me.id() == id) {
+
+		breep::logger<peer_manager>.debug
+				("Received " + std::to_string(data.size() - id_size) + " octets in a private message from " + source.id_as_string());
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 		if (m_master_listener) {
+			breep::logger<peer_manager>.trace("Calling master listener");
 			m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()) + id_size, processed_data.size() - id_size, false);
 		}
 		for (auto& l : m_data_r_listener) {
 			try {
+				breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
 				l.second(*this, source, processed_data.data() + id_size, processed_data.size() - id_size, false);
 			}  catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
@@ -317,6 +363,7 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 			}
 		}
 	} else {
+		breep::logger<peer_manager>.trace("Forwarding private message to " + boost::uuids::to_string(id));
 		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(id)));
 	}
 }
@@ -329,12 +376,17 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 	std::vector<uint8_t> processed_data;
 	detail::unmake_little_endian(data, processed_data);
 
+	breep::logger<peer_manager>.debug
+			("Received " + std::to_string(data.size()) + " from " + source.id_as_string());
+
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 	if (m_master_listener) {
+		breep::logger<peer_manager>.trace("Calling master listener");
 		m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()), processed_data.size(), false);
 	}
 	for (auto& l : m_data_r_listener) {
 		try {
+			breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, source, processed_data.data(), processed_data.size(), true);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << '\n';
@@ -356,6 +408,8 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 	peer& target = m_peers.at(uuid);
 	m_me.bridging_from_to().at(uuid).push_back(&source);
 	m_me.bridging_from_to().at(source.id()).push_back(&target);
+
+	breep::logger<peer_manager>.trace("Now forwarding between " + boost::uuids::to_string(uuid) + " and " + source.id_as_string());
 
 	std::vector<uint8_t> ldata;
 	unsigned char dist = source.distance();
@@ -448,14 +502,17 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 		buff2.push_back(ldata[i++]);
 	}
 
+	breep::logger<peer_manager>.debug("Connecting to " + boost::uuids::to_string(id) + "@" + buff2 + ":" + std::to_string(remote_port));
 	detail::optional<peer> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), remote_port));
 
 	ldata.clear();
 	detail::make_little_endian(buff, ldata);
 
 	if (p && p->id() == id) {
+		breep::logger<peer_manager>.trace("Connection successful");
 		peer_connected(std::move(p.get()));
 	} else {
+		breep::logger<peer_manager>.trace("Connection failed. Requesting a forwarding.");
 		m_manager.send(commands::forward_to, ldata, source);
 	}
 }
@@ -540,6 +597,7 @@ void breep::basic_peer_manager<T>::retrieve_distance_handler(const peer& source,
 	unsigned char dist = m_peers.at(uuid).distance();
 	std::vector<uint8_t> ldata;
 	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(uuid.data, uuid.data + uuid.size()), ldata);
+	breep::logger<peer_manager>.trace("Sending distances to " + source.id_as_string());
 	m_manager.send(commands::update_distance, ldata, source);
 }
 
@@ -568,6 +626,7 @@ void breep::basic_peer_manager<T>::retrieve_peers_handler(const peer& source, co
 
 	std::vector<uint8_t> ldata;
 	detail::make_little_endian(ans, ldata);
+	breep::logger<peer_manager>.trace("Sending peers list to " + source.id_as_string());
 	m_manager.send(commands::peers_list, ldata, source);
 }
 

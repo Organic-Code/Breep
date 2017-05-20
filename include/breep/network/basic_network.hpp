@@ -19,6 +19,7 @@
 
 #include <sstream>
 #include <utility>
+#include <tuple>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/iostreams/device/array.hpp>
@@ -35,7 +36,8 @@ namespace breep {
 
 	namespace detail {
 		template <typename T, typename U>
-		auto make_obj_pair(std::shared_ptr<object_builder<T,U>> ptr);
+		std::tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>
+		make_obj_tuple(std::shared_ptr<object_builder<T, U>> ptr);
 	}
 
 	/**
@@ -82,8 +84,8 @@ namespace breep {
 		/**
 		 * Type representing a data listener.
 		 * The function should take an instance of \em basic_network<io_manager>, the peer that
-		 * sent the data, the data itself, and a boolean (set to true if the data was sent to
-		 * all the network and false if it was sent only to you) as parameter.
+		 * sent the data, the data itself, and a boolean (set to true if the data was sent only
+		 * to true and set to false if the data was sent to all the network) as parameter.
 		 *
 		 * @note for now, you may take a T, const T, const T& or T& type as parameter, but this may be removed in the future (letting only const T&)
 		 *
@@ -94,7 +96,7 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		template <typename T>
-		using data_received_listener = std::function<void(network& network, const network::peer& received_from, const T& data, bool sent_to_all)>;
+		using data_received_listener = std::function<void(network& network, const network::peer& received_from, const T& data, bool is_private)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -124,6 +126,7 @@ namespace breep {
 		 * internally used.
 		 */
 		using object_builder_caller = std::function<bool(network& network, const peer& received_from, boost::archive::binary_iarchive& data, bool sent_to_all)>;
+		using object_builder_log_level = std::function<void(log_level ll)>;
 
 		/**
 		 * @since 0.1.0
@@ -180,6 +183,7 @@ namespace breep {
 			}
 			boost::archive::binary_oarchive ar(oss, boost::archive::no_header);
 			ar << data;
+			breep::logger<network>.info("Sending " + type_traits<Serialiseable>::universal_name());
 			m_manager.send_to_all(oss.str());
 		}
 
@@ -199,8 +203,15 @@ namespace breep {
 		template <typename Serialiseable>
 		void send_object_to(const peer& p, Serialiseable data) const {
 			std::ostringstream oss;
+			uint64_t hash_code = type_traits<Serialiseable>::hash_code();
+			uint8_t* hash_8b = reinterpret_cast<uint8_t*>(&hash_code);
+
+			for (uint_fast8_t i{sizeof(uint64_t) / sizeof(uint8_t)} ; i-- ;) {
+				oss << *(hash_8b + i);
+			}
 			boost::archive::binary_oarchive ar(oss, boost::archive::no_header);
 			ar << data;
+			breep::logger<network>.info("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
 			m_manager.send_to(p, oss.str());
 		}
 
@@ -283,6 +294,8 @@ namespace breep {
 	 	 * @since 0.1.0
 		 */
 		listener_id add_connection_listener(connection_listener listener) {
+			std::lock_guard<std::mutex> lock_guard(m_connection_mutex);
+			breep::logger<network>.debug("Adding connection listener (id: " + std::to_string(m_id_count) + ")");
 			m_co_listeners.emplace(m_id_count, listener);
 			return m_id_count++;
 		}
@@ -303,6 +316,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		listener_id add_disconnection_listener(disconnection_listener listener) {
+			std::lock_guard<std::mutex> lock_guard(m_disconnection_mutex);
+			breep::logger<network>.debug("Adding disconnection listener (id: " + std::to_string(m_id_count) + ")");
 			m_dc_listeners.emplace(m_id_count, listener);
 			return m_id_count++;
 		}
@@ -318,6 +333,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		bool remove_connection_listener(listener_id id) {
+			std::lock_guard<std::mutex> lock_guard(m_connection_mutex);
+			breep::logger<network>.debug("Removing connection listener (id: " + std::to_string(m_id_count) + ")");
 			return m_co_listeners.erase(id) > 0;
 		}
 
@@ -332,11 +349,13 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		bool remove_disconnection_listener(listener_id id) {
+			std::lock_guard<std::mutex> lock_guard(m_disconnection_mutex);
+			breep::logger<network>.debug("Removing disconnection listener (id: " + std::to_string(m_id_count) + ")");
 			return m_dc_listeners.erase(id) > 0;
 		}
 
 		/**
-		 * @return The list of connected peers
+		 * @return The list of connected peers (you excluded)
 		 *
 		 * @attention Accessing a value from this map from a thread other that the network's thread (accessible through listeners) is NOT safe.
 		 *
@@ -388,12 +407,13 @@ namespace breep {
 
 			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
+				breep::logger<network>.debug("New type being registered for listening: " + type_traits<T>::universal_name());
 				std::shared_ptr<detail::object_builder<io_manager,T>> builder_ptr = std::make_shared<detail::object_builder<io_manager, T>>();
-				m_data_listeners.emplace(type_traits<T>::hash_code(), detail::make_obj_pair(builder_ptr));
-
+				m_data_listeners.emplace(type_traits<T>::hash_code(), detail::make_obj_tuple(builder_ptr));
+				builder_ptr->set_log_level(logger<network>.level());
 				return builder_ptr->add_listener(m_id_count++, listener);
 			} else {
-				auto builder_ptr = detail::any_cast<detail::object_builder<io_manager,T>*>(associated_listener->second.second);
+				auto builder_ptr = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<2>(associated_listener->second));
 				return builder_ptr->add_listener(m_id_count++, listener);
 			}
 		}
@@ -414,9 +434,11 @@ namespace breep {
 		bool remove_data_listener(listener_id id) {
 			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
+				breep::logger<network>.warning
+						("Trying to remove a listener of type " + type_traits<T>::universal_name() + " that was not registered. (listener id: " + std::to_string(id) + ")");
 				return false;
 			} else {
-				auto builder = detail::any_cast<detail::object_builder<io_manager,T>*>(associated_listener->second.second);
+				auto builder = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<2>(associated_listener->second));
 				return builder->remove_listener(id);
 			}
 		}
@@ -427,6 +449,17 @@ namespace breep {
 		 */
 		void set_unlistened_type_listener(unlistened_type_listener listener) {
 			m_unlistened_listener = listener;
+		}
+
+		/**
+		 * @brief sets the logging level
+		 */
+		void set_log_level(log_level ll) const {
+			breep::logger<network>.level(ll);
+			m_manager.set_log_level(ll);
+			for (auto& pair : m_data_listeners) {
+				std::get<1>(pair.second)(ll);
+			}
 		}
 
 	private:
@@ -442,11 +475,15 @@ namespace breep {
 
 			auto associated_listener = m_data_listeners.find(hash_code);
 			if (associated_listener != m_data_listeners.end()) {
-				if (!associated_listener->second.first(*this, source, archive, sent_to_all)) {
+				if (!std::get<0>(associated_listener->second)(*this, source, archive, sent_to_all) && m_unlistened_listener) {
+					breep::logger<network>.trace("calling default listener.");
 					m_unlistened_listener(*this, source, archive, sent_to_all, hash_code);
 				}
 			} else if (m_unlistened_listener){
+				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code) + ". Calling default listener.");
 				m_unlistened_listener(*this, source, archive, sent_to_all, hash_code);
+			} else {
+				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code));
 			}
 		}
 
@@ -458,22 +495,25 @@ namespace breep {
 
 		std::unordered_map<listener_id, connection_listener> m_co_listeners;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listeners;
-		std::unordered_map<uint64_t, std::pair<object_builder_caller, detail::any>> m_data_listeners;
+		std::unordered_map<uint64_t, std::tuple<object_builder_caller, object_builder_log_level, detail::any>> m_data_listeners;
 
 		std::mutex m_connection_mutex;
 		std::mutex m_disconnection_mutex;
 	};
 
 	template <typename T, typename U>
-	auto detail::make_obj_pair(std::shared_ptr<object_builder<T,U>> ptr) {
-		return std::make_pair<typename basic_network<T>::object_builder_caller, detail::any>(
+	std::tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>
+	detail::make_obj_tuple(std::shared_ptr<object_builder<T, U>> ptr) {
+		return std::make_tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>(
 				[ptr](basic_network<T>& net, const typename basic_network<T>::peer& p, boost::archive::binary_iarchive& ar, bool sta) -> bool {
 					return ptr->build_and_call(net, p, ar, sta);
-				}
-				, ptr.get()
-		);
+				},
+		        [obj_ptr = ptr.get()] (log_level ll) -> void {
+					obj_ptr->set_log_level(ll);
+				},
+				ptr.get());
 	}
 }
-
+BREEP_DECLARE_TEMPLATE(breep::basic_network);
 
 #endif //BREEP_NETWORK_BASIC_NETWORK_HPP

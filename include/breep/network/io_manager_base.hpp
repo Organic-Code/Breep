@@ -22,6 +22,7 @@
 
 #include <boost/asio/ip/address.hpp>
 
+#include "breep/util/type_traits.hpp"
 #include "breep/network/detail/commands.hpp"
 #include "breep/network/detail/utils.hpp"
 
@@ -30,6 +31,8 @@ namespace boost { namespace asio { namespace ip {
 }}}
 
 namespace breep {
+
+	enum class log_level;
 
 	template <typename T>
 	class basic_peer_manager;
@@ -112,6 +115,11 @@ namespace breep {
 		 */
 		virtual void run() = 0;
 
+		/**
+		 * @brief sets the logging level.
+		 */
+		virtual void set_log_level(log_level) const = 0;
+
 	protected:
 
 		/**
@@ -129,5 +137,6 @@ namespace breep {
 		friend class basic_peer_manager<io_manager>;
 	};
 }
+BREEP_DECLARE_TEMPLATE(breep::io_manager_base);
 
 #endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP
