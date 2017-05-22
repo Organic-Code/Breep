@@ -34,6 +34,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	, m_co_mutex{}
 	, m_dc_mutex{}
 	, m_data_mutex{}
+	, m_thread{nullptr}
 
 {
 	static_assert(std::is_base_of<breep::io_manager_base<T>, T>::value, "Specified type not derived from breep::io_manager_base");
@@ -100,7 +101,10 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 template <typename T>
 inline void breep::basic_peer_manager<T>::run() {
 	require_non_running();
-	std::thread(&peer_manager::sync_run, this).detach();
+	if (m_thread.get() != nullptr) {
+		m_thread->join();
+	}
+	m_thread = std::make_unique<std::thread>(&peer_manager::sync_run, this);
 }
 
 template <typename T>
@@ -436,6 +440,8 @@ void breep::basic_peer_manager<T>::stop_forwarding_handler(const peer& source, c
 
 	peer& target = m_peers.at(id);
 
+	breep::logger<peer_manager>.trace("Stopping to forward from " + source.id_as_string() + " to " + target.id_as_string());
+
 	std::vector<const peer*>& v = m_me.bridging_from_to().at(id);
 	auto it = std::find(v.begin(), v.end(), &source); // keeping a vector because this code is unlikely to be called.
 	if (it != v.end()) {
@@ -554,6 +560,7 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 	try {
 		peer& p = m_peers.at(uuid);
 		if (p.distance() > distance) {
+			breep::logger<peer_manager>.trace("Found a better path for " + p.id_as_string() + " (through " + source.id_as_string() + ")");
 			std::vector<uint8_t> peer_id;
 			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
@@ -566,7 +573,7 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 			}
 		}
 	} catch (std::out_of_range&) {
-		std::unique_ptr<peer>* p = nullptr;
+		std::unique_ptr<peer>* p(nullptr);
 		size_t i{m_failed_connections.size()};
 		while (p == nullptr && i--) {
 			if (m_failed_connections[i]->id() == uuid) {
@@ -576,6 +583,7 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 
 		if (p != nullptr) {
 			std::vector<uint8_t> peer_id;
+			breep::logger<peer_manager>.trace("Path to " + (*p)->id_as_string() + " found (through " + source.id_as_string() + ")");
 			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
 			std::vector<uint8_t> sendable;
@@ -634,6 +642,9 @@ void breep::basic_peer_manager<T>::retrieve_peers_handler(const peer& source, co
 
 template <typename T>
 void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, const std::vector<uint8_t>& data) {
+
+	breep::logger<peer_manager>.trace("Received a list of peers. Scanning through it.");
+
 	std::vector<uint8_t> ldata;
 	detail::unmake_little_endian(data, ldata);
 	size_t peers_nbr(ldata[0] << 8 | ldata[1]);

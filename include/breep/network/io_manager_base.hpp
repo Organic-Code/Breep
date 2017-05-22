@@ -137,6 +137,6 @@ namespace breep {
 		friend class basic_peer_manager<io_manager>;
 	};
 }
-BREEP_DECLARE_TEMPLATE(breep::io_manager_base);
+BREEP_DECLARE_TEMPLATE(breep::io_manager_base)
 
 #endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP

@@ -117,6 +117,11 @@ namespace breep {
 		 */
 		explicit basic_peer_manager(io_manager&& manager, unsigned short port = default_port) noexcept;
 
+		~basic_peer_manager() {
+			disconnect();
+			join();
+		}
+
 		/**
 		 * @brief Sends data to all members of the network
 		 * @tparam data_container Type representing data. Exact definition
@@ -146,11 +151,21 @@ namespace breep {
 
 		/**
 		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
+		 *
+		 * @throws invalid_state if the peer_manager is already running.
+		 *
+		 * @attention if the network was previously started, shot down, and that ::run() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 */
 		void run();
 
 		/**
 		 * Starts a new network. Same as run(), excepts it is a blocking method.
+		 *
+		 * @throws invalid_state if the peer_manager is already running.
+		 *
+		 * @attention if the network was previously started, shot down, and that ::sync_run() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 */
 		void sync_run();
 
@@ -162,8 +177,11 @@ namespace breep {
 		 * @param port Target port. Defaults to the local listening port.
 		 * @return true if the connection was successful, false otherwise.
 		 *
-		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 * @throws invalid_state when trying to connect to a network if the peer_manager is already running.
 		 * @note when \em false is returned, the network's thread is not started.
+		 *
+		 * @attention if the network was previously started, shot down, and that ::connect() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 *
 		 * @sa network::connect_sync(const boost::asio::ip::address&)
 		 *
@@ -178,7 +196,10 @@ namespace breep {
 		 * @brief Similar to \em network::connect(const boost::asio::ip::address&), but blocks until disconnected from all the network or the connection was not successful.
 		 * @return true if connection was successful, false otherwise
 		 *
-		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 * @attention if the network was previously started, shot down, and that ::sync_connect() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
+		 *
+		 * @throws invalid_state if the peer_manager is already running.
 		 *
 		 * @sa network::connect(const boost::asio::ip::address& address)
 		 *
@@ -311,6 +332,16 @@ namespace breep {
 			m_manager.set_log_level(ll);
 		}
 
+		/**
+		 * @brief Wait until the network stopped
+		 * @details If the network is not launched, retunrs immediately
+		 */
+		void join() {
+			if (m_thread.get() != nullptr && m_thread->joinable()) {
+				m_thread->join();
+			}
+		}
+
 	private:
 
 		bool try_connect(const boost::asio::ip::address address, unsigned short port);
@@ -373,6 +404,8 @@ namespace breep {
 
 		friend class detail::peer_manager_attorney<io_manager>;
 		friend class detail::peer_manager_master_listener<io_manager>;
+
+		std::unique_ptr<std::thread> m_thread;
 	};
 
 
@@ -415,7 +448,7 @@ namespace breep {
 
 	}
 }
-BREEP_DECLARE_TEMPLATE(breep::basic_peer_manager);
+BREEP_DECLARE_TEMPLATE(breep::basic_peer_manager)
 
 #include "impl/basic_peer_manager.tcc"
 

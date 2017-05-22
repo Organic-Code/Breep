@@ -26,9 +26,11 @@
 
 namespace breep {
 
-	namespace {
-		static const auto start_time = std::chrono::high_resolution_clock::now();
-		static std::mutex logging_lock{};
+	namespace detail {
+		namespace logger_cst {
+			static const auto start_time = std::chrono::high_resolution_clock::now();
+			static std::mutex logging_lock{};
+		}
 	}
 
 	enum class log_level {
@@ -37,7 +39,8 @@ namespace breep {
 		info,
 		warning,
 		error,
-		fatal
+		fatal,
+		none
 	};
 
 	namespace detail {
@@ -46,7 +49,7 @@ namespace breep {
 		class logger {
 		public:
 
-			logger() : m_level{log_level::info}
+			logger() : m_level{log_level::warning}
 					, tclass{type_traits<T>::universal_name().substr(0, type_traits<T>::universal_name().find('<'))}
 					, hash{}
 			{}
@@ -86,7 +89,9 @@ namespace breep {
 			}
 
 			void fatal(const std::string& str) {
-				log_impl("(fatal)  ", str);
+				if (greater_or_equal(log_level::fatal, m_level)) {
+					log_impl("(fatal)  ", str);
+				}
 				abort();
 			}
 
@@ -104,12 +109,12 @@ namespace breep {
 			}
 
 			void log_impl(const std::string& level, const std::string& str) {
-				std::lock_guard<std::mutex> lock(logging_lock);
+				std::lock_guard<std::mutex> lock(detail::logger_cst::logging_lock);
 				std::clog << str_base(level) << str << std::endl;
 			}
 
 			std::string str_base(const std::string& str) {
-				auto count = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+				auto count = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - detail::logger_cst::start_time).count();
 				auto h = count / 3600;
 				auto m = (count - h * 3600) / 60;
 				auto s = count % 60;

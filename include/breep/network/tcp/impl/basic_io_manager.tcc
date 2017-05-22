@@ -200,11 +200,11 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_connected_peer(peer& peer) {
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 inline void breep::tcp::basic_io_manager<T,U,V,W>::disconnect() {
 	m_io_service.stop();
-	m_io_service.reset();
 }
 
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 inline void breep::tcp::basic_io_manager<T,U,V,W>::run() {
+	m_io_service.reset();
 	breep::logger<io_manager>.info("The network is now online.");
 	m_io_service.run();
 	breep::logger<io_manager>.info("The network is now offline.");

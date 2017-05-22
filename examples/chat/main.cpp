@@ -9,6 +9,12 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+/**
+ * @file chat/main.cpp
+ * @author Lucas Lazare
+ */
+
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -67,6 +73,9 @@ int main(int argc, char* argv[]) {
 	// taking the local hosting port as parameter.
 	breep::tcp::peer_manager peer_manager(static_cast<unsigned short>(atoi(argv[1])));
 
+	// disabling logging.
+	peer_manager.set_log_level(breep::log_level::none);
+
 	std::cout << "you are " << peer_manager.self().id_as_string() << "." << std::endl;
 
 	// adding listeners. Of course, more listeners could be added.
@@ -92,6 +101,7 @@ int main(int argc, char* argv[]) {
 	std::string ans;
 	while(true) {
 		std::getline(std::cin, ans);
+
 		if (ans == "/q") {
 			std::cout << "Leaving..." << std::endl;
 			peer_manager.disconnect();

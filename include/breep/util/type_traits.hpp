@@ -53,10 +53,14 @@
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
 	namespace breep { namespace detail { \
+		/* If you have an error here, should probably declared you type with\
+            BREEP_DECLARE_TYPE instead of BREEP_DECLARE_TEMPLATE \
+            Note that types that have litterals as template parameters cannot be declared \
+            through this macro. use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
 	    template <typename... T> \
 	    struct networking_traits_impl<TType<T...>> { \
 			networking_traits_impl(); \
-	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; /* if you have an error here, you probably forgot to declare the type T (breep::networking_traits<breep::T>) with BREEP_DECLARE_TYPE(T) or BREEP_DECLARE_TEMPLATE(T). */\
+	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; \
 	    }; \
 		template <typename... T> /* it's ok if this constructor is not inline */ \
 		networking_traits_impl<TType<T...>>::networking_traits_impl() {}\
@@ -143,6 +147,8 @@ namespace breep {
 		 * holds the name of the template class (unmangled), including namespace and template parameters.
 		 */
 		static const std::string& universal_name(){
+			// If you have an error here, you probably forgot to declare the type T with either
+			// BREEP_DECLARE_TYPE or BREEP_DECLARE_TEMPLATE.
 			static const std::string name = detail::networking_traits_impl<T>().universal_name;
 			return name;
 		}

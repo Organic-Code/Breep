@@ -29,8 +29,8 @@
 #include "breep/network/detail/utils.hpp"
 #include "breep/network/detail/object_builder.hpp"
 #include "breep/util/type_traits.hpp"
-#include "basic_peer.hpp"
-#include "basic_peer_manager.hpp"
+#include "breep/network/basic_peer.hpp"
+#include "breep/network/basic_peer_manager.hpp"
 
 namespace breep {
 
