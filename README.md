@@ -11,8 +11,66 @@ Breep is also a high-level library. You don't have to care on when peers connect
 send data, and on how to send your classes. You simply register listeners that get notified when
 peers come and go, when they send you stuff. You may even use serialization and send your own object
 directly through the network. Same goes for your listeners: you don't say 'I want to listen for
-piles of bytes', but instead you say 'I want to listen for this class'.
+piles of bytes', but instead you say 'I want to listen for fancy::MyClass'.
 
+
+### How do I use Breep::network ?
+
+The best way to now it is to read this examples. But as a little preview, here is a small one
+
+Here is how to create a network, start listening on port 1234, and send "Hello!" to any budy that connects:
+```cpp
+BREEP_DECLARE_TYPE(std::string)
+
+void co_listener(breep::tcp::network& network, const breep::tcp::peer& source) {
+	network.send_object_to(source, std::string("Hello!"));
+}
+
+int main() {
+	breep::tcp::network network(1234);
+	network.add_connection_listener(&co_listener);
+	network.sync_awake();
+	return 0;
+}
+```
+The ``BREEP_DECLARE_TYPE`` involved here is to tell breep::network that we will listen/send some std::string s.
+If you forgot to do it, it will result in a compile-time error.
+
+There is how to do the opposite: the network starts listening on port 1233, tries to connect at localhost:1234, prints the first message it sees, then disconnect:
+```cpp
+BREEP_DECLARE_TYPE(std::string)
+
+void data_listener(breep::tcp::netdata_wrapper<std::string>& dw) {
+    std::cout << dw.data << std::endl;
+    dw.network.disconnect();
+}
+
+int main() {
+    breep::tcp::network network(1233);
+    network.add_data_listener<std::string>(&data_listener);
+    if (!network.connect(boost::asio::ip::address_v4::loopback(), 1234)) {
+        std::cout << "Failed to connect.\n";
+        return 1;
+    }
+    network.join();
+    return 0;
+}
+```
+Please don't get confused: there is no UDP in this lib (yet).
+
+
+### Why should I use Breep::network ?
+
+* It's awesome!
+* It's high level: you can directly send and receive objects.
+* The overhead for this is low: if you set up you serialization well, you only have a fixed 64bits extra overhead
+* It's easy to get in: just read the examples, you'll see!
+
+### Why should I NOT Breep::network ?
+
+* It has not been tested as much as it should have been.
+* It's probably broken for BigEndian architecture (I have no way to test this, sorry ; a warning should be displayed on such architectures.)
+* It's very, *very* slow to compile with.
 
 ## License
 
@@ -24,3 +82,7 @@ Extract of article 13 :
 
     All linguistic versions of this Licence, approved by the European Commission, have identical value.
     Parties can take advantage of the linguistic version of their choice.
+
+## Author
+
+[Lucas Lazare](https://github.com/Organic-code), an IT student frustrated from not being able to properly use java's broken network library, and inspired by [KryoNet](https://github.com/EsotericSoftware/kryonet)
