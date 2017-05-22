@@ -333,6 +333,39 @@ namespace breep {
 		}
 
 		/**
+		 * @brief removes all data listeners from the list.
+		 */
+		void clear_data_listeners() {
+			std::lock_guard<std::mutex> lock_guard(m_data_mutex);
+			m_data_r_listener.clear();
+		}
+
+		/**
+		 * @brief removes all connection listeners from the list.
+		 */
+		void clear_connection_listeners() {
+			std::lock_guard<std::mutex> lock_guard(m_co_mutex);
+			m_co_listener.clear();
+		}
+
+		/**
+		 * @brief removes all disconnection listeners from the list.
+		 */
+		void clear_disconnection_listeners() {
+			std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
+			m_dc_listener.clear();
+		}
+
+		/**
+		 * @brief clears all listeners
+		 */
+		void clear_any() {
+			clear_data_listeners();
+			clear_connection_listeners();
+			clear_disconnection_listeners();
+		}
+
+		/**
 		 * @brief Wait until the network stopped
 		 * @details If the network is not launched, retunrs immediately
 		 */

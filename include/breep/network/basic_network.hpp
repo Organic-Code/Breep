@@ -29,21 +29,32 @@
 #include "breep/network/detail/utils.hpp"
 #include "breep/network/detail/object_builder.hpp"
 #include "breep/util/type_traits.hpp"
+#include "breep/network/basic_netdata_wrapper.hpp"
 #include "breep/network/basic_peer.hpp"
 #include "breep/network/basic_peer_manager.hpp"
 
 namespace breep {
 
 	namespace detail {
+		namespace network_cst {
+			const int object = 0;
+			const int caller = 1;
+			const int log_setter = 2;
+			const int listener_rmer = 3;
+		}
+	}
+
+	namespace detail {
 		template <typename T, typename U>
-		std::tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>
+		std::tuple<detail::any, typename basic_network<T>::ob_caller, typename basic_network<T>::ob_log_level, typename basic_network<T>::ob_rm_listener>
 		make_obj_tuple(std::shared_ptr<object_builder<T, U>> ptr);
 	}
+
 
 	/**
 	 * @class basic_network basic_network.hpp
 	 * @brief A advanced basic_peer_manager.
-	 * @detail This class represents and manages the network. It is an advanced version of the basic_peer_manager that
+	 * @details This class represents and manages the network. It is an advanced version of the basic_peer_manager that
 	 *                         allows you to send instanciated objects directly and to register listeners for a specific type.
 	 * @tparam io_manager      Manager used to manage input and ouput operations of (including connection & disconection) the network
 	 *                         This class should inherit from \em breep::network_manager_base
@@ -64,6 +75,9 @@ namespace breep {
 		using peer_manager = basic_peer_manager<io_manager>;
 		using network = basic_network<io_manager>;
 
+		template <typename T>
+		using netdata_wrapper = basic_netdata_wrapper<io_manager, T>;
+
 
 		/**
 		 * Type representing a connection listener
@@ -83,20 +97,18 @@ namespace breep {
 
 		/**
 		 * Type representing a data listener.
-		 * The function should take an instance of \em basic_network<io_manager>, the peer that
-		 * sent the data, the data itself, and a boolean (set to true if the data was sent only
-		 * to true and set to false if the data was sent to all the network) as parameter.
+		 * This function should take a netdata_wrapper as parameter (by reference).
+		 * A netdata_wrappers contains:
+		 *        \em this instance of basic_network<io_manager> (::network)
+		 *        The peer that sent the class (::source)
+		 *        The data itself (::data)
+		 *        A boolean indicating if the data was sent only to you or not (::is_private)
+		 *        The currently called listener id (::listener_id)
 		 *
-		 * @note for now, you may take a T, const T, const T& or T& type as parameter, but this may be removed in the future (letting only const T&)
-		 *
-		 * @sa connection_listener
-		 * @sa disconnection_listener
-		 * @sa unlistened_type_listener
-		 *
-	 	 * @since 0.1.0
+		 * @since 0.1.0
 		 */
 		template <typename T>
-		using data_received_listener = std::function<void(network& network, const network::peer& received_from, const T& data, bool is_private)>;
+		using data_received_listener = std::function<void(netdata_wrapper<T>& data)>;
 
 		/**
 		 * Type representing a disconnection listener.
@@ -125,8 +137,9 @@ namespace breep {
 		/**
 		 * internally used.
 		 */
-		using object_builder_caller = std::function<bool(network& network, const peer& received_from, boost::archive::binary_iarchive& data, bool sent_to_all)>;
-		using object_builder_log_level = std::function<void(log_level ll)>;
+		using ob_caller = std::function<bool(network& network, const peer& received_from, boost::archive::binary_iarchive& data, bool sent_to_all)>;
+		using ob_rm_listener = std::function<bool(listener_id)>;
+		using ob_log_level = std::function<void(log_level ll)>;
 
 		/**
 		 * @since 0.1.0
@@ -140,6 +153,7 @@ namespace breep {
 				, m_data_listeners{}
 				, m_connection_mutex{}
 				, m_disconnection_mutex{}
+				, m_object_builder_mutex{}
 		{
 			m_manager.add_connection_listener([this] (peer_manager&, const peer& np) {
 				std::lock_guard<std::mutex> lock_guard(m_connection_mutex);
@@ -217,6 +231,11 @@ namespace breep {
 
 		/**
 		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
+		 *
+		 * @attention if the network was previously awekened, shot down, and that ::awaken() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
+		 *
+		 * @throws invalid_state if the peer_manager is already running.
 		 */
 		void awake() {
 			m_manager.run();
@@ -237,18 +256,23 @@ namespace breep {
 		 * @param address Address of a member
 		 * @param port Target port. Defaults to the local listening port.
 		 *
-		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 * @return true if the connection was successful, false otherwise.
+		 *
+		 * @attention if the network was previously awekened, shot down, and that ::connect(...) is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
+		 *
+		 * @throws invalid_state if the peer_manager is already running.
 		 *
 		 * @sa network::connect_sync(const boost::asio::ip::address&)
 		 *
 	 	 * @since 0.1.0
 		 */
-		void connect(boost::asio::ip::address address, unsigned short port) {
-			m_manager.connect(std::move(address), port);
+		bool connect(boost::asio::ip::address address, unsigned short port) {
+			return m_manager.connect(std::move(address), port);
 		}
 
-		void connect(const boost::asio::ip::address& address) {
-			m_manager.connect(address);
+		bool connect(const boost::asio::ip::address& address) {
+			return m_manager.connect(address);
 		}
 
 		/**
@@ -256,6 +280,9 @@ namespace breep {
 		 * @return true if connection was successful, false otherwise
 		 *
 		 * @throws invalid_state thrown when trying to connect twice to a network.
+		 *
+		 * @attention if the network was previously started, shot down, and that ::sync_connect() is called before ensuring
+		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 *
 		 * @sa network::connect(const boost::asio::ip::address& address)
 		 *
@@ -403,17 +430,18 @@ namespace breep {
 		 * @sa network::add_connection_listener(connection_listener)
 		 */
 		template <typename T>
-		listener_id add_data_listener(data_received_listener<T> listener) {
+		type_listener_id add_data_listener(data_received_listener<T> listener) {
 
 			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
+				std::lock_guard<std::mutex> lock_guard(m_object_builder_mutex);
 				breep::logger<network>.debug("New type being registered for listening: " + type_traits<T>::universal_name());
 				std::shared_ptr<detail::object_builder<io_manager,T>> builder_ptr = std::make_shared<detail::object_builder<io_manager, T>>();
 				m_data_listeners.emplace(type_traits<T>::hash_code(), detail::make_obj_tuple(builder_ptr));
 				builder_ptr->set_log_level(logger<network>.level());
 				return builder_ptr->add_listener(m_id_count++, listener);
 			} else {
-				auto builder_ptr = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<2>(associated_listener->second));
+				auto builder_ptr = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<detail::network_cst::object>(associated_listener->second));
 				return builder_ptr->add_listener(m_id_count++, listener);
 			}
 		}
@@ -438,8 +466,33 @@ namespace breep {
 						("Trying to remove a listener of type " + type_traits<T>::universal_name() + " that was not registered. (listener id: " + std::to_string(id) + ")");
 				return false;
 			} else {
-				auto builder = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<2>(associated_listener->second));
-				return builder->remove_listener(id);
+				return std::get<detail::network_cst::listener_rmer>(associated_listener->second)(id);
+			}
+		}
+
+		/**
+		 * @brief Removes a listener
+		 * @details Stops the listener from being called
+		 *
+		 * @param id type_listener_id of the concerned listener
+		 * @return true if a listener was removed, false otherwise
+		 *
+		 * @note Unlike ::remove_data_listener(listener_id), this method cannot print the class' name in case of warning.
+		 *       Apart from that, there is no difference.
+		 *
+		 * @note contrary to remove_connection_listener and remove_disconnetion_listener,
+		 *       does NOT result in a dead lock if called from a data_listener in the
+		 *       network's thread.
+		 */
+		bool remove_data_listener(const type_listener_id& id) {
+			auto associated_listener = m_data_listeners.find(id.type_hash());
+			if (associated_listener == m_data_listeners.end()) {
+				breep::logger<network>.warning
+						("Trying to remove a listener unknown type (hash: " + std::to_string(id.type_hash())
+						 + ") that was not registered. (listener id: " + std::to_string(id.id()) + ")");
+				return false;
+			} else {
+				return std::get<detail::network_cst::listener_rmer>(associated_listener->second)(id.id());
 			}
 		}
 
@@ -458,8 +511,45 @@ namespace breep {
 			breep::logger<network>.level(ll);
 			m_manager.set_log_level(ll);
 			for (auto& pair : m_data_listeners) {
-				std::get<1>(pair.second)(ll);
+				std::get<detail::network_cst::log_setter>(pair.second)(ll);
 			}
+		}
+
+		/**
+		 * @brief removes all listeners of the given type
+		 */
+		template <typename T>
+		void clear_all() {
+			auto object_builder = m_data_listeners.find(type_traits<T>::hash_code());
+			if (object_builder != m_data_listeners.end()) {
+				detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<detail::network_cst::object>(object_builder->second))->clear_any();
+			} else {
+				breep::logger<network>.warning("Trying to clean an listener list for a type that was not registered (" + type_traits<T>::universal_name() + ")");
+			}
+		}
+
+		/**
+		 * @brief removes any data/connection/disconnection listeners
+		 * @details Also removes all object builders. As a side effect, all types are considered to never have been
+		 *         registered.
+		 */
+		void clear_any() {
+			breep::logger<network>.debug("Cleaning any listeners");
+
+			m_connection_mutex.lock();
+			m_co_listeners.clear();
+			m_connection_mutex.unlock();
+			m_disconnection_mutex.lock();
+			m_dc_listeners.clear();
+			m_disconnection_mutex.unlock();
+		}
+
+		/**
+		 * @brief Wait until the network stopped
+		 * @details If the network is not launched, retunrs immediately
+		 */
+		void join() {
+			m_manager.join();
 		}
 
 	private:
@@ -473,16 +563,22 @@ namespace breep {
 			boost::iostreams::stream_buffer<boost::iostreams::basic_array_source<char>> buffer(data, data_size - 4);
 			boost::archive::binary_iarchive archive(buffer, boost::archive::no_header);
 
+			m_object_builder_mutex.lock();
 			auto associated_listener = m_data_listeners.find(hash_code);
 			if (associated_listener != m_data_listeners.end()) {
-				if (!std::get<0>(associated_listener->second)(*this, source, archive, sent_to_all) && m_unlistened_listener) {
+				if (!std::get<detail::network_cst::caller>(associated_listener->second)(*this, source, archive, sent_to_all) && m_unlistened_listener) {
+					m_object_builder_mutex.unlock();
 					breep::logger<network>.trace("calling default listener.");
 					m_unlistened_listener(*this, source, archive, sent_to_all, hash_code);
+				} else {
+					m_object_builder_mutex.unlock();
 				}
 			} else if (m_unlistened_listener){
+				m_object_builder_mutex.unlock();
 				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code) + ". Calling default listener.");
 				m_unlistened_listener(*this, source, archive, sent_to_all, hash_code);
 			} else {
+				m_object_builder_mutex.unlock();
 				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code));
 			}
 		}
@@ -495,25 +591,30 @@ namespace breep {
 
 		std::unordered_map<listener_id, connection_listener> m_co_listeners;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listeners;
-		std::unordered_map<uint64_t, std::tuple<object_builder_caller, object_builder_log_level, detail::any>> m_data_listeners;
+		std::unordered_map<uint64_t, std::tuple<detail::any, ob_caller, ob_log_level, ob_rm_listener>> m_data_listeners;
 
 		std::mutex m_connection_mutex;
 		std::mutex m_disconnection_mutex;
+		std::mutex m_object_builder_mutex;
 	};
 
 	template <typename T, typename U>
-	std::tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>
+	std::tuple<detail::any, typename basic_network<T>::ob_caller, typename basic_network<T>::ob_log_level, typename basic_network<T>::ob_rm_listener>
 	detail::make_obj_tuple(std::shared_ptr<object_builder<T, U>> ptr) {
-		return std::make_tuple<typename basic_network<T>::object_builder_caller, typename basic_network<T>::object_builder_log_level, detail::any>(
+		return std::make_tuple<detail::any, typename basic_network<T>::ob_caller, typename basic_network<T>::ob_log_level, typename basic_network<T>::ob_rm_listener>(
+				ptr.get(),
 				[ptr](basic_network<T>& net, const typename basic_network<T>::peer& p, boost::archive::binary_iarchive& ar, bool sta) -> bool {
 					return ptr->build_and_call(net, p, ar, sta);
 				},
 		        [obj_ptr = ptr.get()] (log_level ll) -> void {
 					obj_ptr->set_log_level(ll);
 				},
-				ptr.get());
+		        [obj_ptr = ptr.get()] (listener_id id) -> bool {
+			        return obj_ptr->remove_listener(id);
+		        }
+		);
 	}
 }
-BREEP_DECLARE_TEMPLATE(breep::basic_network);
+BREEP_DECLARE_TEMPLATE(breep::basic_network)
 
 #endif //BREEP_NETWORK_BASIC_NETWORK_HPP

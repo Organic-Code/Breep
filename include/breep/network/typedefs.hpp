@@ -18,10 +18,18 @@
  */
 
 #include <cstdint>
+#include <utility>
 
 namespace breep {
 
 	typedef const uint8_t* cuint8_random_iterator;
 	typedef unsigned long listener_id;
+
+	struct type_listener_id : private std::pair<listener_id, uint64_t> {
+		type_listener_id(listener_id id_, uint64_t type_hash_) : std::pair<listener_id,uint64_t>(id_, type_hash_) {}
+
+		listener_id id() const { return first; }
+		uint64_t type_hash() const { return second; }
+	};
 }
 #endif //BREEP_NETWORK_TYPEDEFS_HPP

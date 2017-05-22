@@ -1,5 +1,5 @@
-#ifndef BREEP_NETWORK_TCP_HPP
-#define BREEP_NETWORK_TCP_HPP
+#ifndef BREEP_NETWORK_BASIC_NETDATA_WRAPPER_HPP
+#define BREEP_NETWORK_BASIC_NETDATA_WRAPPER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -13,31 +13,37 @@
 
 
 /**
- * @file tcp.hpp
+ * @file netdata_network.hpp
  * @author Lucas Lazare
- * @brief convenience header for breep::tcp.
  */
 
-#include <breep/util/type_traits.hpp>
-#include <breep/network/basic_netdata_wrapper.hpp>
-#include <breep/network/basic_peer.hpp>
-#include <breep/network/basic_network.hpp>
-#include <breep/network/basic_peer.hpp>
-#include <breep/network/tcp/basic_io_manager.hpp>
+#include "breep/network/typedefs.hpp"
 
-namespace breep { namespace tcp {
-		typedef basic_io_manager<1024, 5000, 120000, 54000> io_manager;
-		typedef basic_peer<io_manager> peer;
-		typedef basic_peer_manager<io_manager> peer_manager;
-		typedef basic_network<io_manager> network;
+namespace breep {
+	template<typename>
+	class basic_network;
 
-		template <typename T>
-		using netdata_wrapper = basic_netdata_wrapper<io_manager, T>;
-}}
+	template<typename T, typename U>
+	struct basic_netdata_wrapper {
+		basic_netdata_wrapper(basic_network<T>& network_, const typename basic_network<T>::peer& source_, const U& data_, bool is_private_)
+				: network(network_), source(source_), data(data_), is_private(is_private_), listener_id() {}
 
-BREEP_DECLARE_TYPE(breep::tcp::io_manager)
-BREEP_DECLARE_TYPE(breep::tcp::peer)
-BREEP_DECLARE_TYPE(breep::tcp::peer_manager)
-BREEP_DECLARE_TYPE(breep::tcp::network)
 
-#endif //BREEP_NETWORK_TCP_HPP
+		// instance of the network that called you
+		basic_network<T>& network;
+
+		// peer that sent you the data
+		const typename basic_network<T>::peer& source;
+
+		// the data itself
+		const U& data;
+
+		// true if the data was sent only to you, false otherwise
+		const bool is_private;
+
+		// your own listener_id
+		breep::listener_id listener_id;
+	};
+}
+
+#endif // BREEP_NETWORK_BASIC_NETDATA_WRAPPER_HPP
