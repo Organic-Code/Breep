@@ -20,7 +20,6 @@ or has expressed by any other mean his willingness to license under the EUPL.
 
 ## 1. Definitions
 
------------------
 
 In this Licence, the following terms have the following meaning:
 
@@ -49,7 +48,6 @@ In this Licence, the following terms have the following meaning:
 
 ## 2. Scope of the rights granted by the *Licence*
 
------------------------------------------------
 
 The *Licensor* hereby grants *You* a world-wide, royalty-free, non-exclusive, sub-licensable licence to do the following, for the duration of copyright vested in the *Original Work*:
 
@@ -72,7 +70,6 @@ The *Licensor* grants to the *Licensee* royalty-free, non exclusive usage rights
 
 ## 3. *Communication* of the *Source Code*
 
------------------------------------
 
 The *Licensor* may provide the *Work* either in its *Source Code* form, or as *Executable Code*. If the *Work* is provided as *Executable Code*, the *Licensor* provides in addition a machine-readable copy of the *Source Code* of the *Work* along with each copy of the *Work* that the *Licensor* distributes or indicates, in a notice following the copyright notice attached to the *Work*, a repository where the *Source Code* is easily and freely accessible for as long as the *Licensor* continues to distribute and/or communicate the *Work*.
 
@@ -81,7 +78,6 @@ The *Licensor* may provide the *Work* either in its *Source Code* form, or as *E
 
 ## 4. Limitations on copyright
 
---------------------------
 
 Nothing in this Licence is intended to deprive the *Licensee* of the benefits from any exception or limitation to the exclusive rights of the rights owners in the *Original Work* or *Software*, of the exhaustion of those rights or of other applicable limitations thereto.
 
@@ -90,7 +86,6 @@ Nothing in this Licence is intended to deprive the *Licensee* of the benefits fr
 
 ## 5. Obligations of the *Licensee*
 
-------------------------------
 
 The grant of the rights mentioned above is subject to some restrictions and obligations imposed on the *Licensee*. Those obligations are the following:
 
@@ -109,7 +104,6 @@ Legal Protection: This Licence does not grant permission to use the trade names,
 
 ## 6. Chain of Authorship
 
-----------------------
 
 The original *Licensor* warrants that the copyright in the *Original Work* granted hereunder is owned by him/her or licensed to him/her and that he/she has the power and authority to grant the *Licence*.
 
@@ -122,7 +116,6 @@ Each time *You* accept the *Licence*, the original *Licensor* and subsequent *Co
 
 ## 7. Disclaimer of Warranty
 
--------------------------
 
 The *Work* is a work in progress, which is continuously improved by numerous contributors. It is not a finished work and may therefore contain defects or “bugs” inherent to this type of software development.
 
@@ -135,7 +128,6 @@ This disclaimer of warranty is an essential part of the *Licence* and a conditio
 
 ## 8. Disclaimer of Liability
 
---------------------------
 
 Except in the cases of wilful misconduct or damages directly caused to natural persons, the *Licensor* will in no event be liable for any direct or indirect, material or moral, damages of any kind, arising out of the *Licence* or of the use of the *Work*, including without limitation, damages for loss of goodwill, work stoppage, computer failure or malfunction, loss of data or any commercial damage, even if the *Licensor* has been advised of the possibility of such damage. However, the *Licensor* will be liable under statutory product liability laws as far such laws apply to the *Work*.
 
@@ -144,7 +136,6 @@ Except in the cases of wilful misconduct or damages directly caused to natural p
 
 ## 9. Additional agreements
 
-------------------------
 
 While distributing the *Original Work* or *Derivative Works*, *You* may choose to conclude an additional agreement to offer, and charge a fee for, acceptance of support, warranty, indemnity, or other liability obligations and/or services consistent with this Licence. However, in accepting such obligations, *You* may act only on your own behalf and on your sole responsibility, not on behalf of the original *Licensor* or any other *Contributor*, and only if *You* agree to indemnify, defend, and hold each *Contributor* harmless for any liability incurred by, or claims asserted against such *Contributor* by the fact *You* have accepted any such warranty or additional liability.
 
@@ -153,7 +144,6 @@ While distributing the *Original Work* or *Derivative Works*, *You* may choose t
 
 ## 10. Acceptance of the  *Licence*
 
---------------------------------
 
 The provisions of this Licence can be accepted by clicking on an icon “I agree” placed under the bottom of a window displaying the text of this Licence or by affirming consent in any other similar way, in accordance with the rules of applicable law. Clicking on that icon indicates your clear and irrevocable acceptance of this Licence and all of its terms and conditions. 
 
@@ -165,7 +155,6 @@ Similarly, you irrevocably accept this Licence and all of its terms and conditio
 
 ## 11. Information to the public
 
------------------------------
 
 In case of any *Distribution* and/or *Communication* of the *Work* by means of electronic communication by *You* (for example, by offering to download the *Work* from a remote location) the distribution channel or media (for example, a website) must at least provide to the public the information requested by the applicable law regarding the *Licensor*, the *Licence* and the way it may be accessible, concluded, stored and reproduced by the *Licensee*.
 
@@ -174,7 +163,6 @@ In case of any *Distribution* and/or *Communication* of the *Work* by means of e
 
 ## 12. Termination of the *Licence*
 
---------------------------------
 
 The *Licence* and the rights granted hereunder will terminate automatically upon any breach by the *Licensee* of the terms of the *Licence*.
 
@@ -185,7 +173,6 @@ Such a termination will not terminate the licences of any person who has receive
 
 ## 13. Miscellaneous
 
------------------
 
 Without prejudice of Article 9 above, the *Licence* represents the complete agreement between the Parties as to the *Work* licensed hereunder.
 
@@ -200,7 +187,6 @@ All linguistic versions of this *Licence*, approved by the European Commission, 
 
 ## 14. Jurisdiction
 
-----------------
 
 Any litigation resulting from the interpretation of this License, arising between the European Commission, as a *Licensor*, and any *Licensee*, will be subject to the jurisdiction of the Court of Justice of the European Communities, as laid down in article 238 of the Treaty establishing the European Community.
 
@@ -211,7 +197,6 @@ Any litigation arising between Parties, other than the European Commission, and 
 
 ## 15. Applicable Law
 
-------------------
 
 This Licence shall be governed by the law of the European Union country where the *Licensor* resides or has his registered office.
 
