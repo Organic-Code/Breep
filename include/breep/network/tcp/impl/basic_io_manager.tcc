@@ -30,6 +30,13 @@
 #include "breep/util/exceptions.hpp"
 
 
+/**
+ * @file basic_io_manager.tcc
+ * @author Lucas Lazare
+ * @since 0.1.0
+ */
+
+
 template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_millis, unsigned long U, unsigned long timeout_chk_interval>
 breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_interval>::basic_io_manager(unsigned short port)
 		: m_owner(nullptr)

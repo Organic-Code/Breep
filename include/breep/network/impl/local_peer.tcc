@@ -10,6 +10,13 @@
 
 #include "breep/network/local_peer.hpp" // allows my IDE to work
 
+/**
+ * @file local_peer.tcc
+ * @author Lucas Lazare
+ * @since 0.1.0
+ */
+
+
 template <typename T>
 inline const breep::basic_peer<T>*& breep::local_peer<T>::path_to(const basic_peer<T>& p) {
 	return m_path_to_passing_by.at(p.id());

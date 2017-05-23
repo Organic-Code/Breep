@@ -14,6 +14,7 @@
 /**
  * @file peer.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 #include <utility>
@@ -111,14 +112,26 @@ namespace breep {
 			m_port = port;
 		}
 
+		/**
+		 * @return the remote port
+		 * @since 0.1.0
+		 */
 		unsigned short connection_port() const {
 			return m_port;
 		}
 
+		/**
+		 * @return true if the peer is connected, false otherwise
+		 * @since 0.1.0
+		 */
 		bool is_connected() const {
 			return m_distance != std::numeric_limits<unsigned char>::max();
 		}
 
+		/**
+		 * @return a string representation of the id
+		 * @since 0.1.0
+		 */
 		const std::string& id_as_string() const {
 			return m_id_as_string;
 		}

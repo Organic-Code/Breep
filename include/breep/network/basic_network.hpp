@@ -70,6 +70,10 @@ namespace breep {
 	class basic_network {
 	public:
 
+		/**
+		 * convenience typedefs
+		 * @since 0.1.0
+		 */
 		using inner_io_manager = io_manager;
 		using peer = basic_peer<io_manager>;
 		using peer_manager = basic_peer_manager<io_manager>;
@@ -230,19 +234,23 @@ namespace breep {
 		}
 
 		/**
-		 * Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
+		 * @brief Starts a new network on background. It is considered as a network connection (ie: you can't call connect(ip::address)).
 		 *
 		 * @attention if the network was previously awekened, shot down, and that ::awaken() is called before ensuring
 		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 *
 		 * @throws invalid_state if the peer_manager is already running.
+		 *
+		 * @since 0.1.0
 		 */
 		void awake() {
 			m_manager.run();
 		}
 
 		/**
-		 * Starts a new network. Same as run(), excepts it a will blocks until the network is closed.
+		 * @brief Starts a new network. Same as run(), excepts it a will blocks until the network is closed.
+		 *
+		 * @since 0.1.0
 		 */
 		void sync_awake() {
 			m_manager.sync_run();
@@ -271,6 +279,9 @@ namespace breep {
 			return m_manager.connect(std::move(address), port);
 		}
 
+		/**
+		 * @since 0.1.0
+		 */
 		bool connect(const boost::asio::ip::address& address) {
 			return m_manager.connect(address);
 		}
@@ -292,6 +303,9 @@ namespace breep {
 			return m_manager.sync_connect(address, port);
 		}
 
+		/**
+		 * @since 0.1.0
+		 */
 		bool sync_connect(const boost::asio::ip::address& address) {
 			return m_manager.sync_connect(address);
 		}
@@ -405,6 +419,8 @@ namespace breep {
 		 * @brief Changes the port to which the object is mapped
 		 * @param port the new port
 		 * @attention If the port is changed while the network is awake, breep::invalid_state exception is raised.
+		 *
+		 * @since 0.1.0
 		 */
 		void port(unsigned short port) {
 			m_manager.port(port);
@@ -412,6 +428,8 @@ namespace breep {
 
 		/**
 		 * @return A peer representing the local instance on the global network
+		 *
+		 * @since 0.1.0
 		 */
 		const local_peer<io_manager>& self() const {
 			return m_manager.self();
@@ -428,6 +446,8 @@ namespace breep {
 		 * @sa network::remove_data_listener(listener_id)
 		 * @sa network::add_disconnection_listener(disconnection_listener)
 		 * @sa network::add_connection_listener(connection_listener)
+		 *
+		 * @since 0.1.0
 		 */
 		template <typename T>
 		type_listener_id add_data_listener(data_received_listener<T> listener) {
@@ -457,6 +477,8 @@ namespace breep {
 		 * @note contrary to remove_connection_listener and remove_disconnetion_listener,
 		 *       does NOT result in a dead lock if called from a data_listener in the
 		 *       network's thread.
+		 *
+		 * @since 0.1.0
 		 */
 		template <typename T>
 		bool remove_data_listener(listener_id id) {
@@ -483,6 +505,8 @@ namespace breep {
 		 * @note contrary to remove_connection_listener and remove_disconnetion_listener,
 		 *       does NOT result in a dead lock if called from a data_listener in the
 		 *       network's thread.
+		 *
+		 * @since 0.1.0
 		 */
 		bool remove_data_listener(const type_listener_id& id) {
 			auto associated_listener = m_data_listeners.find(id.type_hash());
@@ -499,6 +523,8 @@ namespace breep {
 		/**
 		 * @brief Sets the listener for unlistened types.
 		 * @sa unlistened_type_listener
+		 *
+		 * @since 0.1.0
 		 */
 		void set_unlistened_type_listener(unlistened_type_listener listener) {
 			m_unlistened_listener = listener;
@@ -506,6 +532,8 @@ namespace breep {
 
 		/**
 		 * @brief sets the logging level
+		 *
+		 * @since 0.1.0
 		 */
 		void set_log_level(log_level ll) const {
 			breep::logger<network>.level(ll);
@@ -517,7 +545,9 @@ namespace breep {
 
 		/**
 		 * @brief removes all listeners of the given type
-		 */
+		 *
+		 * @since 0.1.0
+		 */ // TODO test
 		template <typename T>
 		void clear_all() {
 			auto object_builder = m_data_listeners.find(type_traits<T>::hash_code());
@@ -532,7 +562,9 @@ namespace breep {
 		 * @brief removes any data/connection/disconnection listeners
 		 * @details Also removes all object builders. As a side effect, all types are considered to never have been
 		 *         registered.
-		 */
+		 *
+		 * @since 0.1.0
+		 */ // TODO test
 		void clear_any() {
 			breep::logger<network>.debug("Cleaning any listeners");
 
@@ -542,11 +574,14 @@ namespace breep {
 			m_disconnection_mutex.lock();
 			m_dc_listeners.clear();
 			m_disconnection_mutex.unlock();
+			m_data_listeners.clear();
 		}
 
 		/**
 		 * @brief Wait until the network stopped
 		 * @details If the network is not launched, retunrs immediately
+		 *
+		 * @since 0.1.0
 		 */
 		void join() {
 			m_manager.join();

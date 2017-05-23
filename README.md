@@ -33,8 +33,8 @@ int main() {
 	return 0;
 }
 ```
-The ``BREEP_DECLARE_TYPE`` involved here is to tell breep::network that we will listen/send some std::string s.
-If you forgot to do it, it will result in a compile-time error.
+The ``BREEP_DECLARE_TYPE`` involved here is used to tell to breep::network that we will listen/send some std::string*s*.
+If you forget to do it, you will get a compile-time error.
 
 There is how to do the opposite: the network starts listening on port 1233, tries to connect at localhost:1234, prints the first message it sees, then disconnect:
 ```cpp
@@ -63,7 +63,7 @@ Please don't get confused: there is no UDP in this lib (yet).
 
 * It's awesome!
 * It's high level: you can directly send and receive objects.
-* The overhead for this is low: if you set up you serialization well, you only have a fixed 64bits extra overhead
+* The overhead for this is low: if you set up well your serialization, you only have a fixed 64bits extra overhead
 * It's easy to get in: just read the examples, you'll see!
 
 ### Why should I NOT Breep::network ?

@@ -12,6 +12,12 @@
 #include <utility>
 #include <boost/detail/endian.hpp>
 
+/**
+ * @file utils.tcc
+ * @author Lucas Lazare
+ * @since 0.1.0
+ */
+
 template <typename Container, typename OutputIterator>
 inline void breep::detail::little_endian(const Container& container, OutputIterator outputIterator) {
 	using std::iterator_traits;

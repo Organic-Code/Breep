@@ -31,9 +31,10 @@
  *  When calling this macro, You should not explicitly overload a templatized class (ie: std::vector<int>), except for classes templatized by value (ie: std::tuple_element<0, std::tuple<int>>).
  *  Please use BREEP_DECLARE_TEMPLATE instead.
  *
- *  @since 0.1.0
  *  @sa BREEP_DECLARE_TEMPLATE
  *  @sa breep::networking_traits
+ *
+ *  @since 0.1.0
  */
 #define BREEP_DECLARE_TYPE(T) \
 	namespace breep { namespace detail { \
@@ -50,6 +51,8 @@
  *  @attention When using BREEP_DECLARE_TEMPLATE, no template parameter of the passed class must be a value.
  *  @sa BREEP_DECLARE_TYPE
  *  @sa breep::networking_traits
+ *
+ *  @since 0.1.0
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
 	namespace breep { namespace detail { \
@@ -70,6 +73,7 @@ namespace breep {
 
     // define BREEP_MODIFIER_AWARE_IDENTIFIER before including this file if you want modifiers to affect the generated
     // universal_name and hash_code.
+	// since 0.1.0
 #ifdef BREEP_MODIFIER_AWARE_IDENTIFIER
 #define BREEP_REF_STRING " &"
 #define BREEP_PTR_STRING " *"
@@ -90,31 +94,31 @@ namespace breep {
 		template <typename>
 		struct networking_traits_impl {};
 
-		// Partial specialization for references.
+		// Partial specialization for references. (since 0.1.0)
 		template<typename T>
 		struct networking_traits_impl<T&> {
 			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_REF_STRING;
 		};
 
-		// Partial specialization for pointers.
+		// Partial specialization for pointers. (since 0.1.0)
 		template<typename T>
 		struct networking_traits_impl<T*> {
 			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_PTR_STRING;
 		};
 
-		// Partial specialization for const types.
+		// Partial specialization for const types. (since 0.1.0)
 		template<typename T>
 		struct networking_traits_impl<const T> {
 			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_CST_STRING;
 		};
 
-		// Partial specialization for rvalue references.
+		// Partial specialization for rvalue references. (since 0.1.0)
 		template<typename T>
 		struct networking_traits_impl<T&&> {
 			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_RVL_STRING;
 		};
 
-		// Partial specialization for volatile.
+		// Partial specialization for volatile. (since 0.1.0)
 		template<typename T>
 		struct networking_traits_impl<volatile T> {
 			const std::string universal_name = networking_traits_impl<T>().universal_name + BREEP_VLT_STRING;
@@ -140,11 +144,15 @@ namespace breep {
 	 *
 	 * @sa BREEP_DECLARE_TYPE
 	 * @sa BREEP_DECLARE_TEMPLATE
+	 *
+	 * @since 0.1.0
 	 */
 	template <typename T>
 	struct type_traits {
 		/**
 		 * holds the name of the template class (unmangled), including namespace and template parameters.
+		 *
+		 * @since 0.1.0
 		 */
 		static const std::string& universal_name(){
 			// If you have an error here, you probably forgot to declare the type T with either
@@ -158,6 +166,8 @@ namespace breep {
 		 * It is guaranteed that networking_traits<T>::hash_code == networking_traits<U>::hash_code if T == U
 		 * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
 		 *       The hashing function was choosen because of its good performance regarding collision avoidance.
+		 *
+		 * @since 0.1.0
 		 */
 		static uint64_t hash_code() {
 			static const uint64_t hash = detail::hash(universal_name());

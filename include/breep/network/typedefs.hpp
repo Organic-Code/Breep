@@ -28,7 +28,9 @@ namespace breep {
 	struct type_listener_id : private std::pair<listener_id, uint64_t> {
 		type_listener_id(listener_id id_, uint64_t type_hash_) : std::pair<listener_id,uint64_t>(id_, type_hash_) {}
 
+		// id of the listener
 		listener_id id() const { return first; }
+		// hash of the type listened by the listener
 		uint64_t type_hash() const { return second; }
 	};
 }

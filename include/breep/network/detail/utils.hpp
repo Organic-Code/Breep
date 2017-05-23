@@ -15,6 +15,7 @@
 /**
  * @file utils.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 #include <limits>

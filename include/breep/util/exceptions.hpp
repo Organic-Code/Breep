@@ -26,7 +26,7 @@ namespace breep {
 	 * @class invalid_state invalid_state.hpp
 	 * @brief exception thrown whenever a method is called when it shouldn't be
 	 *
-	 * @details thrown by \em breep::network::connect, \em breep::network::connect_sync
+	 * @details thrown by \em breep::network::connect, \em breep::network::sync_connect, \em breep::network::run, \em breep::network::sync_run
 	 *
 	 * @since 0.1.0
 	 */

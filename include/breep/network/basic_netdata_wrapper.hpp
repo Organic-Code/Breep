@@ -15,6 +15,7 @@
 /**
  * @file netdata_network.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 #include "breep/network/typedefs.hpp"
@@ -29,19 +30,34 @@ namespace breep {
 				: network(network_), source(source_), data(data_), is_private(is_private_), listener_id() {}
 
 
-		// instance of the network that called you
+		/**
+		 * @brief contains the instance of the network that called you
+		 * @since 0.1.0
+		 */
 		basic_network<T>& network;
 
-		// peer that sent you the data
+		/**
+		 * @brief contains the peer that sent you the data
+		 * @since 0.1.0
+		 */
 		const typename basic_network<T>::peer& source;
 
-		// the data itself
+		/**
+		 * @brief data that the peer sent you
+		 * @since 0.1.0
+		 */
 		const U& data;
 
-		// true if the data was sent only to you, false otherwise
+		/**
+		 * @brief true if the data was sent only to you, false otherwise
+		 * @since 0.1.0
+		 */
 		const bool is_private;
 
-		// your own listener_id
+		/**
+		 * @brief your own listener id
+		 * @since 0.1.0
+		 */
 		breep::listener_id listener_id;
 	};
 }

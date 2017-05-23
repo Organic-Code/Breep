@@ -15,6 +15,7 @@
 /**
  * @file basic_network.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 #include <mutex>

@@ -69,6 +69,8 @@ namespace breep {
 		 * @param command command of the packet (considered as data)
 		 * @param data data to be sent. It is uppon your responsability to check for endianness.
 		 * @param peer the peer to whom to send the data.
+		 *
+		 * @since 0.1.0
 		 */
 		template <typename data_container>
 		void send(commands command, const data_container& data, const basic_peer<io_manager>& peer) const {
@@ -87,6 +89,8 @@ namespace breep {
 		 * @param begin iterator to the data to be sent. It is uppon your responsability to check for endianness.
 		 * @param size quantity of data to be sent
 		 * @param peer of the peer to whom to send the data.
+		 *
+		 * @since 0.1.0
 		 */
 		template <typename data_iterator, typename  size_type>
 		void send(commands command, data_iterator begin, size_type size, const basic_peer<io_manager>& peer) const {
@@ -97,26 +101,36 @@ namespace breep {
 		 * @brief connects to a peer
 		 *
 		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
+		 *
+		 * @since 0.1.0
 		 */
 		virtual detail::optional<basic_peer<io_manager>> connect(const boost::asio::ip::address&, unsigned short port) = 0;
 
 		/**
 		 * @brief performs any required action after a peer connection.
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void process_connected_peer(basic_peer<io_manager>& peer) = 0;
 
 		/**
 		 * @brief disconnects from the network
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void disconnect() = 0;
 
 		/**
 		 * @brief Network's main thread entry point
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void run() = 0;
 
 		/**
 		 * @brief sets the logging level.
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void set_log_level(log_level) const = 0;
 
@@ -126,11 +140,15 @@ namespace breep {
 		 * @brief sets the port
 		 * 			Will never be called from the owner if the network is active.
 		 * @param port the new port.
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void port(unsigned short port) = 0;
 
 		/**
 		 * @brief sets the owner of the network_manager, ie the object to whom received datas should be redirected.
+		 *
+		 * @since 0.1.0
 		 */
 		virtual void owner(basic_peer_manager<io_manager>* owner) = 0;
 

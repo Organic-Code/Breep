@@ -18,6 +18,14 @@
 
 #include "breep/network/detail/utils.hpp"
 
+
+/**
+ * @file basic_peer_manager.tcc
+ * @author Lucas Lazare
+ * @since 0.1.0
+ */
+
+
 template <typename T>
 breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short port) noexcept
 	: m_peers{}

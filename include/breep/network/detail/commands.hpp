@@ -14,6 +14,7 @@
 /**
  * @file commands.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 
@@ -130,8 +131,16 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		peer_disconnection,
-		// ignored by peer_manager.
+		/**
+		 * @brief ignored by basic_peer_manager [only logging it]
+		 *
+		 * @since 0.1.0
+		 */
 		keep_alive,
+		/**
+		 * @brief never sent
+		 * @since 0.1.0
+		 */
 		null_command
 	};
 }

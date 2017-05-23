@@ -15,6 +15,7 @@
 /**
  * @file network.hpp
  * @author Lucas Lazare
+ * @since 0.1.0
  */
 
 #include <utility>
@@ -156,6 +157,8 @@ namespace breep {
 		 *
 		 * @attention if the network was previously started, shot down, and that ::run() is called before ensuring
 		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
+		 *
+		 * @since 0.1.0
 		 */
 		void run();
 
@@ -166,6 +169,8 @@ namespace breep {
 		 *
 		 * @attention if the network was previously started, shot down, and that ::sync_run() is called before ensuring
 		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
+		 *
+		 * @since 0.1.0
 		 */
 		void sync_run();
 
@@ -311,6 +316,8 @@ namespace breep {
 		 * @brief Changes the port to which the object is mapped
 		 * @param port the new port
 		 * @attention If the port is changed while there are ongoing connections, breep::invalid_state exception is raised.
+		 *
+		 * @since 0.1.0
 		 */
 		void port(unsigned short port) {
 			if (m_port != port) {
@@ -322,6 +329,8 @@ namespace breep {
 
 		/**
 		 * @return a peer representing the local computer on the network.
+		 *
+		 * @since 0.1.0
 		 */
 		const local_peer<io_manager>& self() const {
 			return m_me;
@@ -334,6 +343,8 @@ namespace breep {
 
 		/**
 		 * @brief removes all data listeners from the list.
+		 *
+		 * @since 0.1.0
 		 */
 		void clear_data_listeners() {
 			std::lock_guard<std::mutex> lock_guard(m_data_mutex);
@@ -342,6 +353,8 @@ namespace breep {
 
 		/**
 		 * @brief removes all connection listeners from the list.
+		 *
+		 * @since 0.1.0
 		 */
 		void clear_connection_listeners() {
 			std::lock_guard<std::mutex> lock_guard(m_co_mutex);
@@ -350,6 +363,8 @@ namespace breep {
 
 		/**
 		 * @brief removes all disconnection listeners from the list.
+		 *
+		 * @since 0.1.0
 		 */
 		void clear_disconnection_listeners() {
 			std::lock_guard<std::mutex> lock_guard(m_dc_mutex);
@@ -358,6 +373,8 @@ namespace breep {
 
 		/**
 		 * @brief clears all listeners
+		 *
+		 * @since 0.1.0
 		 */
 		void clear_any() {
 			clear_data_listeners();
@@ -367,7 +384,9 @@ namespace breep {
 
 		/**
 		 * @brief Wait until the network stopped
-		 * @details If the network is not launched, retunrs immediately
+		 * @details If the network is not launched, returns immediately
+		 *
+		 * @since 0.1.0
 		 */
 		void join() {
 			if (m_thread.get() != nullptr && m_thread->joinable()) {

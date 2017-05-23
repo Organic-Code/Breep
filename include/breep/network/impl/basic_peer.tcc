@@ -10,6 +10,12 @@
 
 #include "breep/network/basic_peer.hpp" // allows my IDE to work
 
+/**
+ * @file basic_peer.tcc
+ * @author Lucas Lazare
+ * @since 0.1.0
+ */
+
 template <typename T>
 inline const boost::uuids::uuid& breep::basic_peer<T>::id() const noexcept {
 	return m_id;

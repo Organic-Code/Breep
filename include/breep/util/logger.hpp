@@ -43,6 +43,10 @@ namespace breep {
 		none
 	};
 
+	bool operator >=(log_level lhs, log_level rhs) {
+		return static_cast<int>(lhs) >= static_cast<int>(rhs);
+	}
+
 	namespace detail {
 
 		template<typename T>
@@ -58,55 +62,92 @@ namespace breep {
 				return *this;
 			}
 
+			/**
+			 * @since 0.1.0
+			 */
 			void trace(const std::string& str) {
-				if (greater_or_equal(log_level::trace, m_level)) {
+				if (log_level::trace >= m_level) {
 					log_impl("(trace)  ", str);
 				}
 			}
 
+			/**
+			 * @since 0.1.0
+			 */
 			void debug(const std::string& str) {
-				if (greater_or_equal(log_level::debug, m_level)) {
+				if (log_level::debug >= m_level) {
 					log_impl("(debug)  ", str);
 				}
 			}
 
+			/**
+			 * @since 0.1.0
+			 */
 			void info(const std::string& str) {
-				if (greater_or_equal(log_level::info, m_level)) {
+				if (log_level::info >= m_level) {
 					log_impl("(info)   ", str);
 				}
 			}
 
+			/**
+			 * @since 0.1.0
+			 */
 			void warning(const std::string& str) {
-				if (greater_or_equal(log_level::warning, m_level)) {
+				if (log_level::warning >= m_level) {
 					log_impl("(warning)", str);
 				}
 			}
 
+			/**
+			 * @since 0.1.0
+			 */
 			void error(const std::string& str) {
-				if (greater_or_equal(log_level::error, m_level)) {
+				if (log_level::error >= m_level) {
 					log_impl("(error)  ", str);
 				}
 			}
 
+			/**
+			 * @brief calls abort().
+			 * @since 0.1.0
+			 */
 			void fatal(const std::string& str) {
-				if (greater_or_equal(log_level::fatal, m_level)) {
+				if (log_level::fatal >= m_level) {
 					log_impl("(fatal)  ", str);
 				}
 				abort();
 			}
 
+			/**
+			 * @brief calls exit(exit_code).
+			 * @since 0.1.0
+			 */
+			void fatal(const std::string& str, int exit_code) {
+				if (log_level::fatal >= m_level) {
+					log_impl("(fatal)  ", str);
+				}
+				exit(exit_code);
+			}
+
+			/**
+			 * sets the logging level
+			 *
+			 * @since 0.1.0
+			 */
 			void level(log_level ll) {
 				m_level = ll;
 			}
 
+			/**
+			 * gets the logging level
+			 *
+			 * @since 0.1.0
+			 */
 			log_level level() {
 				return m_level;
 			}
 
 		private:
-			bool greater_or_equal(log_level lhs, log_level rhs) {
-				return static_cast<int>(lhs) >= static_cast<int>(rhs);
-			}
 
 			void log_impl(const std::string& level, const std::string& str) {
 				std::lock_guard<std::mutex> lock(detail::logger_cst::logging_lock);
