@@ -181,9 +181,9 @@ namespace breep {
 		uint64_t hash(const std::string& str) {
 			uint64_t hash_code = 0;
 
-			for (auto c : str) {
-				if (c != '>' && c != '<' && c != ',' && c != ':') {
-					hash_code = c + (hash_code << 6) + (hash_code << 16) - hash_code;
+			for (unsigned int i = str.size() ; i-- ;) {
+				if (str[i] != '>' && str[i] != ',' && str[i] != ' ' && (str[i] != ':' || str[i+1] != ':')) {
+					hash_code = str[i] + (hash_code << 6) + (hash_code << 16) - hash_code;
 				}
 			}
 			return hash_code;
