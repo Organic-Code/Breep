@@ -16,7 +16,7 @@ piles of bytes', but instead you say 'I want to listen for fancy::MyClass'.
 
 ### How do I use Breep::network ?
 
-The best way to now it is to read this examples. But as a little preview, here is a small one
+The best way to now it is to read its [examples](examples/) or to [read the online doc](https://organic-code.github.io/Breep/). But as a little preview, here is a small one
 
 Here is how to create a network, start listening on port 1234, and send "Hello!" to any budy that connects:
 ```cpp
@@ -66,11 +66,29 @@ Please don't get confused: there is no UDP in this lib (yet).
 * The overhead for this is low: if you set up well your serialization, you only have a fixed 64bits extra overhead
 * It's easy to get in: just read the examples, you'll see!
 
-### Why should I NOT Breep::network ?
+### Why should I NOT use Breep::network ?
 
 * It has not been tested as much as it should have been.
 * It's probably broken for BigEndian architecture (I have no way to test this, sorry ; a warning should be displayed on such architectures.)
 * It's very, *very* slow to compile with.
+
+## Requirements
+
+| Resource                       | Requirement               |
+|:------------------------------:|:-------------------------:|
+| Compiler                       | C++14 compliant or above  |
+| [Boost](http://www.boost.org/) | Boost 1.55 or above       |
+
+
+## Road Map
+
+| Milestone                                                | Feature                             | Status      |
+|:--------------------------------------------------------:|:-----------------------------------:|:-----------:|
+| 0.1                                                      | Peer to peer network management     | complete    |
+| 0.1                                                      | Instantiated objects delivery       | complete    |
+| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Improved serialization              | development |
+| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Multiple objects delivery in one go | pending     |
+| [x.x](https://github.com/Organic-Code/Breep/issues/1)    | Client server network management    | on hold     |
 
 ## License
 
