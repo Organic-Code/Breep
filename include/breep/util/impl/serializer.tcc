@@ -101,19 +101,19 @@ namespace breep { namespace detail {
 
 namespace breep {
 
-	serializer& operator<<(serializer& s, bool val) {
-		s.m_os.put(val ? '1' : '0');
-		return s;
-	}
-
 	serializer& operator<<(serializer& s, uint8_t val) {
 		s.m_os.put(val);
 		return s;
 	}
 
+	serializer& operator<<(serializer& s, bool val) {
+		s << (val ? '1' : '0');
+		return s;
+	}
+
 	serializer& operator<<(serializer& s, uint16_t val) {
-		s.m_os.put(static_cast<uint8_t>(val >> 8));
-		s.m_os.put(static_cast<uint8_t>(val));
+		s << static_cast<uint8_t>(val >> 8);
+		s << static_cast<uint8_t>(val);
 		return s;
 	}
 

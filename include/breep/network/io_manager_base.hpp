@@ -14,7 +14,7 @@
 
 
 /**
- * @file invalid_state.hpp
+ * @file io_manager_base.hpp
  * @author Lucas Lazare
  *
  * @since 0.1.0
@@ -41,9 +41,9 @@ namespace breep {
 	class basic_peer;
 
 	/**
-	 * @class network_manager_base network_manager_base.hpp
+	 * @class io_manager_base io_manager_base.hpp
 	 * @brief base class for network managers, used by \em network<typename network_manager>.
-	 * @details Classes inheriting from network_manager_base should specify a data_type type, for its personal use via the peer<>.io_data member.
+	 * @details Classes inheriting from io_manager_base should specify a data_type type, for its personal use via the peer<>.io_data member.
 	 * The object should open ports and start listening for incoming connections as soon as they get an owner.
 	 * The constructor should take an unsigned short [port] as parameter if instantiated from the class breep::network.
 	 *
