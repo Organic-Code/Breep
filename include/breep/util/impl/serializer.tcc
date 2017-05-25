@@ -50,7 +50,7 @@ namespace breep { namespace detail {
 			case FP_SUBNORMAL:
 			case FP_NORMAL: {
 				int_fast8_t sign_bit = value > 0;
-				int_fast8_t shift = 0;
+				int_fast16_t shift = 0;
 				FloatType inner_val = std::abs(value);
 
 				if (inner_val >= 2) {
@@ -87,11 +87,15 @@ namespace breep { namespace detail {
 
 	template <typename SizeType>
 	void write_size(serializer& s, SizeType size) {
-		while (size >= std::numeric_limits<uint8_t>::max()) {
-			size -= std::numeric_limits<uint8_t>::max();
-			s << static_cast<uint8_t>(std::numeric_limits<uint8_t>::max());
+		uint_fast8_t bits_to_write = 0;
+		while (size >> bits_to_write) {
+			++bits_to_write;
 		}
-		s << static_cast<uint8_t>(size);
+		uint_fast8_t oct_to_write = static_cast<uint_fast8_t>(bits_to_write / 8 + (bits_to_write % 8 == 0 ? 0 : 1) + 1);
+		s << static_cast<uint8_t>(oct_to_write);
+		while (oct_to_write--) {
+			s << static_cast<uint8_t>(size >> (oct_to_write * 8));
+		}
 	}
 }}
 
@@ -151,7 +155,7 @@ namespace breep {
 	}
 
 	serializer& operator<<(serializer& s, double val) {
-		s << detail::toIEEE<uint64_t, double, uint_fast16_t, uint_fast32_t, 11, 52>(val);
+		s << detail::toIEEE<uint64_t, double, uint_fast16_t, uint_fast64_t, 11, 52>(val);
 		return s;
 	}
 
