@@ -31,12 +31,34 @@ namespace breep {
 			FloatType result;
 			InputType shift, bias;
 
+
+			InputType exponentMax(0);
+			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
+				exponentMax = (exponentMax << 1) + 1;
+			}
+
+			if ((value & (exponentMax << MantissaBits)) == (exponentMax << MantissaBits)) {
+				InputType mantissaMax(0);
+				for (uint_fast8_t i = 0 ; i < MantissaBits; ++i) {
+					mantissaMax = (mantissaMax << 1) + 1;
+				}
+
+				if (value & mantissaMax) {
+					return std::numeric_limits<FloatType>::quiet_NaN();
+				} else {
+					if (value & (InputType(1) << (MantissaBits + ExponentBits))) {
+						return -std::numeric_limits<FloatType>::infinity();
+					} else {
+						return std::numeric_limits<FloatType>::infinity();
+					}
+				}
+			}
+
 			if (value == 0) {
 				return FloatType(0.);
 			} else if (value == (InputType(1) << (ExponentBits + MantissaBits))) {
 				return FloatType(-0.);
 			}
-			// TODO: check for infinity and NaN
 
 			result = FloatType((value & ((InputType(1) << MantissaBits) - 1)));
 			result /= FloatType((InputType(1) << MantissaBits));

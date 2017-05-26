@@ -19,24 +19,44 @@
 #include <limits>
 #include <tuple>
 #include <utility>
+#include <bitset>
 
 #include "../serializer.hpp" // Allows my IDE to work
 
 namespace breep { namespace detail {
+	// The code from the following method was adapted from the public domain
 	template <typename ReturnType, typename FloatType, unsigned int ExponentBits, unsigned int MantissaBits>
 	ReturnType toIEEE(FloatType value) {
 
-		// TODO: check for infinity and NaN
+		if (std::isinf(value)) {
+			ReturnType exponentMax(0);
+			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
+				exponentMax = (exponentMax << 1) + 1;
+			}
+			if (value > 0) {
+				return exponentMax << MantissaBits;
+			} else {
+				return (ReturnType(1) << (MantissaBits + ExponentBits)) | (exponentMax << MantissaBits);
+			}
+		}
 
-		FloatType fnorm;
-		ReturnType shift;
-		ReturnType sign, exp, mantissa;
+		if (std::isnan(value)) {
+			ReturnType exponentMax(0);
+			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
+				exponentMax = (exponentMax << 1) + 1;
+			}
+			return (exponentMax << MantissaBits) | 1;
+		}
 
 		if (value == FloatType(0.)) { // special value
 			return 0;
 		} else if (value == FloatType(-0.)) { // special value
 			return ReturnType(1) << (ExponentBits + MantissaBits);
 		}
+
+		FloatType fnorm;
+		ReturnType shift;
+		ReturnType sign, exp, mantissa;
 
 		if (value < 0) {
 			sign = 1;
