@@ -86,8 +86,8 @@ Please don't get confused: there is no UDP in this lib (yet).
 |:--------------------------------------------------------:|:-----------------------------------:|:-----------:|
 | 0.1                                                      | Peer to peer network management     | complete    |
 | 0.1                                                      | Instantiated objects delivery       | complete    |
-| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Improved serialization              | development |
-| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Multiple objects delivery in one go | pending     |
+| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Improved serialization              | complete    |
+| [1.0](https://github.com/Organic-Code/Breep/milestone/1) | Multiple objects delivery in one go | development |
 | [x.x](https://github.com/Organic-Code/Breep/issues/1)    | Client server network management    | on hold     |
 
 ## License
