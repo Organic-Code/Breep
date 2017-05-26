@@ -32,7 +32,6 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short 
 	, m_co_listener{}
 	, m_data_r_listener{}
 	, m_dc_listener{}
-	, m_master_listener{}
 	, m_me{}
 	, m_failed_connections{}
 	, m_manager{std::move(io_manager)}
@@ -361,10 +360,6 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 		breep::logger<peer_manager>.debug
 				("Received " + std::to_string(data.size() - id_size) + " octets in a private message from " + sender.id_as_string());
 		std::lock_guard<std::mutex> lock_guard(m_data_mutex);
-		if (m_master_listener) {
-			breep::logger<peer_manager>.trace("Calling master listener");
-			m_master_listener(*this, sender, reinterpret_cast<char*>(processed_data.data()) + 1 + 2 * id_size, processed_data.size() - 1 - 2 * id_size, false);
-		}
 		for (auto& l : m_data_r_listener) {
 			try {
 				breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
@@ -394,10 +389,7 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 			("Received " + std::to_string(data.size()) + " from " + source.id_as_string());
 
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
-	if (m_master_listener) {
-		breep::logger<peer_manager>.trace("Calling master listener");
-		m_master_listener(*this, source, reinterpret_cast<char*>(processed_data.data()), processed_data.size(), false);
-	}
+
 	for (auto& l : m_data_r_listener) {
 		try {
 			breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");

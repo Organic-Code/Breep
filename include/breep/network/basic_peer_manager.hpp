@@ -40,8 +40,6 @@ namespace breep {
 	namespace detail {
 		template<typename T>
 		class peer_manager_attorney;
-		template<typename T>
-		class peer_manager_master_listener;
 	}
 
 	/**
@@ -428,15 +426,10 @@ namespace breep {
 			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
 		}
 
-		void set_master_listener(std::function<void(peer_manager&, const peer&, char*, size_t, bool)> listener) {
-			m_master_listener = listener;
-		}
-
 		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
-		std::function<void(peer_manager&, const peer&, char*, size_t, bool)> m_master_listener;
 
 		local_peer<io_manager> m_me;
 		std::vector<std::unique_ptr<peer>> m_failed_connections;
@@ -455,7 +448,6 @@ namespace breep {
 		mutable std::mutex m_data_mutex;
 
 		friend class detail::peer_manager_attorney<io_manager>;
-		friend class detail::peer_manager_master_listener<io_manager>;
 
 		std::unique_ptr<std::thread> m_thread;
 	};
@@ -465,18 +457,6 @@ namespace breep {
 	class basic_network;
 
 	namespace detail {
-
-	template<typename T>
-	class peer_manager_master_listener {
-
-		peer_manager_master_listener() = delete;
-
-		inline static void set_master_listener(basic_peer_manager<T>& object, std::function<void(breep::basic_peer_manager<T>&, const basic_peer<T>&, char*, size_t, bool)> listener) {
-			object.set_master_listener(listener);
-		}
-
-		friend basic_network<T>;
-	};
 
 	template <typename T>
 	class peer_manager_attorney {

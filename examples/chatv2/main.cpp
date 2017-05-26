@@ -18,6 +18,7 @@
 #include <string>
 #include <iostream>
 
+#include <breep/util/serializer.hpp>
 #include <breep/network/tcp.hpp>
 
 /* This class will be sent through the network */
@@ -27,17 +28,26 @@ public:
 	square() = default;
 	explicit square(int length_): length(length_) {}
 
-	/* This is a method required by boost serialization.
-	 * In fact, it will both serialize and unserialize your class, depending on the template parameter.
-	 */
-	template <typename Archive>
-	void serialize(Archive& ar, unsigned int /*version*/) {
-		// We'll serialize the length.
-		ar & length;
-	}
-
 	int length = 0;
 };
+
+/**
+ * In this method, we indicate how we serialize an object (ie: how we transform it
+ * into flat bytes). This method is required if you want to send an object of this type.
+ */
+breep::serializer& operator<<(breep::serializer& s, const square& local_square) {
+	s << local_square.length;
+	return s;
+}
+
+/**
+ * This method does the exact reverse of the previous one.
+ */
+breep::deserializer& operator>>(breep::deserializer& d, square& local_square) {
+	d >> local_square.length;
+	return d;
+}
+
 
 /* This is just a container class that is not of much use, but that is here to demonstrate the
  * use of template class with the network. */
@@ -51,19 +61,29 @@ public:
 			: m_message(message)
 	{}
 
-	template <typename Archiver>
-	void serialize(Archiver& ar, unsigned int /*version*/) {
-		// We'll serialize the contained message the same way as before
-		ar & m_message;
-	}
-
 	const T& message() const {
 		return m_message;
 	}
 
+	template <typename U>
+	friend breep::deserializer& operator>>(breep::deserializer&, chat_message<U>&);
+
 private:
 	T m_message;
 };
+
+template <typename T>
+breep::serializer& operator<<(breep::serializer& s, const chat_message<T>& message) {
+	s << message.message();
+	return s;
+}
+
+template <typename T>
+breep::deserializer& operator>>(breep::deserializer& d, chat_message<T>& message) {
+	d >> message.m_message;
+	return d;
+}
+
 
 /* This class will be sent to each newly connected peer, so that he can know our name. */
 struct name {
@@ -72,14 +92,18 @@ struct name {
 	name() = default;
 	explicit name(const std::string& name_) : value(name_) {}
 
-	template <typename Archiver>
-	void serialize(Archiver& ar, unsigned int /*version*/) {
-		// Serializing again
-		ar & value;
-	}
-
 	std::string value;
 };
+
+breep::serializer& operator<<(breep::serializer& s, const name& local_name) {
+	s << local_name.value;
+	return s;
+}
+
+breep::deserializer& operator>>(breep::deserializer& d, name& local_name) {
+	d >> local_name.value;
+	return d;
+}
 
 /* Here is where we declare the types for breep::network. These macros must be called
  * outside of all namespace. */
@@ -206,7 +230,7 @@ int main(int argc, char* argv[]) {
 	cr.start_listening(network);
 
 	// If we receive a class for which we don't have any listener (such as an int, for example), this will be called.
-	network.set_unlistened_type_listener([](breep::tcp::network&,const breep::tcp::peer&,boost::archive::binary_iarchive&,bool,uint64_t) -> void {
+	network.set_unlistened_type_listener([](breep::tcp::network&,const breep::tcp::peer&,breep::deserializer&,bool,uint64_t) -> void {
 		std::cout << "Unlistened class received." << std::endl;
 	});
 
