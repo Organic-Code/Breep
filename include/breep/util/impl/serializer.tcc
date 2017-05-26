@@ -28,69 +28,75 @@ namespace breep { namespace detail {
 	template <typename ReturnType, typename FloatType, unsigned int ExponentBits, unsigned int MantissaBits>
 	ReturnType toIEEE(FloatType value) {
 
-		if (std::isinf(value)) {
-			ReturnType exponentMax(0);
-			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
-				exponentMax = (exponentMax << 1) + 1;
+		switch (std::fpclassify(value)) {
+			case FP_INFINITE: {
+				ReturnType exponentMax(0);
+				for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
+					exponentMax = (exponentMax << 1) + 1;
+				}
+				if (value > 0) {
+					return exponentMax << MantissaBits;
+				} else {
+					return (ReturnType(1) << (MantissaBits + ExponentBits)) | (exponentMax << MantissaBits);
+				}
 			}
-			if (value > 0) {
-				return exponentMax << MantissaBits;
-			} else {
-				return (ReturnType(1) << (MantissaBits + ExponentBits)) | (exponentMax << MantissaBits);
+			case FP_NAN: {
+				ReturnType exponentMax(0);
+				for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
+					exponentMax = (exponentMax << 1) + 1;
+				}
+				return (exponentMax << MantissaBits) | 1;
+			}
+			case FP_NORMAL:
+			case FP_SUBNORMAL: {
+				FloatType fnorm;
+				ReturnType shift;
+				ReturnType sign, exp, mantissa;
+
+				if (value < 0) {
+					sign = 1;
+					fnorm = -value;
+				} else {
+					sign = 0;
+					fnorm = value;
+				}
+
+				// get the normalized form of f and track the exponent
+				shift = 0;
+
+				if (fnorm >= FloatType(2.)) {
+					while (fnorm >= FloatType(2.)) {
+						fnorm /= FloatType(2.);
+						shift++;
+					}
+				} else {
+					while (fnorm < FloatType(1.)) {
+						fnorm *= FloatType(2.);
+						shift--;
+					}
+				}
+				fnorm = fnorm - FloatType(1.);
+
+				mantissa = static_cast<ReturnType>(fnorm * ((ReturnType(1) << MantissaBits) + FloatType(.5)));
+
+				exp = static_cast<ReturnType>(shift + ((ReturnType(1) << (ExponentBits - 1)) - 1));
+
+				return static_cast<ReturnType>((sign << (MantissaBits + ExponentBits)) | (exp << MantissaBits) | mantissa);
+			}
+			case FP_ZERO:
+			default: {
+				return std::signbit(value) ? ReturnType(1) << (ExponentBits + MantissaBits) : 0;
 			}
 		}
-
-		if (std::isnan(value)) {
-			ReturnType exponentMax(0);
-			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
-				exponentMax = (exponentMax << 1) + 1;
-			}
-			return (exponentMax << MantissaBits) | 1;
-		}
-
-		if (value == FloatType(0.)) { // special value
-			return 0;
-		} else if (value == FloatType(-0.)) { // special value
-			return ReturnType(1) << (ExponentBits + MantissaBits);
-		}
-
-		FloatType fnorm;
-		ReturnType shift;
-		ReturnType sign, exp, mantissa;
-
-		if (value < 0) {
-			sign = 1;
-			fnorm = -value;
-		} else {
-			sign = 0;
-			fnorm = value;
-		}
-
-		// get the normalized form of f and track the exponent
-		shift = 0;
-
-		if (fnorm >= FloatType(2.)) {
-			while (fnorm >= FloatType(2.)) {
-				fnorm /= FloatType(2.);
-				shift++;
-			}
-		} else {
-			while (fnorm < FloatType(1.)) {
-				fnorm *= FloatType(2.);
-				shift--;
-			}
-		}
-		fnorm = fnorm - FloatType(1.);
-
-		mantissa = static_cast<ReturnType>(fnorm * ((ReturnType(1) << MantissaBits) + FloatType(.5)));
-
-		exp = static_cast<ReturnType>(shift + ((ReturnType(1) << (ExponentBits - 1)) - 1));
-
-		return static_cast<ReturnType>((sign << (MantissaBits + ExponentBits)) | (exp << MantissaBits) | mantissa);
 	}
+}}
+
+namespace breep {
 
 	template <typename SizeType>
 	void write_size(serializer& s, SizeType size) {
+		static_assert(std::is_fundamental<SizeType>::value && std::is_integral<SizeType>::value, "SizeType must be an integer.");
+
 		uint_fast8_t bits_to_write = 0;
 		while (size >> bits_to_write) {
 			++bits_to_write;
@@ -101,9 +107,6 @@ namespace breep { namespace detail {
 			s << static_cast<uint8_t>(size >> (oct_to_write * 8));
 		}
 	}
-}}
-
-namespace breep {
 
 	serializer& operator<<(serializer& s, uint8_t val) {
 		s.m_os.put(val);
@@ -176,7 +179,7 @@ namespace breep {
 
 	template <typename IterableContainer>
 	serializer& operator<<(serializer& s, const IterableContainer& val) {
-		detail::write_size(s, val.size());
+		write_size(s, val.size());
 		for (const auto& current_value : val) {
 			s << current_value;
 		}
@@ -188,7 +191,7 @@ namespace breep {
 	serializer& operator<<(serializer& s, const std::forward_list<T>& forward_list) {
 		uint64_t size = 0;
 		for (auto it = forward_list.begin(), end = forward_list.end() ; it != end ; ++it, ++size);
-		detail::write_size(s, size);
+		write_size(s, size);
 		for (const T& current_value : forward_list) {
 			s << current_value;
 		}

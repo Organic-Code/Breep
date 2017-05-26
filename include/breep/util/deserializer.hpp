@@ -44,6 +44,12 @@ namespace breep {
 		friend deserializer& operator>>(deserializer&, uint8_t&);
 	};
 
+	/**
+	 * If you wish to read the size of your custom container, which was written
+	 * using breep::write_size(serializer&,SizeType), use this method.
+	 */
+	void read_size(deserializer& s, uint64_t& size);
+
 	// deserializing fundamental types
 	deserializer& operator>>(deserializer&, bool&);
 	deserializer& operator>>(deserializer&, char&);

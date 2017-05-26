@@ -40,6 +40,14 @@ namespace breep {
 		friend serializer& operator<<(serializer&, uint8_t);
 	};
 
+
+	/**
+	 * If you want to write the size of your custom container, use this method
+	 * @tparam SizeType fundamental integer type.
+	 */
+	template <typename SizeType>
+	void write_size(serializer& s, SizeType size);
+
 	// serializing fundamental types
 	serializer& operator<<(serializer&, bool);
 	serializer& operator<<(serializer&, char);

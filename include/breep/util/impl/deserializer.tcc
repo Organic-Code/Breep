@@ -83,15 +83,15 @@ namespace breep {
 
 			return result;
 		}
+	}
 
-		void read_size(deserializer& s, uint64_t& size) {
-			uint8_t uint8(0);
-			uint_fast8_t oct_to_read(0);
-			s >> oct_to_read;
-			while (oct_to_read--) {
-				s >> uint8;
-				size |= (static_cast<uint64_t>(uint8) << static_cast<uint64_t>(oct_to_read * 8));
-			}
+	void read_size(deserializer& s, uint64_t& size) {
+		uint8_t uint8(0);
+		uint_fast8_t oct_to_read(0);
+		s >> oct_to_read;
+		while (oct_to_read--) {
+			s >> uint8;
+			size |= (static_cast<uint64_t>(uint8) << static_cast<uint64_t>(oct_to_read * 8));
 		}
 	}
 
@@ -192,7 +192,7 @@ namespace breep {
 	template<typename PushableContainer>
 	deserializer& operator>>(deserializer& s, PushableContainer& val) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			typename PushableContainer::value_type value;
 			s >> value;
@@ -214,7 +214,7 @@ namespace breep {
 	template <typename T>
 	deserializer& operator>>(deserializer& s, std::vector<T>& vector) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		vector.reserve(size + vector.size());
 		while(size--) {
 			T value;
@@ -227,7 +227,7 @@ namespace breep {
 	template <typename T, std::size_t N>
 	deserializer& operator>>(deserializer& s, std::array<T, N>& array) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		for (uint_fast64_t i = 0 ; i < size ; ++i) {
 			s >> array[i];
 		}
@@ -237,7 +237,7 @@ namespace breep {
 	template <typename T>
 	deserializer& operator>>(deserializer& s, std::deque<T>& deque) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -249,7 +249,7 @@ namespace breep {
 	template <typename T>
 	deserializer& operator>>(deserializer& s, std::list<T>& list) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -261,7 +261,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W>
 	deserializer& operator>>(deserializer& s, std::map<T,U,V,W>& map) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T key;
 			U value;
@@ -274,7 +274,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W>
 	deserializer& operator>>(deserializer& s, std::multimap<T,U,V,W>& map) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T key;
 			U value;
@@ -288,7 +288,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W, typename X>
 	deserializer& operator>>(deserializer& s, std::unordered_map<T,U,V,W,X>& map) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T key;
 			U value;
@@ -302,7 +302,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W, typename X>
 	deserializer& operator>>(deserializer& s, std::unordered_multimap<T,U,V,W,X>& map) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T key;
 			U value;
@@ -315,7 +315,7 @@ namespace breep {
 	template <typename T, typename U, typename V>
 	deserializer& operator>>(deserializer& s, std::set<T,U,V>& set) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -327,7 +327,7 @@ namespace breep {
 	template <typename T, typename U, typename V>
 	deserializer& operator>>(deserializer& s, std::multiset<T,U,V>& multiset) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -339,7 +339,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W>
 	deserializer& operator>>(deserializer& s, std::unordered_set<T,U,V,W>& unordered_set) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -351,7 +351,7 @@ namespace breep {
 	template <typename T, typename U, typename V, typename W>
 	deserializer& operator>>(deserializer& s, std::unordered_multiset<T,U,V,W>& unordered_multiset){
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while (size--) {
 			T value;
 			s >> value;
@@ -373,7 +373,7 @@ namespace breep {
 	template <typename T, typename U>
 	deserializer& operator>>(deserializer& s, std::queue<T,U>& queue) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while(size--) {
 			T value;
 			s >> value;
@@ -385,7 +385,7 @@ namespace breep {
 	template <typename T, typename U, typename V>
 	deserializer& operator>>(deserializer& s, std::priority_queue<T,U,V>& priority_queue) {
 		uint64_t size = 0;
-		detail::read_size(s, size);
+		read_size(s, size);
 		while(size--) {
 			T value;
 			s >> value;
