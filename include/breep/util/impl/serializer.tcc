@@ -19,7 +19,6 @@
 #include <limits>
 #include <tuple>
 #include <utility>
-#include <chrono>
 
 #include "../serializer.hpp" // Allows my IDE to work
 
@@ -91,7 +90,7 @@ namespace breep { namespace detail {
 		while (size >> bits_to_write) {
 			++bits_to_write;
 		}
-		uint_fast8_t oct_to_write = static_cast<uint_fast8_t>(bits_to_write / 8 + (bits_to_write % 8 == 0 ? 0 : 1) + 1);
+		uint_fast8_t oct_to_write = static_cast<uint_fast8_t>(bits_to_write / 8 + (bits_to_write % 8 == 0 ? 0 : 1));
 		s << static_cast<uint8_t>(oct_to_write);
 		while (oct_to_write--) {
 			s << static_cast<uint8_t>(size >> (oct_to_write * 8));
@@ -108,6 +107,17 @@ namespace breep {
 
 	serializer& operator<<(serializer& s, bool val) {
 		s << (val ? '1' : '0');
+		return s;
+	}
+
+	serializer& operator<<(serializer& s, char val) {
+		if (std::numeric_limits<char>::min() < 0) {
+			unsigned char unsigned_value = static_cast<unsigned char>(val);
+			s << unsigned_value;
+		} else {
+			signed char signed_value = static_cast<signed char>(val);
+			s << signed_value;
+		}
 		return s;
 	}
 
@@ -168,6 +178,18 @@ namespace breep {
 		return s;
 	}
 
+	// Who doesn't love O(n*n) ?
+	template <typename T>
+	serializer& operator<<(serializer& s, const std::forward_list<T>& forward_list) {
+		uint64_t size = 0;
+		for (auto it = forward_list.begin(), end = forward_list.end() ; it != end ; ++it, ++size);
+		detail::write_size(s, size);
+		for (const T& current_value : forward_list) {
+			s << current_value;
+		}
+		return s;
+	}
+
 	template <typename T, typename U>
 	serializer& operator<<(serializer& s, const std::pair<T,U>& val) {
 		s << val.first << val.second;
@@ -182,7 +204,7 @@ namespace breep {
 
 	template <typename T, typename U>
 	serializer& operator<<(serializer& s, const std::tuple<T, U>& val) {
-		s << std::get<0>(val) << std::get(1)(val);
+		s << std::get<0>(val) << std::get<1>(val);
 		return s;
 	}
 
@@ -220,5 +242,5 @@ namespace breep {
 	serializer& operator<<(serializer& s, const std::chrono::duration<T,U>& val) {
 		s << static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(val).count());
 		return s;
-	};
+	}
 }

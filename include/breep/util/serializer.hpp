@@ -19,6 +19,8 @@
 
 #include <cstdint>
 #include <sstream>
+#include <chrono>
+#include <forward_list>
 
 namespace breep {
 	class serializer {
@@ -40,6 +42,7 @@ namespace breep {
 
 	// serializing fundamental types
 	serializer& operator<<(serializer&, bool);
+	serializer& operator<<(serializer&, char);
 	serializer& operator<<(serializer&, uint16_t);
 	serializer& operator<<(serializer&, uint32_t);
 	serializer& operator<<(serializer&, uint64_t);
@@ -53,6 +56,9 @@ namespace breep {
 	// generic method to serialize containers that supports iterators
 	template <typename IterableContainer>
 	serializer& operator<<(serializer&, const IterableContainer&);
+
+	template <typename T>
+	serializer& operator<<(serializer&, const std::forward_list<T>&);
 
 	// serializing std::pair
 	template <typename T, typename U>

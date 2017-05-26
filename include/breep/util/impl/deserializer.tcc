@@ -14,7 +14,6 @@
  * @since 1.0.0
  */
 
-#include <cstdint>
 #include <cmath>
 #include <limits>
 #include <tuple>
@@ -58,13 +57,13 @@ namespace breep {
 			return result * ((value >> (ExponentBits + MantissaBits)) & 1 ? -1.0 : 1.0);
 		}
 
-		void read_size(deserializer& s, uint64_t size) {
-			uint8_t uint8;
-			uint_fast8_t oct_to_read;
+		void read_size(deserializer& s, uint64_t& size) {
+			uint8_t uint8(0);
+			uint_fast8_t oct_to_read(0);
 			s >> oct_to_read;
 			while (oct_to_read--) {
 				s >> uint8;
-				size |= (uint8 << (oct_to_read * 8));
+				size |= (static_cast<uint64_t>(uint8) << static_cast<uint64_t>(oct_to_read * 8));
 			}
 		}
 	}
@@ -81,17 +80,30 @@ namespace breep {
 		return s;
 	}
 
+	deserializer& operator>>(deserializer& s, char& val) {
+		if (std::numeric_limits<char>::min() < 0) {
+			unsigned char unsigned_value(0);
+			s >> unsigned_value;
+			val = unsigned_value;
+		} else {
+			signed char signed_value(0);
+			s >> signed_value;
+			val =  signed_value;
+		}
+		return s;
+	}
+
 	deserializer& operator>>(deserializer& s, uint16_t& val) {
-		uint8_t uint8;
+		uint8_t uint8(0);
 		s >> uint8;
-		val = uint8 << 8;
+		val = static_cast<uint16_t>(static_cast<uint16_t>(uint8) << 8);
 		s >> uint8;
-		val |= uint8;
+		val = static_cast<uint16_t>(val | uint8);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, uint32_t& val) {
-		uint16_t uint16;
+		uint16_t uint16(0);
 		s >> uint16;
 		val = uint16 << 16;
 		s >> uint16;
@@ -100,84 +112,258 @@ namespace breep {
 	}
 
 	deserializer& operator>>(deserializer& s, uint64_t& val) {
-		uint32_t uint32;
+		uint32_t uint32(0);
 		s >> uint32;
-		val = uint32 << 32;
+		val = static_cast<uint64_t>(uint32) << 32;
 		s >> uint32;
 		val |= uint32;
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, int8_t& val) {
-		uint8_t uint8;
+		uint8_t uint8(0);
 		s >> uint8;
 		val = static_cast<int8_t>(uint8);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, int16_t& val) {
-		uint16_t uint16;
+		uint16_t uint16(0);
 		s >> uint16;
 		val = static_cast<int16_t>(uint16);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, int32_t& val) {
-		uint32_t uint32;
+		uint32_t uint32(0);
 		s >> uint32;
 		val = static_cast<int32_t>(uint32);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, int64_t& val) {
-		uint64_t uint64;
+		uint64_t uint64(0);
 		s >> uint64;
 		val = static_cast<int64_t>(uint64);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, float& val) {
-		uint32_t uint32;
+		uint32_t uint32(0);
 		s >> uint32;
 		val = detail::fromIEEE<float, uint32_t, uint8_t, uint_fast32_t, 8, 23>(uint32);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, double& val) {
-		uint64_t uint64;
+		uint64_t uint64(0);
 		s >> uint64;
 		val = detail::fromIEEE<double, uint64_t, uint16_t, uint_fast64_t, 11, 52>(uint64);
 		return s;
 	}
 
-	// FIXME: what about non-fifo STL containers?
-	// TODO: optimize for STL containers (.insert is there for almost everyone, but is not the best)
-	template<typename InsertableContainer>
-	deserializer& operator>>(deserializer& s, InsertableContainer& val) {
+	template<typename PushableContainer>
+	deserializer& operator>>(deserializer& s, PushableContainer& val) {
 		uint64_t size = 0;
 		detail::read_size(s, size);
 		while (size--) {
-			typename  InsertableContainer::value_type value;
+			typename PushableContainer::value_type value;
 			s >> value;
-			val.insert(val.end(), std::move(value));
+			val.push_back(std::move(value));
 		}
 		return s;
 	}
 
 	template<typename T>
 	deserializer& operator>>(deserializer& s, std::forward_list<T>& val) {
-		uint64_t size = 0;
-		detail::read_size(s, size);
 		std::vector<T> tmp;
-		while (size--) {
-			T value;
-			s >> value;
-			tmp.emplace_back(std::move(value));
-		}
+		s >> tmp;
 		for (auto it = tmp.rbegin(), end = tmp.rend() ; it != end ; ++it) {
 			val.emplace_front(std::move(*it));
 		}
+		return s;
+	}
 
+	template <typename T>
+	deserializer& operator>>(deserializer& s, std::vector<T>& vector) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		vector.reserve(size + vector.size());
+		while(size--) {
+			T value;
+			s >> value;
+			vector.emplace_back(std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, std::size_t N>
+	deserializer& operator>>(deserializer& s, std::array<T, N>& array) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		for (uint_fast64_t i = 0 ; i < size ; ++i) {
+			s >> array[i];
+		}
+		return s;
+	}
+
+	template <typename T>
+	deserializer& operator>>(deserializer& s, std::deque<T>& deque) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			deque.emplace_back(std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T>
+	deserializer& operator>>(deserializer& s, std::list<T>& list) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			list.emplace_back(std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer& s, std::map<T,U,V,W>& map) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T key;
+			U value;
+			s >> key >> value;
+			map.emplace_hint(map.cend(), std::make_pair(std::move(key), std::move(value)));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer& s, std::multimap<T,U,V,W>& map) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T key;
+			U value;
+			s >> key >> value;
+			map.emplace_hint(map.cend(), std::make_pair(std::move(key), std::move(value)));
+		}
+		return s;
+	}
+
+
+	template <typename T, typename U, typename V, typename W, typename X>
+	deserializer& operator>>(deserializer& s, std::unordered_map<T,U,V,W,X>& map) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T key;
+			U value;
+			s >> key >> value;
+			map.emplace_hint(map.cend(), std::make_pair(std::move(key), std::move(value)));
+		}
+		return s;
+	}
+
+
+	template <typename T, typename U, typename V, typename W, typename X>
+	deserializer& operator>>(deserializer& s, std::unordered_multimap<T,U,V,W,X>& map) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T key;
+			U value;
+			s >> key >> value;
+			map.emplace_hint(map.cend(), std::make_pair(std::move(key), std::move(value)));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer& s, std::set<T,U,V>& set) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			set.emplace_hint(set.cend(), std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer& s, std::multiset<T,U,V>& multiset) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			multiset.emplace_hint(multiset.cend(), std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer& s, std::unordered_set<T,U,V,W>& unordered_set) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			unordered_set.emplace_hint(unordered_set.cend(), std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer& s, std::unordered_multiset<T,U,V,W>& unordered_multiset){
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while (size--) {
+			T value;
+			s >> value;
+			unordered_multiset.emplace_hint(unordered_multiset.cend(), std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U>
+	deserializer& operator>>(deserializer& s, std::stack<T,U>& stack) {
+		std::vector<T> tmp;
+		s >> tmp;
+		for (auto it = tmp.rbegin(), end = tmp.rend() ; it != end ; ++it) {
+			stack.emplace(std::move(*it));
+		}
+		return s;
+	}
+
+	template <typename T, typename U>
+	deserializer& operator>>(deserializer& s, std::queue<T,U>& queue) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while(size--) {
+			T value;
+			s >> value;
+			queue.emplace(std::move(value));
+		}
+		return s;
+	}
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer& s, std::priority_queue<T,U,V>& priority_queue) {
+		uint64_t size = 0;
+		detail::read_size(s, size);
+		while(size--) {
+			T value;
+			s >> value;
+			priority_queue.emplace(std::move(value));
+		}
 		return s;
 	}
 

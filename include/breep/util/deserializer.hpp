@@ -20,22 +20,33 @@
 #include <cstdint>
 #include <istream>
 #include <forward_list>
+#include <vector>
+#include <array>
+#include <deque>
+#include <list>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+#include <stack>
+#include <queue>
 
 namespace breep {
 	class deserializer {
 
 	public:
-		explicit deserializer(std::basic_streambuf<uint8_t>* sb): m_is(sb) {}
+		explicit deserializer(const std::basic_string<uint8_t>& bs): m_is(bs) {}
 
 	private:
-		std::basic_istream<uint8_t> m_is;
+		std::basic_istringstream<uint8_t> m_is;
 
 		// deserializing fundamental uint8_t
 		friend deserializer& operator>>(deserializer&, uint8_t&);
 	};
 
 	// deserializing fundamental types
-	deserializer& operator>>(deserializer&, uint8_t&);
+	deserializer& operator>>(deserializer&, bool&);
+	deserializer& operator>>(deserializer&, char&);
 	deserializer& operator>>(deserializer&, uint16_t&);
 	deserializer& operator>>(deserializer&, uint32_t&);
 	deserializer& operator>>(deserializer&, uint64_t&);
@@ -47,13 +58,61 @@ namespace breep {
 	deserializer& operator>>(deserializer&, double&);
 
 
-	// generic method deserializing containers that support .insert(iterator, value)
-	template <typename InsertableContainer>
-	deserializer& operator>>(deserializer&, InsertableContainer&);
+	// generic method deserializing containers that support .push_back(value_type)
+	template <typename PushableContainer>
+	deserializer& operator>>(deserializer&, PushableContainer&);
 
-	// deserializing std::forward_list
+	// STL containers
 	template <typename T>
 	deserializer& operator>>(deserializer&, std::forward_list<T>&);
+
+	template <typename T>
+	deserializer& operator>>(deserializer&, std::vector<T>&);
+
+	template <typename T, std::size_t N>
+	deserializer& operator>>(deserializer&, std::array<T, N>&);
+
+	template <typename T>
+	deserializer& operator>>(deserializer&, std::deque<T>&);
+
+	template <typename T>
+	deserializer& operator>>(deserializer&, std::list<T>&);
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer&, std::map<T,U,V,W>&);
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer&, std::multimap<T,U,V,W>&);
+
+	template <typename T, typename U, typename V, typename W, typename X>
+	deserializer& operator>>(deserializer&, std::unordered_map<T,U,V,W,X>&);
+
+	template <typename T, typename U, typename V, typename W, typename X>
+	deserializer& operator>>(deserializer&, std::unordered_multimap<T,U,V,W,X>&);
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer&, std::set<T,U,V>&);
+
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer&, std::multiset<T,U,V>&);
+
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer&, std::unordered_set<T,U,V,W>&);
+
+
+	template <typename T, typename U, typename V, typename W>
+	deserializer& operator>>(deserializer&, std::unordered_multiset<T,U,V,W>&);
+
+	template <typename T, typename U>
+	deserializer& operator>>(deserializer&, std::stack<T,U>&);
+
+	template <typename T, typename U>
+	deserializer& operator>>(deserializer&, std::queue<T,U>&);
+
+	template <typename T, typename U, typename V>
+	deserializer& operator>>(deserializer&, std::priority_queue<T,U,V>&);
 
 	// deserializing std::pair
 	template <typename T, typename U>
