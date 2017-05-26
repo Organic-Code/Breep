@@ -23,65 +23,50 @@
 #include "../serializer.hpp" // Allows my IDE to work
 
 namespace breep { namespace detail {
-	template <typename ReturnType, typename FloatType, typename LeastExponentType, typename LeastMantissaType, unsigned int ExponentBits, unsigned int MantissaBits>
+	template <typename ReturnType, typename FloatType, unsigned int ExponentBits, unsigned int MantissaBits>
 	ReturnType toIEEE(FloatType value) {
-		static_assert(sizeof(FloatType) == sizeof(ReturnType), "You must have the same number of bits in ReturnType and FloatType");
-		LeastExponentType exponentMax = 0;
-		for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
-			exponentMax = static_cast<LeastExponentType>(exponentMax | 1 << i);
+
+		// TODO: check for infinity and NaN
+
+		FloatType fnorm;
+		ReturnType shift;
+		ReturnType sign, exp, mantissa;
+
+		if (value == FloatType(0.)) { // special value
+			return 0;
+		} else if (value == FloatType(-0.)) { // special value
+			return ReturnType(1) << (ExponentBits + MantissaBits);
 		}
 
-		switch (std::fpclassify(value)) {
-			case FP_INFINITE:
-				if (value > 0) {
-					return ReturnType(exponentMax) << MantissaBits;
-				} else {
-					return (ReturnType(1) << (MantissaBits + ExponentBits)) | (ReturnType(exponentMax) << MantissaBits);
-				}
-			case FP_NAN:
-				return (ReturnType(exponentMax) << MantissaBits) + 1;
-			case FP_ZERO:
-				if (value == -0.) {
-					return ReturnType(1) << (MantissaBits + ExponentBits);
-				} else {
-					return 0;
-				}
-			case FP_SUBNORMAL:
-			case FP_NORMAL: {
-				int_fast8_t sign_bit = value > 0;
-				int_fast16_t shift = 0;
-				FloatType inner_val = std::abs(value);
+		if (value < 0) {
+			sign = 1;
+			fnorm = -value;
+		} else {
+			sign = 0;
+			fnorm = value;
+		}
 
-				if (inner_val >= 2) {
-					while (inner_val > (2 << 10)) {
-						inner_val /= (2 << 10);
-						shift = static_cast<int_fast8_t>(shift + 10);
-					}
-					while (inner_val >= FloatType(2.0)) {
-						inner_val /= FloatType(2.);
-						shift++;
-					}
-				} else {
-					while (inner_val < FloatType(0.1)) {
-						inner_val *= FloatType(10.);
-						shift = static_cast<int_fast8_t>(shift - 10);
-					}
-					while (inner_val < FloatType(1.)) {
-						inner_val *= FloatType(2.);
-						shift--;
-					}
-				}
-				inner_val -= FloatType(1.0);
+		// get the normalized form of f and track the exponent
+		shift = 0;
 
-				LeastMantissaType mantissa_v = static_cast<LeastMantissaType>(inner_val * ((LeastMantissaType(1) << MantissaBits) + FloatType(.5)));
-				LeastExponentType exponent_v = static_cast<LeastExponentType>(shift + (LeastMantissaType(1) << ExponentBits) - 1);
-
-				return (ReturnType(sign_bit) << MantissaBits + ExponentBits) | (ReturnType(exponent_v) << MantissaBits) | ReturnType(mantissa_v);
+		if (fnorm >= FloatType(2.)) {
+			while (fnorm >= FloatType(2.)) {
+				fnorm /= FloatType(2.);
+				shift++;
 			}
-			default:
-				break;
+		} else {
+			while (fnorm < FloatType(1.)) {
+				fnorm *= FloatType(2.);
+				shift--;
+			}
 		}
-		return 0;
+		fnorm = fnorm - FloatType(1.);
+
+		mantissa = static_cast<ReturnType>(fnorm * ((ReturnType(1) << MantissaBits) + FloatType(.5)));
+
+		exp = static_cast<ReturnType>(shift + ((ReturnType(1) << (ExponentBits - 1)) - 1));
+
+		return static_cast<ReturnType>((sign << (MantissaBits + ExponentBits)) | (exp << MantissaBits) | mantissa);
 	}
 
 	template <typename SizeType>
@@ -160,12 +145,12 @@ namespace breep {
 	}
 
 	serializer& operator<<(serializer& s, float val) {
-		s << detail::toIEEE<uint32_t, float, uint_fast8_t, uint_fast32_t, 8, 23>(val);
+		s << detail::toIEEE<uint32_t, float, 8, 23>(val);
 		return s;
 	}
 
 	serializer& operator<<(serializer& s, double val) {
-		s << detail::toIEEE<uint64_t, double, uint_fast16_t, uint_fast64_t, 11, 52>(val);
+		s << detail::toIEEE<uint64_t, double, 11, 52>(val);
 		return s;
 	}
 

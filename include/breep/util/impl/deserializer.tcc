@@ -25,36 +25,41 @@
 namespace breep {
 
 	namespace detail {
-		template <typename FloatType, typename InputType, typename LeastExponentType, typename LeastMantissaType, unsigned int ExponentBits, unsigned int MantissaBits>
+		// The code from the following method was adapted from the public domain
+		template <typename FloatType, typename InputType, unsigned int ExponentBits, unsigned int MantissaBits>
 		FloatType fromIEEE(InputType value) {
-
-			LeastExponentType exponentMax = 0;
-			for (uint_fast8_t i = 0 ; i < ExponentBits ; ++i) {
-				exponentMax = static_cast<LeastExponentType>(exponentMax | 1 << i);
-			}
+			FloatType result;
+			InputType shift, bias;
 
 			if (value == 0) {
 				return FloatType(0.);
-			}
-
-			if (value == (InputType(1) << (MantissaBits + ExponentBits))) {
+			} else if (value == (InputType(1) << (ExponentBits + MantissaBits))) {
 				return FloatType(-0.);
 			}
+			// TODO: check for infinity and NaN
 
-			if (value & (exponentMax << MantissaBits) == (exponentMax << MantissaBits)) {
-
-			}
-
-			FloatType result = (value & ((InputType(1) << MantissaBits) - 1));
-			result /= (InputType(1) << MantissaBits);
+			result = FloatType((value & ((InputType(1) << MantissaBits) - 1)));
+			result /= FloatType((InputType(1) << MantissaBits));
 			result += FloatType(1.);
 
-			LeastExponentType biased_exponent = (1 << (ExponentBits - 1)) - 1;
-			int_fast16_t exponent = ((value >> MantissaBits) & ((InputType(1) << ExponentBits) - 1)) - biased_exponent;
-			while(exponent > 0) { result *= 2.0; exponent--; }
-			while(exponent < 0) { result /= 2.0; exponent++; }
+			bias = static_cast<InputType>((InputType(1) << (ExponentBits - 1)) - 1);
+			shift = static_cast<InputType>(((value >> MantissaBits) & ((InputType(1) << ExponentBits) - 1)) - bias);
 
-			return result * ((value >> (ExponentBits + MantissaBits)) & 1 ? -1.0 : 1.0);
+			if (shift > 0) {
+				while(shift > 0) {
+					result *= FloatType(2.);
+					shift--;
+				}
+			} else {
+				while (shift < 0) {
+					result /= FloatType(2.);
+					shift++;
+				}
+			}
+
+			result *= FloatType((value >> (ExponentBits + MantissaBits)) & 1 ? -1.0: 1.0);
+
+			return result;
 		}
 
 		void read_size(deserializer& s, uint64_t& size) {
@@ -151,14 +156,14 @@ namespace breep {
 	deserializer& operator>>(deserializer& s, float& val) {
 		uint32_t uint32(0);
 		s >> uint32;
-		val = detail::fromIEEE<float, uint32_t, uint8_t, uint_fast32_t, 8, 23>(uint32);
+		val = detail::fromIEEE<float, uint32_t, 8, 23>(uint32);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, double& val) {
 		uint64_t uint64(0);
 		s >> uint64;
-		val = detail::fromIEEE<double, uint64_t, uint16_t, uint_fast64_t, 11, 52>(uint64);
+		val = detail::fromIEEE<double, uint64_t, 11, 52>(uint64);
 		return s;
 	}
 
