@@ -21,8 +21,8 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
-#include <boost/archive/binary_iarchive.hpp>
 
+#include "breep/util/deserializer.hpp"
 #include "breep/util/type_traits.hpp"
 #include "breep/util/logger.hpp"
 #include "breep/network/typedefs.hpp"
@@ -60,7 +60,7 @@ namespace breep { namespace detail {
 
 		object_builder& operator=(const object_builder<T,network>&) = delete;
 
-		bool build_and_call(network& lnetwork, const typename network::peer& received_from, boost::archive::binary_iarchive& data, bool is_private) {
+		bool build_and_call(network& lnetwork, const typename network::peer& received_from, breep::deserializer& data, bool is_private) {
 			if (is_private) {
 				breep::logger<object_builder<io_manager, T>>.info("Received " + type_traits<T>::universal_name());
 			} else {
