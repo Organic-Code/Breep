@@ -28,13 +28,13 @@ namespace breep {
 	public:
 		serializer(): m_os() {}
 
-		std::basic_string<uint8_t> str() {
+		std::basic_string<uint8_t> str() const {
 			m_os.flush();
 			return m_os.str();
 		}
 
 	private:
-		std::basic_ostringstream<uint8_t> m_os;
+		mutable std::basic_ostringstream<uint8_t> m_os;
 
 		// serializing fundamental uint8_t
 		friend serializer& operator<<(serializer&, uint8_t);

@@ -261,6 +261,12 @@ int main(int argc, char* argv[]) {
 			} else if (ans.substr(0,7) == "/square") {
 				// Here is a square for the peers
 				network.send_object(chat_message<square>(square(atoi(ans.data() + 8))));
+			} else if (ans.substr(0,6) == "/happy"){
+				// Just to demonstrate the usage of breep::packet
+				using str = chat_message<std::string>;
+				breep::packet p;
+				p << str("h") << str("a") << str("p") << str("p") << str("y") << chat_message<square>(square(25));
+				network.send_packet(p);
 			} else {
 				std::cout << "Unknown command: " << ans << std::endl;
 			}
