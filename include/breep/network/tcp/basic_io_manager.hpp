@@ -52,6 +52,7 @@ namespace breep { namespace tcp {
 				: socket(std::move(socket_))
 				, fixed_buffer()
 				, dynamic_buffer()
+				, last_read()
 				, last_command(commands::null_command)
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
@@ -60,6 +61,7 @@ namespace breep { namespace tcp {
 				: socket(std::move(*socket_ptr.get()))
 				, fixed_buffer()
 				, dynamic_buffer()
+				, last_read()
 				, last_command(commands::null_command)
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
@@ -73,6 +75,7 @@ namespace breep { namespace tcp {
 		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer;
 		std::vector<uint8_t> dynamic_buffer;
 
+		std::size_t last_read;
 		commands last_command;
 
 		std::chrono::milliseconds timestamp;

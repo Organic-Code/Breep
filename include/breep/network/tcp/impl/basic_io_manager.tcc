@@ -263,7 +263,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 		}
 
 		bool has_work = true;
-		std::size_t max_idx = std::max(read, fixed_buff.size());
+		std::size_t max_idx = read + peer.io_data->last_read;
 		do {
 			uint8_t to_be_red = fixed_buff[current_index++];
 
@@ -283,6 +283,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 						boost::bind(&io_manager::process_read, this, peer, _1, _2)
 					);
 					has_work = false;
+					peer.io_data->last_read= 0;
 
 				} else {
 				// We still have to wait for some more input
@@ -292,6 +293,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 					while (fixed_buff.size() > current_index) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
+					peer.io_data->last_read = count;
 
 					peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
@@ -315,6 +317,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& peer, boost::syst
 					while (fixed_buff.size() > current_index) {
 						fixed_buff[count++] = fixed_buff[current_index++];
 					}
+					peer.io_data->last_read = count;
 
 					peer.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),

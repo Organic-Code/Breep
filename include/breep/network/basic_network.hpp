@@ -604,11 +604,11 @@ namespace breep {
 
 		void network_data_listener(const peer& source, cuint8_random_iterator data, size_t data_size, bool sent_to_all) {
 			uint64_t hash_code{0};
-			for (int i = {sizeof(uint64_t) / sizeof(uint8_t)} ; i--;) {
+			for (int i = {sizeof(uint64_t)} ; i--;) {
 				hash_code = (hash_code << 8) | static_cast<unsigned char>(*data++);
 			}
 
-			breep::deserializer d(std::basic_string<uint8_t>(data, data + data_size));
+			breep::deserializer d(std::basic_string<uint8_t>(data, data + data_size - sizeof(uint64_t)));
 			if (hash_code == type_traits<packet>::hash_code()) {
 				breep::logger<network>.trace("Received a packet. Unwrapping it.");
 				while(!d.empty()) {
