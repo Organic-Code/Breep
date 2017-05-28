@@ -181,8 +181,8 @@ namespace breep {
 		 *
 		 * @tparam Serialiseable  Serialisable must meet the requirements of boost serialization (for now)
 		 *
-		 * @sa basic_network::send_object_to(const peer&, const data_container&) const
-		 * @sa basic_network::send_raw(const data_container&) const
+		 * @sa basic_network::send_object_to(const peer&, const Serialiseable&) const
+		 * @sa basic_network::send_packet(const packet& pack)
 		 *
 		 * @until 1.0.0: void send_object(Serialiseable);
 	 	 * @since 1.0.0: void send_object(const Serialiseable&);
@@ -192,17 +192,17 @@ namespace breep {
 			breep::serializer s;
 			s << type_traits<Serialiseable>::hash_code();
 			s << data;
-			breep::logger<network>.info("Sending " + type_traits<Serialiseable>::universal_name());
+			breep::logger<network>.debug("Sending " + type_traits<Serialiseable>::universal_name());
 			m_manager.send_to_all(s.str());
 		}
 
 		/**
-		 * Sends an object to a specific member of the network
+		 * @brief Sends an object to a specific member of the network
 		 *
 		 * @param p Target peer
 		 *
-		 * @sa basic_network::send_object(const data_container&) const
-		 * @sa basic_network::send_raw_to(const peer&, const data_container&) const
+		 * @sa basic_network::send_object(const Serialiseable&) const
+		 * @sa basic_network::send_packet_to(const peer&, const packet&) const
 		 *
 		 * @until 1.0.0: void send_object_to(const peer&, Serialiseable);
 	 	 * @since 1.0.0: void send_object_to(const peer&, const Serialiseable&);
@@ -213,7 +213,7 @@ namespace breep {
 			breep::serializer s;
 			s << type_traits<Serialiseable>::hash_code();
 			s << data;
-			breep::logger<network>.info("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
+			breep::logger<network>.debug("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
 			m_manager.send_to(p, s.str());
 		}
 
@@ -227,7 +227,7 @@ namespace breep {
 		 * @since 1.0.0
 		 */
 		void send_packet(const packet& pack) const {
-			breep::logger<network>.info("Sending a packet");
+			breep::logger<network>.debug("Sending a packet");
 			m_manager.send_to_all(pack.m_s.str());
 		}
 
@@ -242,7 +242,7 @@ namespace breep {
 		 * @since 1.0.0
 		 */
 		void send_packet_to(const peer& target, const packet& pack) const {
-			breep::logger<network>.info("Sending a private packet");
+			breep::logger<network>.debug("Sending a private packet");
 			m_manager.send_to(target, pack.m_s.str());
 		}
 
@@ -525,7 +525,7 @@ namespace breep {
 			auto associated_listener = m_data_listeners.find(id.type_hash());
 			if (associated_listener == m_data_listeners.end()) {
 				breep::logger<network>.warning
-						("Trying to remove a listener unknown type (hash: " + std::to_string(id.type_hash())
+						("Trying to remove a listener for an unknown type (hash: " + std::to_string(id.type_hash())
 						 + ") that was not registered. (listener id: " + std::to_string(id.id()) + ")");
 				return false;
 			} else {
@@ -560,7 +560,7 @@ namespace breep {
 		 * @brief removes all listeners of the given type
 		 *
 		 * @since 0.1.0
-		 */ // TODO test
+		 */
 		template <typename T>
 		void clear_all() {
 			auto object_builder = m_data_listeners.find(type_traits<T>::hash_code());
@@ -577,7 +577,7 @@ namespace breep {
 		 *         registered.
 		 *
 		 * @since 0.1.0
-		 */ // TODO test
+		 */
 		void clear_any() {
 			breep::logger<network>.debug("Cleaning any listeners");
 
@@ -610,6 +610,7 @@ namespace breep {
 
 			breep::deserializer d(std::basic_string<uint8_t>(data, data + data_size));
 			if (hash_code == type_traits<packet>::hash_code()) {
+				breep::logger<network>.trace("Received a packet. Unwrapping it.");
 				while(!d.empty()) {
 					d >> hash_code;
 					class_received(hash_code, source, d, sent_to_all);

@@ -69,7 +69,7 @@ inline void breep::basic_peer_manager<T>::send_to_all(const data_container& data
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(data, sendable_data);
 
-	breep::logger<peer_manager>.debug("Sending " + std::to_string(data.size()) + " octets");
+	breep::logger<peer_manager>.debug("Sending " + std::to_string(sendable_data.size()) + " octets");
 	for (const std::pair<boost::uuids::uuid, peer>& pair : m_peers) {
 		if (pair.second.distance() == 0) {
 			breep::logger<peer_manager>.trace("Sending to " + pair.second.id_as_string());
@@ -95,7 +95,7 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(processed_data, sendable_data);
 
-	breep::logger<peer_manager>.debug("Sending private packet to " + p.id_as_string());
+	breep::logger<peer_manager>.debug("Sending private data to " + p.id_as_string());
 	breep::logger<peer_manager>.debug("(" + std::to_string(data.size()) + " octets)");
 
 	if (p.distance() != 0) {
@@ -386,7 +386,7 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 	detail::unmake_little_endian(data, processed_data);
 
 	breep::logger<peer_manager>.debug
-			("Received " + std::to_string(data.size()) + " from " + source.id_as_string());
+			("Received " + std::to_string(data.size()) + "octets from " + source.id_as_string());
 
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 
