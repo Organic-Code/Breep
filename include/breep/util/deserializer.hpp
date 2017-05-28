@@ -37,6 +37,10 @@ namespace breep {
 	public:
 		explicit deserializer(const std::basic_string<uint8_t>& bs): m_is(bs) {}
 
+		bool empty() const {
+			return m_is.rdbuf()->in_avail() == 0;
+		}
+
 	private:
 		std::basic_istringstream<uint8_t> m_is;
 

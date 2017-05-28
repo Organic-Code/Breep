@@ -22,9 +22,6 @@
 
 namespace breep {
 
-	template<typename T>
-	class basic_network;
-
 	/**
 	 * Class used to send several classes at once, using basic_network::send_packet or basic_network::send_packet_to
 	 */
@@ -37,6 +34,9 @@ namespace breep {
 
 		template <typename T>
 		friend packet& operator<<(packet&, const T&);
+
+		template <typename T>
+		friend class basic_network;
 	};
 
 	template <typename T>

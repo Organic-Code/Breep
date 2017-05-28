@@ -23,13 +23,14 @@
 
 #include "breep/util/serializer.hpp"
 #include "breep/util/deserializer.hpp"
+#include "breep/util/type_traits.hpp"
 #include "breep/network/typedefs.hpp"
 #include "breep/network/detail/utils.hpp"
 #include "breep/network/detail/object_builder.hpp"
-#include "breep/util/type_traits.hpp"
 #include "breep/network/basic_netdata_wrapper.hpp"
 #include "breep/network/basic_peer.hpp"
 #include "breep/network/basic_peer_manager.hpp"
+#include "breep/network/packet.hpp"
 
 namespace breep {
 
@@ -214,6 +215,35 @@ namespace breep {
 			s << data;
 			breep::logger<network>.info("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
 			m_manager.send_to(p, s.str());
+		}
+
+		/**
+		 * @brief Sends a packet containing 0 or more classes
+		 * @param pack The packet to be sent.
+		 *
+		 * @sa basic_network::send_packet_to(const peer&, const packet&)
+		 * @sa basic_network::send_object(const Serialiseable&)
+		 *
+		 * @since 1.0.0
+		 */
+		void send_packet(const packet& pack) const {
+			breep::logger<network>.info("Sending a packet");
+			m_manager.send_to_all(pack.m_s.str());
+		}
+
+		/**
+		 * @brief Sends a packet containing 0 or more classes
+		 * @param pack The packet to be sent.
+		 * @param target Target peer
+		 *
+		 * @sa basic_network::send_packet(const packet&)
+		 * @sa basic_network::send_object_to(const peer& const Serialiseable&)
+		 *
+		 * @since 1.0.0
+		 */
+		void send_packet_to(const peer& target, const packet& pack) const {
+			breep::logger<network>.info("Sending a private packet");
+			m_manager.send_to(target, pack.m_s.str());
 		}
 
 		/**
@@ -579,7 +609,17 @@ namespace breep {
 			}
 
 			breep::deserializer d(std::basic_string<uint8_t>(data, data + data_size));
+			if (hash_code == type_traits<packet>::hash_code()) {
+				while(!d.empty()) {
+					d >> hash_code;
+					class_received(hash_code, source, d, sent_to_all);
+				}
+			} else {
+				class_received(hash_code, source, d, sent_to_all);
+			}
+		}
 
+		void class_received(uint64_t hash_code, const peer& source, breep::deserializer& d, bool sent_to_all) {
 			m_object_builder_mutex.lock();
 			auto associated_listener = m_data_listeners.find(hash_code);
 			if (associated_listener != m_data_listeners.end()) {
