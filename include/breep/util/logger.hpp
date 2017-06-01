@@ -43,7 +43,8 @@ namespace breep {
 		none
 	};
 
-	bool operator >=(log_level lhs, log_level rhs) {
+    bool operator>=(log_level, log_level);
+	bool operator>=(log_level lhs, log_level rhs) {
 		return static_cast<int>(lhs) >= static_cast<int>(rhs);
 	}
 

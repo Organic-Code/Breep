@@ -101,9 +101,9 @@ namespace breep {
 	}
 
 	deserializer& operator>>(deserializer& s, bool& val) {
-		uint8_t uint8;
-		s >> uint8;
-		val = (uint8 == '1');
+		uint8_t c;
+		s >> c;
+		val = (c == static_cast<uint8_t>('1'));
 		return s;
 	}
 

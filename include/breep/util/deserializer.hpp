@@ -42,7 +42,7 @@ namespace breep {
 		}
 
 	private:
-		std::basic_istringstream<uint8_t> m_is;
+		std::basic_istringstream<uint8_t, std::char_traits<uint8_t>> m_is;
 
 		// deserializing fundamental uint8_t
 		friend deserializer& operator>>(deserializer&, uint8_t&);

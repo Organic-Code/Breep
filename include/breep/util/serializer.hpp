@@ -21,6 +21,7 @@
 #include <sstream>
 #include <chrono>
 #include <forward_list>
+#include <vector>
 
 namespace breep {
 	class serializer {
@@ -61,9 +62,12 @@ namespace breep {
 	serializer& operator<<(serializer&, float);
 	serializer& operator<<(serializer&, double);
 
-	// generic method to serialize containers that supports iterators
+	// generic method to serialize containers that supports iterators (assuming we can dereference and get a const ref)
 	template <typename IterableContainer>
 	serializer& operator<<(serializer&, const IterableContainer&);
+
+    // std::vector<bool> is not like that.
+    serializer& operator<<(serializer& s, const std::vector<bool>&);
 
 	template <typename T>
 	serializer& operator<<(serializer&, const std::forward_list<T>&);

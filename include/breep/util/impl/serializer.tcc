@@ -114,7 +114,7 @@ namespace breep {
 	}
 
 	serializer& operator<<(serializer& s, bool val) {
-		s << (val ? '1' : '0');
+		s << (val ? static_cast<uint8_t>('1') : static_cast<uint8_t>('0'));
 		return s;
 	}
 
@@ -185,6 +185,14 @@ namespace breep {
 		}
 		return s;
 	}
+
+    serializer& operator<<(serializer& s, const std::vector<bool>& vect) {
+        write_size(s, vect.size());
+        for (bool b : vect) {
+            s << b;
+        }
+        return s;
+    }
 
 	// Who doesn't love O(n*n) ?
 	template <typename T>
