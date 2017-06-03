@@ -68,15 +68,20 @@ namespace breep {
 			shift = static_cast<InputType>(((value >> MantissaBits) & ((InputType(1) << ExponentBits) - 1)) - bias);
 
 			if (shift > 0) {
-				while(shift > 0) {
-					result *= FloatType(2.);
-					shift--;
-				}
+                for (uint_fast8_t shift_val = std::numeric_limits<InputType>::digits ; --shift_val ;) {
+                    while (shift >= shift_val) {
+                        result *= FloatType(InputType(1) << shift_val);
+                        shift -= static_cast<InputType>(shift_val);
+                    }
+                }
 			} else {
-				while (shift < 0) {
-					result /= FloatType(2.);
-					shift++;
-				}
+                for (uint_fast8_t shift_val = std::numeric_limits<InputType>::digits ; --shift_val ;) {
+                    while (shift <= -shift_val) {
+                        result /= FloatType(InputType(1) << shift_val);
+                        shift += static_cast<InputType>(shift_val);
+                    }
+                }
+
 			}
 
 			result *= FloatType((value >> (ExponentBits + MantissaBits)) & 1 ? -1.0: 1.0);
@@ -178,14 +183,14 @@ namespace breep {
 	deserializer& operator>>(deserializer& s, float& val) {
 		uint32_t uint32(0);
 		s >> uint32;
-		val = detail::fromIEEE<float, uint32_t, 8, 23>(uint32);
+		val = detail::fromIEEE<float, int32_t, 8, 23>(uint32);
 		return s;
 	}
 
 	deserializer& operator>>(deserializer& s, double& val) {
 		uint64_t uint64(0);
 		s >> uint64;
-		val = detail::fromIEEE<double, uint64_t, 11, 52>(uint64);
+		val = detail::fromIEEE<double, int64_t, 11, 52>(uint64);
 		return s;
 	}
 
@@ -223,6 +228,20 @@ namespace breep {
 		}
 		return s;
 	}
+
+    deserializer& operator>>(deserializer& s, std::vector<bool>& vector) {
+        uint8_t mask;
+        uint64_t size = 0;
+        read_size(s, size);
+        vector.reserve(size + vector.size());
+        for (uint64_t i = 0 ; i < size ; i += std::numeric_limits<uint8_t>::digits) {
+            s >> mask;
+            for (uint8_t j = 0 ; j < std::numeric_limits<uint8_t>::digits && i+j < size ; ++j) {
+                vector.push_back((mask & (1 << j)) != 0);
+            }
+        }
+        return s;
+    }
 
 	template <typename T, std::size_t N>
 	deserializer& operator>>(deserializer& s, std::array<T, N>& array) {

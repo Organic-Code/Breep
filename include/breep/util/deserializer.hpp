@@ -79,6 +79,8 @@ namespace breep {
 	template <typename T>
 	deserializer& operator>>(deserializer&, std::vector<T>&);
 
+    deserializer& operator>>(deserializer&, std::vector<bool>&);
+
 	template <typename T, std::size_t N>
 	deserializer& operator>>(deserializer&, std::array<T, N>&);
 

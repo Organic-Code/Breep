@@ -65,15 +65,19 @@ namespace breep { namespace detail {
 				shift = 0;
 
 				if (fnorm >= FloatType(2.)) {
-					while (fnorm >= FloatType(2.)) {
-						fnorm /= FloatType(2.);
-						shift++;
-					}
+                    for (uint_fast8_t i = std::numeric_limits<ReturnType>::digits ; --i ;) {
+                        while(fnorm >= FloatType(ReturnType(1) << i)) {
+                            fnorm /= FloatType(ReturnType(1) << i);
+                            shift += i;
+                        }
+                    }
 				} else {
-					while (fnorm < FloatType(1.)) {
-						fnorm *= FloatType(2.);
-						shift--;
-					}
+                    for (uint_fast8_t i = std::numeric_limits<ReturnType>::digits ; i-- ;) {
+                        while(fnorm < FloatType(1) / FloatType(ReturnType(1) << i)) {
+                            fnorm *= FloatType(ReturnType(2) << i);
+                            shift -= (i + 1);
+                        }
+                    }
 				}
 				fnorm = fnorm - FloatType(1.);
 
@@ -168,12 +172,12 @@ namespace breep {
 	}
 
 	serializer& operator<<(serializer& s, float val) {
-		s << detail::toIEEE<uint32_t, float, 8, 23>(val);
+		s << detail::toIEEE<int32_t, float, 8, 23>(val);
 		return s;
 	}
 
 	serializer& operator<<(serializer& s, double val) {
-		s << detail::toIEEE<uint64_t, double, 11, 52>(val);
+		s << detail::toIEEE<int64_t, double, 11, 52>(val);
 		return s;
 	}
 
@@ -188,8 +192,12 @@ namespace breep {
 
     serializer& operator<<(serializer& s, const std::vector<bool>& vect) {
         write_size(s, vect.size());
-        for (bool b : vect) {
-            s << b;
+        for (std::vector<bool>::size_type i = 0 ; i < vect.size() ; i += std::numeric_limits<uint8_t>::digits) {
+            uint8_t mask = 0;
+            for (uint_fast8_t j = 0 ; j < std::numeric_limits<uint8_t>::digits && i+j < vect.size() ; ++j) {
+                mask = static_cast<uint8_t>(mask | (vect[i + j] ? 1 << j : 0));
+            }
+            s << mask;
         }
         return s;
     }
