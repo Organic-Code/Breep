@@ -20,6 +20,7 @@
 #include <utility>
 #include <chrono>
 
+#include "breep/util/tuple_iter.hpp"
 #include "../deserializer.hpp" // Allows my IDE to work
 
 namespace breep {
@@ -419,45 +420,11 @@ namespace breep {
 		return s;
 	}
 
-	template<typename T>
-	deserializer& operator>>(deserializer& s, std::tuple<T>& val) {
-		s >> std::get<0>(val);
-		return s;
-	}
-
-	template<typename T, typename U>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U>& val) {
-		s >> std::get<0>(val) << std::get<1>(val);
-		return s;
-	}
-
-	template<typename T, typename U, typename V>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U, V>& val) {
-		s >> std::get<0>(val) << std::get<1>(val) << std::get<2>(val);
-		return s;
-	}
-
-	template<typename T, typename U, typename V, typename W>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U, V, W>& val) {
-		s >> std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val);
-		return s;
-	}
-
-	template<typename T, typename U, typename V, typename W, typename X>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U, V, W, X>& val) {
-		s >> std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val);
-		return s;
-	}
-
-	template<typename T, typename U, typename V, typename W, typename X, typename Y>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U, V, W, X, Y>& val) {
-		s >> std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val) << std::get<5>(val);
-		return s;
-	}
-
-	template<typename T, typename U, typename V, typename W, typename X, typename Y, typename Z>
-	deserializer& operator>>(deserializer& s, std::tuple<T, U, V, W, X, Y>& val) {
-		s >> std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val) << std::get<5>(val) << std::get<6>(val);
+	template<typename... T>
+	deserializer& operator>>(deserializer& s, std::tuple<T...>& values) {
+		for_each(values, [&s](auto&& val) -> void {
+			s >> val;
+		});
 		return s;
 	}
 

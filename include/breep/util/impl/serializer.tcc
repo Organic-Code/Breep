@@ -21,6 +21,8 @@
 #include <utility>
 #include <bitset>
 
+
+#include "breep/util/tuple_iter.hpp"
 #include "../serializer.hpp" // Allows my IDE to work
 
 namespace breep { namespace detail {
@@ -220,51 +222,11 @@ namespace breep {
 		return s;
 	}
 
-	template <typename T>
-	serializer& operator<<(serializer& s, const std::tuple<T>& val) {
-		s << std::get<0>(val);
-		return s;
-	}
-
-	template <typename T, typename U>
-	serializer& operator<<(serializer& s, const std::tuple<T, U>& val) {
-		s << std::get<0>(val) << std::get<1>(val);
-		return s;
-	}
-
-	template <typename T, typename U, typename V>
-	serializer& operator<<(serializer& s, const std::tuple<T, U, V>& val) {
-		s << std::get<0>(val) << std::get<1>(val) << std::get<2>(val);
-		return s;
-	}
-
-	template <typename T, typename U, typename V, typename W>
-	serializer& operator<<(serializer& s, const std::tuple<T,U,V,W>& val) {
-		s << std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val);
-		return s;
-	}
-
-	template <typename T, typename U, typename V, typename W, typename X>
-	serializer& operator<<(serializer& s, const std::tuple<T,U,V,W,X>& val) {
-		s << std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val);
-		return s;
-	}
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y>
-	serializer& operator<<(serializer& s, const std::tuple<T,U,V,W,X,Y>& val) {
-		s << std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val) << std::get<5>(val);
-		return s;
-	}
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y, typename Z>
-	serializer& operator<<(serializer& s, const std::tuple<T,U,V,W,X,Y>& val) {
-		s << std::get<0>(val) << std::get<1>(val) << std::get<2>(val) << std::get<3>(val) << std::get<4>(val) << std::get<5>(val) << std::get<6>(val);
-		return s;
-	}
-
-	template <typename T, typename U>
-	serializer& operator<<(serializer& s, const std::chrono::duration<T,U>& val) {
-		s << static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(val).count());
+	template <typename... T>
+	serializer& operator<<(serializer& s, const std::tuple<T...>& values) {
+        for_each(values, [&s](auto&& val) -> void {
+                    s << val;
+                });
 		return s;
 	}
 }

@@ -76,31 +76,9 @@ namespace breep {
 	template <typename T, typename U>
 	serializer& operator<<(serializer&, const std::pair<T,U>&);
 
-	// serializing std::tuple with up to 7 elements
-	template <typename T>
-	serializer& operator<<(serializer&, const std::tuple<T>&);
-
-	template <typename T, typename U>
-	serializer& operator<<(serializer&, const std::tuple<T, U>&);
-
-	template <typename T, typename U, typename V>
-	serializer& operator<<(serializer&, const std::tuple<T, U, V>&);
-
-	template <typename T, typename U, typename V, typename W>
-	serializer& operator<<(serializer&, const std::tuple<T,U,V,W>&);
-
-	template <typename T, typename U, typename V, typename W, typename X>
-	serializer& operator<<(serializer&, const std::tuple<T,U,V,W,X>&);
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y>
-	serializer& operator<<(serializer&, const std::tuple<T,U,V,W,X,Y>&);
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y, typename Z>
-	serializer& operator<<(serializer&, const std::tuple<T,U,V,W,X,Y>& val);
-
-	// serializing durations
-	template <typename T, typename U>
-	serializer& operator<<(serializer&, const std::chrono::duration<T,U>&);
+	// serializing std::tuple
+	template <typename... T>
+	serializer& operator<<(serializer&, const std::tuple<T...>&);
 }
 
 #include "impl/serializer.tcc"

@@ -130,27 +130,9 @@ namespace breep {
 	template <typename T, typename U>
 	deserializer& operator>>(deserializer&, std::pair<T,U>&);
 
-	// deserializing std::tuple with up to 7 elements
-	template <typename T>
-	deserializer& operator>>(deserializer&, std::tuple<T>&);
-
-	template <typename T, typename U>
-	deserializer& operator>>(deserializer&, std::tuple<T, U>&);
-
-	template <typename T, typename U, typename V>
-	deserializer& operator>>(deserializer&, std::tuple<T, U, V>&);
-
-	template <typename T, typename U, typename V, typename W>
-	deserializer& operator>>(deserializer&, std::tuple<T,U,V,W>&);
-
-	template <typename T, typename U, typename V, typename W, typename X>
-	deserializer& operator>>(deserializer&, std::tuple<T,U,V,W,X>&);
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y>
-	deserializer& operator>>(deserializer&, std::tuple<T,U,V,W,X,Y>&);
-
-	template <typename T, typename U, typename V, typename W, typename X, typename Y, typename Z>
-	deserializer& operator>>(deserializer&, std::tuple<T,U,V,W,X,Y>&);
+	// deserializing std::tuple
+	template <typename... T>
+	deserializer& operator>>(deserializer&, std::tuple<T...>&);
 
 	// deserializing durations
 	template <typename T, typename U>
