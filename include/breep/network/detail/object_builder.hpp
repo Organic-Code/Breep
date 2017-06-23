@@ -21,6 +21,7 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
 
 #include "breep/util/deserializer.hpp"
 #include "breep/util/type_traits.hpp"
@@ -84,12 +85,27 @@ namespace breep { namespace detail {
 			} else {
 				breep::logger<object_builder<io_manager,T>>.debug("Bulding object of type " + type_traits<T>::universal_name());
 				T object;
-				data >> object;
+				try {
+					data >> object;
+				} catch (const std::exception& e) {
+					std::cerr << e.what();
+				} catch (const std::exception* e) {
+					std::cerr << e->what();
+					delete e;
+				}
+
 				basic_netdata_wrapper<io_manager, T> wrapper(lnetwork, received_from, object, is_private);
 				for (auto& listeners_pair : m_listeners) {
 					breep::logger<object_builder<io_manager,T>>.trace("Calling listener with id " + std::to_string(listeners_pair.first));
 					wrapper.listener_id = listeners_pair.first;
-					listeners_pair.second(wrapper);
+					try {
+						listeners_pair.second(wrapper);
+					} catch (const std::exception& e) {
+						std::cerr << e.what();
+					} catch (const std::exception* e) {
+						std::cerr << e->what();
+						delete e;
+					}
 				}
 				return true;
 			}

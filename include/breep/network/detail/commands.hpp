@@ -66,7 +66,7 @@ namespace breep {
 		stop_forwarding,
 		/**
 		 * @brief     Command to tell a peer you are bridging for him
-		 * @details   Must be followed your own distance to the peer (1 octet) + by a peer (id)
+		 * @details   Must be followed by your own distance to the peer (1 octet) + by a peer (id)
 		 * @sa        commands::forward_to
 		 * @sa        commands::stop_forwarding
 		 *

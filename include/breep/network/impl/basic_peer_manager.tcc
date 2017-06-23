@@ -247,7 +247,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
-		} catch (std::exception* e) {
+		} catch (const std::exception* e) {
 			std::cerr << e->what() << std::endl;
 			delete e;
 		}
@@ -277,7 +277,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
-		} catch (std::exception* e) {
+		} catch (const std::exception* e) {
 			std::cerr << e->what() << std::endl;
 			delete e;
 		}
@@ -299,7 +299,7 @@ inline void breep::basic_peer_manager<T>::peer_disconnected(peer& p) {
 			l.second(*this, p);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << std::endl;
-		} catch (std::exception* e) {
+		} catch (const std::exception* e) {
 			std::cerr << e->what() << std::endl;
 			delete e;
 		}
@@ -344,7 +344,7 @@ inline void breep::basic_peer_manager<T>::forward_if_needed(const peer& source, 
 }
 
 template <typename T>
-void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std::vector<uint8_t>& data) {
+void breep::basic_peer_manager<T>::send_to_handler(const peer& /*source*/, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> processed_data;
 	detail::unmake_little_endian(data, processed_data);
 
@@ -366,7 +366,7 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 				l.second(*this, sender, processed_data.data() + 1 + 2 * id_size, processed_data.size() - 1 - 2 * id_size, false);
 			}  catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
-			} catch (std::exception* e) {
+			} catch (const std::exception* e) {
 				std::cerr << e->what() << '\n';
 				delete e;
 			}
@@ -396,7 +396,7 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 			l.second(*this, source, processed_data.data(), processed_data.size(), true);
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << '\n';
-		} catch (std::exception* e) {
+		} catch (const std::exception* e) {
 			std::cerr << e->what() << '\n';
 			delete e;
 		}
