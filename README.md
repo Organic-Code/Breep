@@ -16,7 +16,7 @@ piles of bytes', but instead you say 'I want to listen for fancy::MyClass'.
 
 ### How do I use Breep::network ?
 
-The best way to now it is to read its [examples](examples/) or to [read the online doc](https://organic-code.github.io/Breep/). But as a little preview, here is a small one
+The best way to now it is to read the [tutorials](tutorials/). Alternatively, you may read some [examples](examples/) and [the online doc](https://organic-code.github.io/Breep/). But as a little preview, here is a 'Hello World!'-type example:
 
 Here is how to create a network, start listening on port 1234, and send "Hello!" to any budy that connects:
 ```cpp
@@ -80,6 +80,7 @@ Please don't get confused: there is no UDP in this lib (yet).
 | [Boost](http://www.boost.org/) | Boost 1.55 or above       |
 
 
+
 ## Road Map
 
 | Milestone                                                | Feature                             | Status      |
@@ -106,3 +107,4 @@ Extract of article 13 :
 ## Author
 
 [Lucas Lazare](https://github.com/Organic-code), an IT student frustrated from not being able to properly use java's broken network library, and inspired by [KryoNet](https://github.com/EsotericSoftware/kryonet)
+

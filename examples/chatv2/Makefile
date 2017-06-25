@@ -45,7 +45,7 @@ INCLUDEDIR      = -I ../../include
 #Libraries paths' flags
 LIBSDIR         = -L ../../bin
 #Libraries links' flags
-LINKS           = -lboost_system -lboost_serialization -pthread
+LINKS           = -lboost_system -pthread
 #Extra compiler flags
 DEFINES         =
 #Compiler argument to name the output file

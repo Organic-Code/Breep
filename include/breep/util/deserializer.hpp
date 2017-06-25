@@ -18,7 +18,7 @@
  */
 
 #include <cstdint>
-#include <istream>
+#include <sstream>
 #include <forward_list>
 #include <vector>
 #include <array>
@@ -30,6 +30,7 @@
 #include <unordered_set>
 #include <stack>
 #include <queue>
+#include <chrono>
 
 namespace breep {
 	class deserializer {

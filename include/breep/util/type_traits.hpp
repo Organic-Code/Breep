@@ -140,7 +140,7 @@ namespace breep {
 	 * @details If a call to BREEP_DECLARE_TYPE or BREEP_DECLARE_TEMPLATE has been previously made for the template type,
 	 *          the static const variables ::universal_name (std::string) and ::hash_code (uint64_t) are available.
 	 *
-	 * @note When computing hash_code ':' '>' ',' and '<' are all ignored.
+	 * @note When computing hash_code, '>' and ',' are ignored.
 	 *
 	 * @sa BREEP_DECLARE_TYPE
 	 * @sa BREEP_DECLARE_TEMPLATE
@@ -162,7 +162,7 @@ namespace breep {
 		}
 
 		/**
-		 * holds an hash of the class universal_name (ignoring '>' '<' ',' ':').
+		 * holds an hash of the class universal_name (ignoring '>' and ',' ).
 		 * It is guaranteed that networking_traits<T>::hash_code == networking_traits<U>::hash_code if T == U
 		 * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
 		 *       The hashing function was choosen because of its good performance regarding collision avoidance.
