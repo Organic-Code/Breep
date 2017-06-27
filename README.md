@@ -63,7 +63,7 @@ Please don't get confused: there is no UDP in this lib (yet).
 
 * It's awesome!
 * It's high level: you can directly send and receive objects.
-* The overhead for this is low: if you set up well your serialization, you only have a fixed 64bits extra overhead (compared to sending raw bytes to the p2p network)
+* The overhead for this is low: if you set up well your serialization, you only have a fixed 64bits extra overhead (compared to sending raw bytes to the p2p network — in comparison, TCP has 320bits of overhead only for its header)
 * It's easy to get in: just read the examples, you'll see!
 
 ### Why should I NOT use Breep::network ?

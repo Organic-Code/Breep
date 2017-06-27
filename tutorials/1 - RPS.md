@@ -511,6 +511,8 @@ the ```main``` accordingly:
 	}
 ```
 
+And it works ! See the [full source listing](listings/RPS-final.cpp)
+
 There are a couple of things that may be improved (a '/score' command, better management of plays – right now, it's bugged
 if someone connects, play, and then disconnects), but we'll stop here for this tutorial.
 
