@@ -89,9 +89,11 @@ namespace breep { namespace detail {
 					data >> object;
 				} catch (const std::exception& e) {
 					std::cerr << e.what();
+                    return false;
 				} catch (const std::exception* e) {
 					std::cerr << e->what();
 					delete e;
+                    return false;
 				}
 
 				basic_netdata_wrapper<io_manager, T> wrapper(lnetwork, received_from, object, is_private);
@@ -120,8 +122,8 @@ namespace breep { namespace detail {
 		}
 
 		bool remove_listener(listener_id id) {
+	        std::lock_guard<std::mutex> lock_guard(m_mutex);
 			if (m_listeners.count(id)) {
-				std::lock_guard<std::mutex> lock_guard(m_mutex);
 				if (std::find_if(m_to_remove.cbegin(), m_to_remove.cend(), [id](auto l_id) -> bool { return l_id == id; }) == m_to_remove.cend()) {
 					breep::logger<object_builder<io_manager,T>>.debug
 							("Removing listener for type " + type_traits<T>::universal_name () + ". (id: " + std::to_string(id) + ")");
@@ -129,7 +131,6 @@ namespace breep { namespace detail {
 					return true;
 				}
 			} else {
-				std::lock_guard<std::mutex> lock_guard(m_mutex);
 				auto it = std::find_if(m_to_add.begin(), m_to_add.end(), [id](auto l_it) -> bool { return l_it.first == id; });
 				if (it != m_to_add.cend()) {
 					breep::logger<object_builder<io_manager,T>>.debug
@@ -139,7 +140,7 @@ namespace breep { namespace detail {
 					return true;
 				}
 			}
-			breep::logger<object_builder<io_manager,T>>.warning
+			breep::logger<object_builder<io_manager,T>>.debug
 					("Listener with id " + std::to_string(id) + " not found when trying to remove from listeners of type " + type_traits<T>::universal_name());
 			return false;
 		}
