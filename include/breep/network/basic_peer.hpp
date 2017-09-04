@@ -163,5 +163,6 @@ namespace breep {
 #include "impl/basic_peer.tcc"
 } // namespace breep
 
+BREEP_DECLARE_TEMPLATE(breep::basic_peer)
 
 #endif //BREEP_NETWORK_BASIC_PEER_HPP

@@ -56,10 +56,10 @@
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
 	namespace breep { namespace detail { \
-		/* If you have an error here, should probably declared you type with\
+		/* If you have an error here, should probably declare your type with\
             BREEP_DECLARE_TYPE instead of BREEP_DECLARE_TEMPLATE \
             Note that types that have literals as template parameters cannot be declared \
-            through this macro. use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
+            through this macro; use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
 	    template <typename... T> \
 	    struct networking_traits_impl<TType<T...>> { \
 			networking_traits_impl(); \

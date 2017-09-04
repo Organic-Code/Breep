@@ -302,6 +302,15 @@ namespace breep {
 		}
 
 		/**
+		 * @return true if the network is launched, false otherwise
+		 *
+		 * @since 1.0.0
+		 */
+		bool is_running() const {
+			return m_running;
+		}
+
+		/**
 		 * @return The port to which the object is currently mapped to.
 		 *
 		 * @since 0.1.0

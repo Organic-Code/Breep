@@ -63,16 +63,7 @@ namespace breep { namespace detail {
 				breep::logger<object_builder<io_manager, T>>.info("Received private " + type_traits<T>::universal_name() + " from " + received_from.id_as_string());
 			}
 
-			m_mutex.lock();
-			for (auto& pair : m_to_add) {
-				breep::logger<object_builder<io_manager,T>>.trace("Effectively adding listener (id: " + std::to_string(pair.first) + ")");
-				m_listeners.emplace(std::move(pair));
-			}
-			for (auto& id : m_to_remove) {
-				breep::logger<object_builder<io_manager,T>>.trace("Effectively removing listener (id: " + std::to_string(id) + ")");
-				m_listeners.erase(id);
-			}
-			m_mutex.unlock();
+			flush_listeners();
 
 			if (m_listeners.empty()) {
 				breep::logger<object_builder<io_manager,T>>.debug("No listener for received " + type_traits<T>::universal_name());
@@ -91,19 +82,8 @@ namespace breep { namespace detail {
                     return false;
 				}
 
-				basic_netdata_wrapper<io_manager, T> wrapper(lnetwork, received_from, object, is_private);
-				for (auto& listeners_pair : m_listeners) {
-					breep::logger<object_builder<io_manager,T>>.trace("Calling listener with id " + std::to_string(listeners_pair.first));
-					wrapper.listener_id = listeners_pair.first;
-					try {
-						listeners_pair.second(wrapper);
-					} catch (const std::exception& e) {
-						std::cerr << e.what();
-					} catch (const std::exception* e) {
-						std::cerr << e->what();
-						delete e;
-					}
-				}
+				fire(breep::basic_netdata_wrapper<io_manager, T>(lnetwork, received_from, object, is_private));
+
 				return true;
 			}
 		}
@@ -150,6 +130,33 @@ namespace breep { namespace detail {
 			m_listeners.clear();
 			m_to_add.clear();
 			m_to_remove.clear();
+		}
+
+		void fire(basic_netdata_wrapper<io_manager, T>&& wrapper) {
+			for (auto& listeners_pair : m_listeners) {
+				breep::logger<object_builder<io_manager,T>>.debug("Calling listener with id " + std::to_string(listeners_pair.first));
+				wrapper.listener_id = listeners_pair.first;
+				try {
+					listeners_pair.second(wrapper);
+				} catch (const std::exception& e) {
+					std::cerr << e.what();
+				} catch (const std::exception* e) {
+					std::cerr << e->what();
+					delete e;
+				}
+			}
+		}
+
+		void flush_listeners() {
+			std::lock_guard<std::mutex> lock_guard(m_mutex);
+			for (auto& pair : m_to_add) {
+				breep::logger<object_builder<io_manager,T>>.trace("Effectively adding listener (id: " + std::to_string(pair.first) + ")");
+				m_listeners.emplace(std::move(pair));
+			}
+			for (auto& id : m_to_remove) {
+				breep::logger<object_builder<io_manager,T>>.trace("Effectively removing listener (id: " + std::to_string(id) + ")");
+				m_listeners.erase(id);
+			}
 		}
 
 

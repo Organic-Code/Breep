@@ -182,11 +182,13 @@ namespace breep {
 	detail::logger<T> logger;
 
 	namespace logging {
+
 		/**
 		 * Sets the maximum logging level for all loggers.
 		 *
 		 * @since 1.0.0
 		 */
+		void set_max_level(log_level level);
 		void set_max_level(log_level level) {
 			detail::logger_cst::global_maximum_level = level;
 		}
