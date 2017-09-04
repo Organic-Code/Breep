@@ -107,7 +107,7 @@ namespace breep {
 		while (size >> bits_to_write) {
 			++bits_to_write;
 		}
-		uint_fast8_t oct_to_write = static_cast<uint_fast8_t>(bits_to_write / 8 + (bits_to_write % 8 == 0 ? 0 : 1));
+		auto oct_to_write = static_cast<uint_fast8_t>(bits_to_write / 8 + (bits_to_write % 8 == 0 ? 0 : 1));
 		s << static_cast<uint8_t>(oct_to_write);
 		while (oct_to_write--) {
 			s << static_cast<uint8_t>(size >> (oct_to_write * 8));
@@ -126,10 +126,10 @@ namespace breep {
 
 	serializer& operator<<(serializer& s, char val) {
 		if (std::numeric_limits<char>::min() < 0) {
-			unsigned char unsigned_value = static_cast<unsigned char>(val);
+			auto unsigned_value = static_cast<unsigned char>(val);
 			s << unsigned_value;
 		} else {
-			signed char signed_value = static_cast<signed char>(val);
+			auto signed_value = static_cast<signed char>(val);
 			s << signed_value;
 		}
 		return s;

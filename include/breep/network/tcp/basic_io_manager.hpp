@@ -66,7 +66,7 @@ namespace breep { namespace tcp {
 				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
 		{}
 
-		~io_manager_data() {}
+		~io_manager_data() = default;
 
 		io_manager_data(const io_manager_data&) = delete;
 		io_manager_data& operator=(const io_manager_data&) = delete;
@@ -104,9 +104,9 @@ namespace breep { namespace tcp {
 
 		explicit basic_io_manager(unsigned short port);
 
-		basic_io_manager(io_manager&& other);
+		basic_io_manager(io_manager&& other) noexcept;
 
-		~basic_io_manager();
+		~basic_io_manager() final;
 
 		basic_io_manager(const io_manager&) = delete;
 		io_manager& operator=(const io_manager&) = delete;
@@ -115,23 +115,23 @@ namespace breep { namespace tcp {
 		void send(commands command, const Container& data, const peer& peer) const;
 
 		template <typename InputIterator, typename size_type>
-		void send(commands command, InputIterator begin, size_type size, const peer& peer) const;
+		void send(commands command, InputIterator it, size_type size, const peer& peer) const;
 
-		detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port) override;
+		detail::optional<peer> connect(const boost::asio::ip::address& address, unsigned short port) override;
 
-		void process_connected_peer(peer& peer) override;
+		void process_connected_peer(peer& peer) final;
 
-		void disconnect() override;
+		void disconnect() final;
 
-		void run() override;
+		void run() final;
 
-		void set_log_level(log_level ll) const override{
+		void set_log_level(log_level ll) const final {
 			breep::logger<io_manager>.level(ll);
 		}
 
 	private:
 
-		void port(unsigned short port) {
+		void port(unsigned short port) final {
 			make_id_packet();
 
 			m_acceptor.close();
@@ -199,7 +199,7 @@ namespace breep { namespace tcp {
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
-}}
+}} // namespace breep::tcp
 
 #include "breep/network/tcp/impl/basic_io_manager.tcc"
 

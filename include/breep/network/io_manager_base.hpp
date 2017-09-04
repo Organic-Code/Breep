@@ -55,9 +55,7 @@ namespace breep {
 	class io_manager_base {
 	public:
 
-		virtual ~io_manager_base() {
-
-		}
+		virtual ~io_manager_base() = default;
 
 		/**
 		 * @brief Sends data to a peer
@@ -73,7 +71,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send(commands command, const data_container& data, const basic_peer<io_manager>& peer) const {
+		void send(commands /*command*/, const data_container& /*data*/, const basic_peer<io_manager>& /*peer*/) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_container>::value, "Send called without specialisation.");
 		}
 
@@ -93,7 +91,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_iterator, typename  size_type>
-		void send(commands command, data_iterator begin, size_type size, const basic_peer<io_manager>& peer) const {
+		void send(commands command, data_iterator /*begin*/, size_type /*size*/, const basic_peer<io_manager>& /*peer*/) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 
@@ -154,7 +152,8 @@ namespace breep {
 
 		friend class basic_peer_manager<io_manager>;
 	};
-}
+}  // namespace breep
+
 BREEP_DECLARE_TEMPLATE(breep::io_manager_base)
 
 #endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP

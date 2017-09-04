@@ -66,7 +66,7 @@
 	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; \
 	    }; \
 		template <typename... T> /* it's ok if this constructor is not inline */ \
-		networking_traits_impl<TType<T...>>::networking_traits_impl() {}\
+		networking_traits_impl<TType<T...>>::networking_traits_impl() = default;\
 	}}
 
 namespace breep {
@@ -218,7 +218,7 @@ namespace breep {
 				"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
 				identifier_from_tuple<remove_type<0, T...>>::value; // if you have an error here, you probably forgot to declare the type T<template...> (breep::type_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
 	}
-}
+}  // namespace breep
 
 // fundamental types
 BREEP_DECLARE_TYPE(void)

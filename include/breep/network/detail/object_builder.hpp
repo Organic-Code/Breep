@@ -1,5 +1,5 @@
-#ifndef BREEP_NETWORK_OBJECT_BUILDER_HPP
-#define BREEP_NETWORK_OBJECT_BUILDER_HPP
+#ifndef BREEP_NETWORK_DETAIL_OBJECT_BUILDER_HPP
+#define BREEP_NETWORK_DETAIL_OBJECT_BUILDER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -46,20 +46,15 @@ namespace breep { namespace detail {
 		template <typename>
 		using data_received_listener = std::function<void(basic_netdata_wrapper<io_manager, T>& data)>;
 
-		object_builder()
-				: m_listeners{}
-				, m_to_add{}
-			    , m_to_remove{}
-				, m_mutex{}
-		{}
+		object_builder() = default;
 
-		object_builder(const object_builder<T,network>&) = delete;
-		object_builder(object_builder<T,network>&& other)
+		object_builder(const object_builder<io_manager,T>&) = delete;
+
+		object_builder(object_builder<io_manager,T>&& other)
 				: m_listeners(std::move(other.m_listeners))
-				, m_mutex{}
 		{}
 
-		object_builder& operator=(const object_builder<T,network>&) = delete;
+		object_builder& operator=(const object_builder<io_manager,T>&) = delete;
 
 		bool build_and_call(network& lnetwork, const typename network::peer& received_from, breep::deserializer& data, bool is_private) {
 			if (is_private) {
@@ -83,7 +78,7 @@ namespace breep { namespace detail {
 				breep::logger<object_builder<io_manager,T>>.debug("No listener for received " + type_traits<T>::universal_name());
 				return false;
 			} else {
-				breep::logger<object_builder<io_manager,T>>.debug("Bulding object of type " + type_traits<T>::universal_name());
+				breep::logger<object_builder<io_manager,T>>.debug("Building object of type " + type_traits<T>::universal_name());
 				T object;
 				try {
 					data >> object;
@@ -159,12 +154,13 @@ namespace breep { namespace detail {
 
 
 	private:
-		std::unordered_map<listener_id, data_received_listener<T>> m_listeners;
-		std::vector<std::pair<listener_id, data_received_listener<T>>> m_to_add;
-		std::vector<listener_id> m_to_remove;
-		std::mutex m_mutex;
+		std::unordered_map<listener_id, data_received_listener<T>> m_listeners{};
+		std::vector<std::pair<listener_id, data_received_listener<T>>> m_to_add{};
+		std::vector<listener_id> m_to_remove{};
+		std::mutex m_mutex{};
 	};
-}}
+}} // namespace breep::detail
+
 BREEP_DECLARE_TEMPLATE(breep::detail::object_builder)
 
-#endif //BREEP_NETWORK_OBJECT_BUILDER_HPP
+#endif //BREEP_NETWORK_DETAIL_OBJECT_BUILDER_HPP

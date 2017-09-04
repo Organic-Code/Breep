@@ -27,14 +27,14 @@
 
 
 template <typename T>
-breep::basic_peer_manager<T>::basic_peer_manager(T&& io_manager, unsigned short port) noexcept
+breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short port) noexcept
 	: m_peers{}
 	, m_co_listener{}
 	, m_data_r_listener{}
 	, m_dc_listener{}
 	, m_me{}
 	, m_failed_connections{}
-	, m_manager{std::move(io_manager)}
+	, m_manager{std::move(manager)}
 	, m_id_count{0}
 	, m_port{port}
 	, m_running(false)
@@ -108,7 +108,7 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 template <typename T>
 inline void breep::basic_peer_manager<T>::run() {
 	require_non_running();
-	if (m_thread.get() != nullptr) {
+	if (m_thread) {
 		m_thread->join();
 	}
 	m_thread = std::make_unique<std::thread>(&peer_manager::sync_run, this);
@@ -124,7 +124,7 @@ inline void breep::basic_peer_manager<T>::sync_run() {
 }
 
 template <typename T>
-inline bool breep::basic_peer_manager<T>::connect(boost::asio::ip::address address, unsigned short port_) {
+inline bool breep::basic_peer_manager<T>::connect(const boost::asio::ip::address& address, unsigned short port_) {
 	if (try_connect(address, port_)) {
 		run();
 		return true;
@@ -201,7 +201,7 @@ inline bool breep::basic_peer_manager<T>::remove_data_listener(listener_id id) {
 /* PRIVATE */
 
 template <typename T>
-bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address address, unsigned short port_){
+bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address& address, unsigned short port_){
 	/* /!\ todo: what if two peers connect at once on the opposite side of the network? /!\
 	 * (maybe use the ignored commands::successfully_connected command?)
 	 * (care however, as this command is currently being sent > to remove).
@@ -491,7 +491,7 @@ template <typename T>
 void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> ldata;
 	detail::unmake_little_endian(data, ldata);
-	unsigned short remote_port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
+	auto remote_port = static_cast<unsigned short>(ldata[0] << 8 | ldata[1]);
 
 	size_t id_size = ldata[2];
 	std::string buff;
@@ -555,7 +555,7 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 	detail::unmake_little_endian(data, ldata);
 	boost::uuids::uuid uuid;
 	std::copy(ldata.data() + 1, ldata.data() + ldata.size() - 1, uuid.data);
-	unsigned char distance = static_cast<unsigned char>(ldata[0] + 1);
+	auto distance = static_cast<unsigned char>(ldata[0] + 1);
 
 	try {
 		peer& p = m_peers.at(uuid);
@@ -614,7 +614,7 @@ void breep::basic_peer_manager<T>::retrieve_distance_handler(const peer& source,
 template <typename T>
 void breep::basic_peer_manager<T>::retrieve_peers_handler(const peer& source, const std::vector<uint8_t>& /*data*/) {
 
-	unsigned short peers_nbr = static_cast<unsigned short>(m_peers.size());
+	auto peers_nbr = static_cast<unsigned short>(m_peers.size());
 	assert(peers_nbr == m_peers.size());
 
 	std::vector<uint8_t> ans;
@@ -653,7 +653,7 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 
 	size_t index = 2;
 	while(peers_nbr--) {
-		unsigned short remote_port = static_cast<unsigned short>(ldata[index] << 8 | ldata[index + 1]);
+		auto remote_port = static_cast<unsigned short>(ldata[index] << 8 | ldata[index + 1]);
 
 		uint8_t id_size = ldata[index + 2];
 		std::string id;
@@ -707,17 +707,17 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 		peer_connected(std::move(peer_ptr));
 	}
 
-	std::vector<uint8_t> vect;
+	std::vector<uint8_t> sendable_uuid;
 	for (std::unique_ptr<peer>& peer_ptr : m_failed_connections) {
 		peer_ptr->distance(std::numeric_limits<unsigned char>::max());
-		detail::make_little_endian(detail::unowning_linear_container(peer_ptr->id().data), vect);
+		detail::make_little_endian(detail::unowning_linear_container(peer_ptr->id().data), sendable_uuid);
 
 		for (const std::pair<boost::uuids::uuid, peer>& pair : m_peers) {
 			if (pair.second.distance() == 0) {
-				m_manager.send(commands::retrieve_distance, vect, pair.second);
+				m_manager.send(commands::retrieve_distance, sendable_uuid, pair.second);
 			}
 		}
-		vect.clear();
+		sendable_uuid.clear();
 	}
 }
 

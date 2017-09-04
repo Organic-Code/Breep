@@ -60,6 +60,6 @@ namespace breep {
 		 */
 		breep::listener_id listener_id;
 	};
-}
+} // namespace breep
 
 #endif // BREEP_NETWORK_BASIC_NETDATA_WRAPPER_HPP

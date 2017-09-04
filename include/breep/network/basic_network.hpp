@@ -36,10 +36,10 @@ namespace breep {
 
 	namespace detail {
 		namespace network_cst {
-			const int object = 0;
-			const int caller = 1;
-			const int log_setter = 2;
-			const int listener_rmer = 3;
+			constexpr int object = 0;
+			constexpr int caller = 1;
+			constexpr int log_setter = 2;
+			constexpr int listener_rmer = 3;
 		}
 	}
 
@@ -659,20 +659,22 @@ namespace breep {
 	template <typename T, typename U>
 	std::tuple<detail::any, typename basic_network<T>::ob_caller, typename basic_network<T>::ob_log_level, typename basic_network<T>::ob_rm_listener>
 	detail::make_obj_tuple(std::shared_ptr<object_builder<T, U>> ptr) {
+		auto obj_ptr = ptr.get();
 		return std::make_tuple<detail::any, typename basic_network<T>::ob_caller, typename basic_network<T>::ob_log_level, typename basic_network<T>::ob_rm_listener>(
-				ptr.get(),
-				[ptr](basic_network<T>& net, const typename basic_network<T>::peer& p, breep::deserializer& ar, bool sta) -> bool {
-					return ptr->build_and_call(net, p, ar, sta);
+				obj_ptr,
+				[local = std::move(ptr)](basic_network<T>& net, const typename basic_network<T>::peer& p, breep::deserializer& ar, bool sta) -> bool {
+					return local->build_and_call(net, p, ar, sta);
 				},
-		        [obj_ptr = ptr.get()] (log_level ll) -> void {
+		        [obj_ptr] (log_level ll) -> void {
 					obj_ptr->set_log_level(ll);
 				},
-		        [obj_ptr = ptr.get()] (listener_id id) -> bool {
+		        [obj_ptr] (listener_id id) -> bool {
 			        return obj_ptr->remove_listener(id);
 		        }
 		);
 	}
-}
+} // namespace breep
+
 BREEP_DECLARE_TEMPLATE(breep::basic_network)
 
 #endif //BREEP_NETWORK_BASIC_NETWORK_HPP

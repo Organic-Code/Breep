@@ -35,12 +35,12 @@ namespace breep {
         }
 
         template<typename FuncT, typename ...T, size_t... I>
-        void for_each_helper(FuncT&& funct, std::tuple<T...>& tuple, std::index_sequence<I...>) {
+        void for_each_helper(FuncT&& funct, std::tuple<T...>& tuple, std::index_sequence<I...> /* unused */) {
             do_for_each(std::forward<FuncT>(funct), std::get<I>(tuple)...);
         }
 
         template<typename FuncT, typename ...T, size_t... I>
-        void for_each_helper(FuncT&& funct, const std::tuple<T...>& tuple, std::index_sequence<I...>) {
+        void for_each_helper(FuncT&& funct, const std::tuple<T...>& tuple, std::index_sequence<I...> /* unused */) {
             do_for_each(std::forward<FuncT>(funct), std::get<I>(tuple)...);
         }
     }
@@ -63,6 +63,6 @@ namespace breep {
     void for_each(const std::tuple<T...>& tuple, FuncT&& funct) {
         detail::for_each_helper(std::forward<FuncT>(funct), tuple, std::make_index_sequence<sizeof...(T)>());
     }
-}
+} // namespace breep
 
 #endif //BREEP_UTIL_TUPLE_ITER_HPP

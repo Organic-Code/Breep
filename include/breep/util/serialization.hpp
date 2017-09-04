@@ -39,11 +39,11 @@
  * @attention This macro cannot be used for pointers of any sort.
  *            It can be used like this:
  *            @code{.cpp}
- *                BREEP_ENABLE_SERIALIZATION(foo, a, b)
+ *                BREEP_ENABLE_SERIALIZATION(foo, a, b) // good if a and b are not pointers
  *            @endcode
  *            but not like this:
  *            @code{.cpp}
- *                BREEP_ENABLE_SERIALIZATION(bar, a, *b)
+ *                BREEP_ENABLE_SERIALIZATION(bar, a, *b) // bad
  *            @endcode
  *
  * @since 1.0.0

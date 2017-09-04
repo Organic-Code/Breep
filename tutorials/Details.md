@@ -39,8 +39,8 @@ Which in turns allows the use of the structure type_traits:
 ```
 
 
-The ```hash()``` method is used to reconstruct the correct object at the other side of the network.
-By the way, this specialization was already done for primitive types.
+The ```hash()``` method is used to identify the class of the object at the other side of the network.
+By the way, this specialization was already done for primitive types, so no need to call it for them.
 
 When using template classes — say ```std::vector```, for example — it can be harsh to write
 ```cpp
@@ -50,7 +50,7 @@ When using template classes — say ```std::vector```, for example — it can be
     // ... ad vitam æternam
 ```
 
-So, the macro ```BREEP_DECLARE_TEMPLE``` is here to rescue you!
+So, the macro ```BREEP_DECLARE_TEMPLATE``` is here to rescue you!
 This second macro expends to a bit more complicated code (not going into the details), and allows you
 simplify all that into:
 ```cpp

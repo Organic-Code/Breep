@@ -33,7 +33,7 @@ namespace breep {
 		serializer m_s;
 
 		template <typename T>
-		friend packet& operator<<(packet&, const T&);
+		friend packet& operator<<(packet& p, const T& val);
 
 		template <typename T>
 		friend class basic_network;

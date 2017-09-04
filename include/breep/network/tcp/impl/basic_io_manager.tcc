@@ -64,7 +64,7 @@ breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_inter
 
 
 template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_millis, unsigned long U, unsigned long timeout_chk_interval>
-breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_interval>::basic_io_manager(io_manager&& other)
+breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_interval>::basic_io_manager(io_manager&& other) noexcept
 		: m_owner(other.m_owner)
 		, m_io_service()
 		, m_acceptor(std::move(other.m_acceptor))
@@ -131,7 +131,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::send(commands command, data_iterator
 	}
 
 	m_io_service.post(
-			[this, peer, local_buffer{std::move(buff)}] {
+			[this, peer, local_buffer{std::move(buff)}] () mutable {
 				std::queue<std::vector<uint8_t>>& buffers = m_data_queues.at(peer.id());
 				bool being_lazy = buffers.empty();
 				buffers.push(std::move(local_buffer));

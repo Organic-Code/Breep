@@ -1,5 +1,5 @@
-#ifndef BREEP_UTILS_HPP
-#define BREEP_UTILS_HPP
+#ifndef BREEP_NETWORK_DETAIL_UTILS_HPP
+#define BREEP_NETWORK_DETAIL_UTILS_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -101,7 +101,7 @@ namespace breep { namespace detail {
 	using unused = std::array<uint8_t, 1>;
 
 	struct unowning_linear_container {
-		typedef uint8_t value_type;
+		using value_type = uint8_t;
 
 		unowning_linear_container(const uint8_t* data, size_t size)
 				: data_(data)

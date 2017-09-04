@@ -26,10 +26,10 @@
 #include <breep/network/tcp/basic_io_manager.hpp>
 
 namespace breep { namespace tcp {
-		typedef basic_io_manager<1024, 5000, 120000, 54000> io_manager;
-		typedef basic_peer<io_manager> peer;
-		typedef basic_peer_manager<io_manager> peer_manager;
-		typedef basic_network<io_manager> network;
+		using io_manager = basic_io_manager<1024, 5000, 120000, 54000>;
+		using peer = basic_peer<io_manager>;
+		using network = basic_network<io_manager>;
+		using peer_manager = basic_peer_manager<io_manager>;
 
 		template <typename T>
 		using netdata_wrapper = basic_netdata_wrapper<io_manager, T>;

@@ -190,7 +190,7 @@ namespace breep {
 		 *
 	 	 * @since 0.1.0
 		 */
-		bool connect(boost::asio::ip::address address, unsigned short port);
+		bool connect(const boost::asio::ip::address& address, unsigned short port);
 		bool connect(const boost::asio::ip::address& address) {
 			return connect(address, m_port);
 		}
@@ -387,14 +387,14 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		void join() {
-			if (m_thread.get() != nullptr && m_thread->joinable()) {
+			if (m_thread && m_thread->joinable()) {
 				m_thread->join();
 			}
 		}
 
 	private:
 
-		bool try_connect(const boost::asio::ip::address address, unsigned short port);
+		bool try_connect(const boost::asio::ip::address& address, unsigned short port);
 
 		void peer_connected(peer&& p);
 		void peer_connected(peer&& p, unsigned char distance, peer& bridge);
@@ -405,24 +405,26 @@ namespace breep {
 
 		void forward_if_needed(const peer& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
-			if (m_running)
+			if (m_running) {
 				invalid_state("Already running.");
+			}
 		}
 
 		/* command handlers */
-		void send_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void send_to_all_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void forward_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void stop_forwarding_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void forwarding_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void connect_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void cant_connect_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void update_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void retrieve_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void retrieve_peers_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void peers_list_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void peer_disconnection_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void keep_alive_handler(const peer& p, const std::vector<uint8_t>&) {
+		void send_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void send_to_all_handler(const peer& source, const std::vector<uint8_t>& data);
+		void forward_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void stop_forwarding_handler(const peer& source, const std::vector<uint8_t>& data);
+		void forwarding_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void connect_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void cant_connect_handler(const peer& source, const std::vector<uint8_t>& data);
+		void update_distance_handler(const peer& source, const std::vector<uint8_t>& data);
+		void retrieve_distance_handler(const peer& source, const std::vector<uint8_t>& data);
+		void retrieve_peers_handler(const peer& source, const std::vector<uint8_t>& data);
+		void peers_list_handler(const peer& source, const std::vector<uint8_t>& data);
+		void peer_disconnection_handler(const peer& source, const std::vector<uint8_t>& data);
+
+		void keep_alive_handler(const peer& p, const std::vector<uint8_t>& /* unused */) {
 			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
 		}
 
@@ -461,8 +463,10 @@ namespace breep {
 	template <typename T>
 	class peer_manager_attorney {
 
+	public:
 		peer_manager_attorney() = delete;
 
+	private:
 		inline static void peer_connected(basic_peer_manager<T>& object, basic_peer<T>&& p) {
 			object.peer_connected(std::move(p));
 		}

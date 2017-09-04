@@ -1,5 +1,5 @@
-#ifndef BREEP_LOGGER_HPP
-#define BREEP_LOGGER_HPP
+#ifndef BREEP_UTIL_LOGGER_HPP
+#define BREEP_UTIL_LOGGER_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -26,13 +26,6 @@
 
 namespace breep {
 
-	namespace detail {
-		namespace logger_cst {
-			static const auto start_time = std::chrono::high_resolution_clock::now();
-			static std::mutex logging_lock{};
-		}
-	}
-
 	enum class log_level {
 		trace,
 		debug,
@@ -43,7 +36,15 @@ namespace breep {
 		none
 	};
 
-    bool operator>=(log_level, log_level);
+	namespace detail {
+		namespace logger_cst {
+			const auto start_time = std::chrono::high_resolution_clock::now();
+			std::mutex logging_lock{};
+			auto global_maximum_level = log_level::trace;
+		}
+	}
+
+    bool operator>=(log_level lhs, log_level rhs);
 	bool operator>=(log_level lhs, log_level rhs) {
 		return static_cast<int>(lhs) >= static_cast<int>(rhs);
 	}
@@ -67,7 +68,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void trace(const std::string& str) {
-				if (log_level::trace >= m_level) {
+				if (log_level::trace >= level()) {
 					log_impl("(trace)  ", str);
 				}
 			}
@@ -76,7 +77,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void debug(const std::string& str) {
-				if (log_level::debug >= m_level) {
+				if (log_level::debug >= level()) {
 					log_impl("(debug)  ", str);
 				}
 			}
@@ -85,7 +86,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void info(const std::string& str) {
-				if (log_level::info >= m_level) {
+				if (log_level::info >= level()) {
 					log_impl("(info)   ", str);
 				}
 			}
@@ -94,7 +95,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void warning(const std::string& str) {
-				if (log_level::warning >= m_level) {
+				if (log_level::warning >= level()) {
 					log_impl("(warning)", str);
 				}
 			}
@@ -103,7 +104,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void error(const std::string& str) {
-				if (log_level::error >= m_level) {
+				if (log_level::error >= level()) {
 					log_impl("(error)  ", str);
 				}
 			}
@@ -113,7 +114,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void fatal(const std::string& str) {
-				if (log_level::fatal >= m_level) {
+				if (log_level::fatal >= level()) {
 					log_impl("(fatal)  ", str);
 				}
 				abort();
@@ -124,7 +125,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			void fatal(const std::string& str, int exit_code) {
-				if (log_level::fatal >= m_level) {
+				if (log_level::fatal >= level()) {
 					log_impl("(fatal)  ", str);
 				}
 				exit(exit_code);
@@ -145,7 +146,7 @@ namespace breep {
 			 * @since 0.1.0
 			 */
 			log_level level() {
-				return m_level;
+				return std::max(m_level, logger_cst::global_maximum_level);
 			}
 
 		private:
@@ -179,5 +180,16 @@ namespace breep {
 
 	template <typename T>
 	detail::logger<T> logger;
+
+	namespace logging {
+		/**
+		 * Sets the maximum logging level for all loggers.
+		 *
+		 * @since 1.0.0
+		 */
+		void set_max_level(log_level level) {
+			detail::logger_cst::global_maximum_level = level;
+		}
+	}
 }
-#endif //BREEP_LOGGER_HPP
+#endif //BREEP_UTIL_LOGGER_HPP

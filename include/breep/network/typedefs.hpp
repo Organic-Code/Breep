@@ -22,8 +22,8 @@
 
 namespace breep {
 
-	typedef const uint8_t* cuint8_random_iterator;
-	typedef unsigned long listener_id;
+	using cuint8_random_iterator = const uint8_t*;
+	using listener_id = unsigned long;
 
 	struct type_listener_id : private std::pair<listener_id, uint64_t> {
 		type_listener_id(listener_id id_, uint64_t type_hash_) : std::pair<listener_id,uint64_t>(id_, type_hash_) {}

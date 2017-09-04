@@ -68,7 +68,6 @@ namespace breep {
 	deserializer& operator>>(deserializer&, float&);
 	deserializer& operator>>(deserializer&, double&);
 
-
 	// generic method deserializing containers that support .push_back(value_type)
 	template <typename PushableContainer>
 	deserializer& operator>>(deserializer&, PushableContainer&);
@@ -138,7 +137,7 @@ namespace breep {
 	// deserializing durations
 	template <typename T, typename U>
 	deserializer& operator>>(deserializer&, std::chrono::duration<T,U>&);
-}
+} // namespace breep
 
 #include "impl/deserializer.tcc"
 
