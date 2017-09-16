@@ -218,7 +218,7 @@ bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address& a
 		return true;
 	} else {
 		breep::logger<peer_manager>.warning
-				("Connection to " + address.to_string() + ":" + std::to_string(port_) + " failed");
+				("Connection to [" + address.to_string() + "]:" + std::to_string(port_) + " failed");
 		return false;
 	}
 }

@@ -168,7 +168,7 @@ namespace breep {
 
 
 				return str + " [" + h_str + ':' + m_str + ':' + s_str + "] " + tclass + "@"
-				       + std::to_string(hash(std::this_thread::get_id())) + ": ";
+				       + std::to_string(hash(std::this_thread::get_id())).substr(0, 4) + ": ";
 
 			}
 

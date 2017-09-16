@@ -164,10 +164,18 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 	boost::system::error_code error;
 	size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 	if (error || len != 8) {
+		breep::logger<io_manager>.warning("Target peer has not the same protocol ID format than us! (peer at "
+		                                  + address.to_string() + "@" + std::to_string(port) + ").");
 		return detail::optional<peer>();
 	}
 	while (len--) {
 		if (buffer[len] != io_protocol[len]) {
+			breep::logger<io_manager>.warning("Target peer has not the same io_manager protocol ID than us (["
+			                                  + address.to_string() + "]:" + std::to_string(port) + ").");
+			breep::logger<io_manager>.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
+			                                  std::to_string(IO_PROTOCOL_ID_2) + ". Their protocol ID: "
+			                                  + std::to_string(detail::read_uint32(buffer)) + " "
+						                      + std::to_string(detail::read_uint32(buffer, sizeof(uint32_t))) + ".");
 			return detail::optional<peer>();
 		}
 	}
@@ -362,6 +370,8 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 		size_t len = m_socket->read_some(boost::asio::buffer(buffer), ec);
 
 		if (ec) {
+			breep::logger<io_manager>.warning("Failed to read data from incomming connection: ["
+			                                  + m_socket->remote_endpoint().address().to_string() + "].");
 			m_socket->close();
 		} else {
 			std::vector<uint8_t> protocol_id;
@@ -372,12 +382,20 @@ inline void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_c
 
 			// Reading the protocol ID
 			if (len != 8) {
+				breep::logger<io_manager>.warning("Incomming connection from [" + m_socket->remote_endpoint().address().to_string()
+				                                  + "]: they don't have the same protocol ID format than us!");
 				m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 				m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 				return;
 			}
 			while(len--) {
 				if (buffer[len] != protocol_id[len]) {
+					breep::logger<io_manager>.warning("Incomming peer has not the same io_manager protocol ID than us (["
+					                                  + m_socket->remote_endpoint().address().to_string() + "]).");
+					breep::logger<io_manager>.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
+					                                  std::to_string(IO_PROTOCOL_ID_2) + ". Their protocol ID: "
+					                                  + std::to_string(detail::read_uint32(buffer)) + " "
+					                                  + std::to_string(detail::read_uint32(buffer, sizeof(uint32_t))) + ".");
 					m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 					m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
 					return;
