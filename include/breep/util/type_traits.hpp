@@ -63,7 +63,7 @@
 	    template <typename... T> \
 	    struct networking_traits_impl<TType<T...>> { \
 			networking_traits_impl(); \
-	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; \
+	        const std::string universal_name = std::string(#TType"<") + ::breep::detail::template_param<T...>().name + ">"; \
 	    }; \
 		template <typename... T> /* it's ok if this constructor is not inline */ \
 		networking_traits_impl<TType<T...>>::networking_traits_impl() = default;\
@@ -207,7 +207,7 @@ namespace breep {
 		struct identifier_from_tuple<std::tuple<>> {
 			static const std::string value;
 		};
-		const std::string identifier_from_tuple<std::tuple<>>::value = "";
+		const std::string identifier_from_tuple<std::tuple<>>::value{};
 
 		template<typename... T>
 		struct identifier_from_tuple<std::tuple<T...>> {
@@ -217,7 +217,17 @@ namespace breep {
 		const std::string identifier_from_tuple<std::tuple<T...>>::value =
 				"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
 				identifier_from_tuple<remove_type<0, T...>>::value; // if you have an error here, you probably forgot to declare the type T<template...> (breep::type_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
+
+
+        // This struct is not technically required, but is
+        // here to help gcc5 to understand what's happening
+        template <typename... T>
+        struct template_param {
+            const std::string name{networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + identifier_from_tuple<detail::remove_type<0, T...>>().value};
+        };
+
 	}
+
 }  // namespace breep
 
 // fundamental types
