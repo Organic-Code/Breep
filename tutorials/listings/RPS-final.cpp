@@ -141,7 +141,7 @@ private:
 
 int main(int argc, char* argv[]) {
 	if (argc != 2 && argc != 4) {
-		std::cerr<< "Usage: game.elf <hosting port> [<target ip> <target port>]\n";
+		std::cerr<< "Usage: " << argv[0] << " <hosting port> [<target ip> <target port>]\n";
 		return 1;
 	}
 

@@ -95,7 +95,7 @@ namespace breep { namespace tcp {
 	public:
 
 		// The protocol ID should be changed at each compatibility break.
-		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
+		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960664; // UPDATE THIS TOGETHER WITH THE HASHING FUNCTION +1 [util/type_traits.hpp]
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
 
 		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
@@ -112,14 +112,14 @@ namespace breep { namespace tcp {
 		io_manager& operator=(const io_manager&) = delete;
 
 		template <typename Container>
-		void send(commands command, const Container& data, const peer& peer) const;
+		void send(commands command, const Container& data, const peer& target) const;
 
 		template <typename InputIterator, typename size_type>
-		void send(commands command, InputIterator it, size_type size, const peer& peer) const;
+		void send(commands command, InputIterator it, size_type size, const peer& target) const;
 
 		detail::optional<peer> connect(const boost::asio::ip::address& address, unsigned short port) override;
 
-		void process_connected_peer(peer& peer) final;
+		void process_connected_peer(peer& connected) final;
 
 		void disconnect() final;
 
@@ -168,11 +168,11 @@ namespace breep { namespace tcp {
 
 		void owner(basic_peer_manager<io_manager>* owner) override;
 
-		void process_read(peer& peer, boost::system::error_code error, std::size_t read);
+		void process_read(peer& sender, boost::system::error_code error, std::size_t read);
 
-		void write(const peer& peer) const;
+		void write(const peer& target) const;
 
-		void write_done(const peer& peer) const;
+		void write_done(const peer& target) const;
 
 		void accept(boost::system::error_code ec);
 

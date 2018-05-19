@@ -208,7 +208,7 @@ private:
 int main(int argc, char* argv[]) {
 
 	if (argc != 2 && argc != 4) {
-		std::cout << "Usage: chat.elf <hosting port> [<target ip> <target port>]" << std::endl;
+		std::cout << "Usage: " << argv[0] << " <hosting port> [<target ip> <target port>]" << std::endl;
 		return 1;
 	}
 

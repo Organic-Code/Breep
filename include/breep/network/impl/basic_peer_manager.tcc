@@ -325,9 +325,9 @@ void breep::basic_peer_manager<T>::update_distance(const peer& concerned_peer) {
 
 	std::vector<uint8_t> sendable;
 	detail::make_little_endian(data, sendable);
-	for (const auto& peer : m_peers) {
-		if (peer.second.distance() == 0 && peer.second.id() != concerned_peer.id()) {
-			m_manager.send(commands::update_distance, sendable, peer.second);
+	for (const auto& the_peer : m_peers) {
+		if (the_peer.second.distance() == 0 && the_peer.second.id() != concerned_peer.id()) {
+			m_manager.send(commands::update_distance, sendable, the_peer.second);
 		}
 	}
 }
@@ -336,10 +336,10 @@ void breep::basic_peer_manager<T>::update_distance(const peer& concerned_peer) {
 template <typename T>
 inline void breep::basic_peer_manager<T>::forward_if_needed(const peer& source, commands command, const std::vector<uint8_t>& data) {
 	const std::vector<const peer*>& peers =	m_me.bridging_from_to().at(source.id());
-	for (const peer* peer : peers) {
+	for (const peer* the_peer : peers) {
 		breep::logger<peer_manager>.trace
-				("Forwarding " + std::to_string(data.size()) + " octets from " + source.id_as_string() + " to " + peer->id_as_string());
-		m_manager.send(command, data, *peer);
+				("Forwarding " + std::to_string(data.size()) + " octets from " + source.id_as_string() + " to " + the_peer->id_as_string());
+		m_manager.send(command, data, *the_peer);
 	}
 }
 

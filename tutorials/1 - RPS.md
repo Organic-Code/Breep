@@ -65,7 +65,7 @@ If a remote address & port is specified, we'll try to connect to that address:
 
     int main(int argc, char* argv[]) {
         if (argc != 2 && argc != 4) {
-    		std::cerr<< "Usage: chat.elf <hosting port> [<target ip> <target port>]\n";
+    		std::cerr<< "Usage: " << argv[0] << " <hosting port> [<target ip> <target port>]\n";
     		return 1;
         }
 

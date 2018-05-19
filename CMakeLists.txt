@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project(breep)
 
-find_package( Boost 1.55 REQUIRED )
+set(BOOST_MIN_VERSION "1.55")
+
+find_package( Boost ${BOOST_MIN_VERSION} REQUIRED system )
 find_package( Threads )
 
 include_directories( ${Boost_INCLUDE_DIR} )
