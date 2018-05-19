@@ -22,8 +22,17 @@
 #include <chrono>
 #include <forward_list>
 #include <vector>
+#include <memory>
+
+#include "breep/util/type_traits.hpp"
 
 namespace breep {
+
+	class serializer;
+	namespace detail {
+		serializer& left_shift_op_impl(serializer&, uint8_t);
+	}
+
 	class serializer {
 
 	public:
@@ -38,7 +47,7 @@ namespace breep {
 		mutable std::basic_ostringstream<uint8_t> m_os;
 
 		// serializing fundamental uint8_t
-		friend serializer& operator<<(serializer&, uint8_t);
+		friend serializer& ::breep::detail::left_shift_op_impl(serializer&, uint8_t);
 	};
 
 
@@ -49,36 +58,20 @@ namespace breep {
 	template <typename SizeType>
 	void write_size(serializer& s, SizeType size);
 
-	// serializing fundamental types
-	serializer& operator<<(serializer&, bool);
-	serializer& operator<<(serializer&, char);
-	serializer& operator<<(serializer&, uint16_t);
-	serializer& operator<<(serializer&, uint32_t);
-	serializer& operator<<(serializer&, uint64_t);
-	serializer& operator<<(serializer&, int8_t);
-	serializer& operator<<(serializer&, int16_t);
-	serializer& operator<<(serializer&, int32_t);
-	serializer& operator<<(serializer&, int64_t);
-	serializer& operator<<(serializer&, float);
-	serializer& operator<<(serializer&, double);
-
-	// generic method to serialize containers that supports iterators (assuming we can dereference and get a const ref)
-	template <typename IterableContainer>
-	serializer& operator<<(serializer&, const IterableContainer&);
-
-    // std::vector<bool> is not like that.
-    serializer& operator<<(serializer& s, const std::vector<bool>&);
-
-	template <typename T>
-	serializer& operator<<(serializer&, const std::forward_list<T>&);
-
-	// serializing std::pair
-	template <typename T, typename U>
-	serializer& operator<<(serializer&, const std::pair<T,U>&);
-
-	// serializing std::tuple
-	template <typename... T>
-	serializer& operator<<(serializer&, const std::tuple<T...>&);
+	/**
+	 * Serializes parameter
+	 * @param s     serializer where to serialize
+	 * @param value value to be serialized
+	 * @return the original serializer, appended with extra data
+	 *
+	 * @note if T is a (smart)pointer type, it will be de-referenced.
+	 * @note if T is a (smart)pointer type, null values will call std::abort (through assert) except if NDEBUG is defined,
+	 *       in which case behaviour with null values is undefined
+	 */
+	template <typename T> std::enable_if_t<!type_traits<T>::is_any_ptr, serializer&> operator<<(serializer& s, T&& value);
+	template <typename T> std::enable_if_t<type_traits<T>::is_any_ptr, serializer&> operator<<(serializer& s, T&& value);
+	template <typename T> serializer& operator<<(serializer& s, const std::unique_ptr<T>& value);
+	template <typename T> serializer& operator<<(serializer& s, const std::shared_ptr<T>& value);
 }
 
 #include "impl/serializer.tcc"

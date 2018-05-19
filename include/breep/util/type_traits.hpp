@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <tuple>
+#include <cstddef>
 
 /**
  * @brief Used to declare an untemplatized class, so that it can be sent through the network. Must be called from the global namespace
@@ -149,6 +150,8 @@ namespace breep {
 	 */
 	template <typename T>
 	struct type_traits {
+		static constexpr bool is_any_ptr =  std::is_pointer<std::remove_cv_t<std::remove_reference_t<T>>>::value;
+
 		/**
 		 * holds the name of the template class (unmangled), including namespace and template parameters.
 		 *

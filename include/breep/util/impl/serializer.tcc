@@ -20,6 +20,8 @@
 #include <tuple>
 #include <utility>
 #include <bitset>
+#include <type_traits>
+#include <cassert>
 
 
 #include "breep/util/tuple_iter.hpp"
@@ -114,77 +116,92 @@ namespace breep {
 		}
 	}
 
-	serializer& operator<<(serializer& s, uint8_t val) {
+namespace detail { // breep::detail
+	inline serializer& left_shift_op_impl(serializer&, uint8_t);
+	inline serializer& left_shift_op_impl(serializer&, uint16_t);
+	inline serializer& left_shift_op_impl(serializer&, uint32_t);
+	inline serializer& left_shift_op_impl(serializer&, uint64_t);
+	inline serializer& left_shift_op_impl(serializer&, int8_t);
+	inline serializer& left_shift_op_impl(serializer&, int16_t);
+	inline serializer& left_shift_op_impl(serializer&, int32_t);
+	inline serializer& left_shift_op_impl(serializer&, int64_t);
+	inline serializer& left_shift_op_impl(serializer&, bool);
+	inline serializer& left_shift_op_impl(serializer&, char);
+	inline serializer& left_shift_op_impl(serializer&, float);
+	serializer& left_shift_op_impl(serializer&, const std::vector<bool>&);
+	template <typename T> serializer& left_shift_op_impl(serializer& s, const T&);
+	template <typename T> serializer& left_shift_op_impl(serializer&, const std::forward_list<T>&);
+	template <typename T, typename U> serializer& left_shift_op_impl(serializer&, const std::pair<T,U>&);
+	template <typename... T> serializer& left_shift_op_impl(serializer&, const std::tuple<T...>&);
+
+	inline serializer& left_shift_op_impl(serializer& s, uint8_t val) {
 		s.m_os.put(val);
 		return s;
 	}
 
-	serializer& operator<<(serializer& s, bool val) {
-		s << (val ? static_cast<uint8_t>('1') : static_cast<uint8_t>('0'));
+	inline serializer& left_shift_op_impl(serializer& s, uint16_t val) {
+		left_shift_op_impl(s, static_cast<uint8_t>(val >> 8));
+		left_shift_op_impl(s, static_cast<uint8_t>(val));
 		return s;
 	}
 
-	serializer& operator<<(serializer& s, char val) {
+	inline serializer& left_shift_op_impl(serializer& s, uint32_t val) {
+		left_shift_op_impl(s, static_cast<uint16_t>(val >> 16));
+		left_shift_op_impl(s, static_cast<uint16_t>(val));
+		return s;
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, uint64_t val) {
+		left_shift_op_impl(s, static_cast<uint32_t>(val >> 32));
+		left_shift_op_impl(s, static_cast<uint32_t>(val));
+		return s;
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, int8_t val) {
+		return left_shift_op_impl(s, static_cast<uint8_t>(val));
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, int16_t val) {
+		return left_shift_op_impl(s, static_cast<uint16_t>(val));
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, int32_t val) {
+		return left_shift_op_impl(s, static_cast<uint32_t>(val));
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, int64_t val) {
+		return left_shift_op_impl(s, static_cast<uint64_t>(val));
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, bool val) {
+		left_shift_op_impl(s, (val ? static_cast<uint8_t>('1') : static_cast<uint8_t>('0')));
+		return s;
+	}
+
+	inline serializer& left_shift_op_impl(serializer& s, char val) {
 		if (std::numeric_limits<char>::min() < 0) {
 			auto unsigned_value = static_cast<unsigned char>(val);
-			s << unsigned_value;
+			left_shift_op_impl(s, unsigned_value);
 		} else {
 			auto signed_value = static_cast<signed char>(val);
-			s << signed_value;
+			left_shift_op_impl(s, signed_value);
 		}
 		return s;
 	}
 
-	serializer& operator<<(serializer& s, uint16_t val) {
-		s << static_cast<uint8_t>(val >> 8);
-		s << static_cast<uint8_t>(val);
-		return s;
+	inline serializer& left_shift_op_impl(serializer& s, float val) {
+		return left_shift_op_impl(s, detail::toIEEE<int32_t, float, 8, 23>(val));
 	}
 
-	serializer& operator<<(serializer& s, uint32_t val) {
-		s << static_cast<uint16_t>(val >> 16);
-		s << static_cast<uint16_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, uint64_t val) {
-		s << static_cast<uint32_t>(val >> 32);
-		s << static_cast<uint32_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, int8_t val) {
-		s << static_cast<uint8_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, int16_t val) {
-		s << static_cast<uint16_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, int32_t val) {
-		s << static_cast<uint32_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, int64_t val) {
-		s << static_cast<uint64_t>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, float val) {
-		s << detail::toIEEE<int32_t, float, 8, 23>(val);
-		return s;
-	}
-
-	serializer& operator<<(serializer& s, double val) {
-		s << detail::toIEEE<int64_t, double, 11, 52>(val);
+	inline serializer& left_shift_op_impl(serializer& s, double val) {
+		left_shift_op_impl(s, detail::toIEEE<int64_t, double, 11, 52>(val));
 		return s;
 	}
 
 	template <typename IterableContainer>
-	serializer& operator<<(serializer& s, const IterableContainer& val) {
+	serializer& left_shift_op_impl(serializer& s, const IterableContainer& val) {
+		static_assert(!std::is_pointer<IterableContainer>::value, "failed to dereference IterableContainer");
+
 		write_size(s, val.size());
 		for (const auto& current_value : val) {
 			s << current_value;
@@ -192,21 +209,20 @@ namespace breep {
 		return s;
 	}
 
-    serializer& operator<<(serializer& s, const std::vector<bool>& vect) {
+    serializer& left_shift_op_impl(serializer& s, const std::vector<bool>& vect) {
         write_size(s, vect.size());
         for (std::vector<bool>::size_type i = 0 ; i < vect.size() ; i += std::numeric_limits<uint8_t>::digits) {
             uint8_t mask = 0;
             for (uint_fast8_t j = 0 ; j < std::numeric_limits<uint8_t>::digits && i+j < vect.size() ; ++j) {
                 mask = static_cast<uint8_t>(mask | (vect[i + j] ? 1 << j : 0));
             }
-            s << mask;
+            left_shift_op_impl(s, mask);
         }
         return s;
     }
 
-	// Who doesn't love O(n*n) ?
 	template <typename T>
-	serializer& operator<<(serializer& s, const std::forward_list<T>& forward_list) {
+	serializer& left_shift_op_impl(serializer& s, const std::forward_list<T>& forward_list) {
 		uint64_t size = 0;
 		for (auto it = forward_list.begin(), end = forward_list.end() ; it != end ; ++it, ++size);
 		write_size(s, size);
@@ -217,16 +233,45 @@ namespace breep {
 	}
 
 	template <typename T, typename U>
-	serializer& operator<<(serializer& s, const std::pair<T,U>& val) {
+	serializer& left_shift_op_impl(serializer& s, const std::pair<T,U>& val) {
 		s << val.first << val.second;
 		return s;
 	}
 
 	template <typename... T>
-	serializer& operator<<(serializer& s, const std::tuple<T...>& values) {
+	serializer& left_shift_op_impl(serializer& s, const std::tuple<T...>& values) {
         for_each(values, [&s](auto&& val) -> void {
                     s << val;
                 });
 		return s;
 	}
-}
+
+} // namespace detail
+
+
+	template <typename T>
+	std::enable_if_t<!type_traits<T>::is_any_ptr, serializer&>
+	operator<<(serializer& s, T&& value) {
+		return detail::left_shift_op_impl(s, value);
+	}
+
+	template <typename T>
+	std::enable_if_t<type_traits<T>::is_any_ptr, serializer&>
+	operator<<(serializer& s, T&& value) {
+		assert(value);
+		return s << *value;
+	}
+
+	template <typename T>
+	serializer& operator<<(serializer& s, const std::unique_ptr<T>& value) {
+		return s << value.get();
+	}
+
+	template <typename T>
+	serializer& operator<<(serializer& s, const std::shared_ptr<T>& value) {
+		return s << value.get();
+	}
+
+
+
+} // namespace breep
