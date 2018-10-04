@@ -90,6 +90,9 @@ namespace breep {
 #endif
 
 	namespace detail {
+		template <unsigned int N>
+		constexpr uint64_t hash(const char str[N]);
+
 		uint64_t hash(const std::string& str);
 
 		template <typename>
@@ -182,7 +185,19 @@ namespace breep {
 
 		// sdbm's hash algorithm, gawk's implementation.
 		// when modified, basic_io_manager::IO_PROTOCOL_ID_1 should be updated aswell
-		uint64_t hash(const std::string& str) {
+		template <size_t N>
+		constexpr uint64_t hash(const char str[N]) {
+			uint64_t hash_code = 0;
+
+			for (std::string::size_type i = N ; i-- ;) {
+				if (str[i] != '>' && str[i] != ' ' && (str[i] != ':' || str[i+1] != ':')) {
+					hash_code = str[i] + (hash_code << 6u) + (hash_code << 16u) - hash_code;
+				}
+			}
+			return hash_code;
+		}
+
+		inline uint64_t hash(const std::string& str) {
 			uint64_t hash_code = 0;
 
 			for (std::string::size_type i = str.size() ; i-- ;) {
@@ -211,7 +226,7 @@ namespace breep {
 		struct identifier_from_tuple<std::tuple<>> {
 			static const std::string value;
 		};
-		const std::string identifier_from_tuple<std::tuple<>>::value{};
+		inline const std::string identifier_from_tuple<std::tuple<>>::value{};
 
 		template<typename... T>
 		struct identifier_from_tuple<std::tuple<T...>> {

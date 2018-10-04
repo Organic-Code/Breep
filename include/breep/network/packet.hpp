@@ -47,9 +47,9 @@ namespace breep {
 	}
 }
 
-BREEP_DECLARE_TYPE(packet)
+BREEP_DECLARE_TYPE(breep::packet)
 
-breep::packet::packet() : m_s() {
+inline breep::packet::packet() : m_s() {
 	m_s << type_traits<packet>::hash_code();
 }
 

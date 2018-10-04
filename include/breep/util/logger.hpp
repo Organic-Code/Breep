@@ -38,14 +38,14 @@ namespace breep {
 
 	namespace detail {
 		namespace logger_cst {
-			const auto start_time = std::chrono::high_resolution_clock::now();
-			std::mutex logging_lock{};
-			auto global_maximum_level = log_level::trace;
+			inline const auto start_time = std::chrono::high_resolution_clock::now();
+			inline std::mutex logging_lock{};
+			inline auto global_maximum_level = log_level::trace;
 		}
 	}
 
     bool operator>=(log_level lhs, log_level rhs);
-	bool operator>=(log_level lhs, log_level rhs) {
+	inline bool operator>=(log_level lhs, log_level rhs) {
 		return static_cast<int>(lhs) >= static_cast<int>(rhs);
 	}
 
@@ -189,7 +189,7 @@ namespace breep {
 		 * @since 1.0.0
 		 */
 		void set_max_level(log_level level);
-		void set_max_level(log_level level) {
+		inline void set_max_level(log_level level) {
 			detail::logger_cst::global_maximum_level = level;
 		}
 	}

@@ -29,7 +29,7 @@ namespace breep {
 namespace detail {
 	// The code from the following method was adapted from the public domain
 	template <typename FloatType, typename InputType, unsigned int ExponentBits, unsigned int MantissaBits>
-	FloatType fromIEEE(InputType value) {
+	constexpr FloatType fromIEEE(InputType value) {
 
 		static_assert(std::numeric_limits<uint_fast8_t>::max() >= std::numeric_limits<InputType>::digits
 				, "[unlikely]: will not able to store std::numeric_limits<InputType>::digitd in uint_fast8_t");
@@ -96,15 +96,15 @@ namespace detail {
 	}
 }
 
-	void read_size(deserializer& d, uint64_t& size) {
-		uint8_t uint8(0);
-		uint_fast8_t oct_to_read(0);
-		d >> oct_to_read;
-		while (oct_to_read--) {
-			d >> uint8;
-			size |= (static_cast<uint64_t>(uint8) << static_cast<uint64_t>(oct_to_read * 8));
-		}
+inline void read_size(deserializer& d, uint64_t& size) {
+	uint8_t uint8(0);
+	uint_fast8_t oct_to_read(0);
+	d >> oct_to_read;
+	while (oct_to_read--) {
+		d >> uint8;
+		size |= (static_cast<uint64_t>(uint8) << static_cast<uint64_t>(oct_to_read * 8));
 	}
+}
 
 namespace detail { // namespace breep::detail
 	
@@ -320,7 +320,7 @@ namespace detail { // namespace breep::detail
 		return d;
 	}
 
-    deserializer& right_shift_op_impl(deserializer& d, std::vector<bool>& vector) {
+    inline deserializer& right_shift_op_impl(deserializer& d, std::vector<bool>& vector) {
         uint8_t mask;
         uint64_t size = 0;
         read_size(d, size);

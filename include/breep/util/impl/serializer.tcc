@@ -30,7 +30,7 @@
 namespace breep { namespace detail {
 	// The code from the following method was adapted from the public domain
 	template <typename ReturnType, typename FloatType, unsigned int ExponentBits, unsigned int MantissaBits>
-	ReturnType toIEEE(FloatType value) {
+	constexpr ReturnType toIEEE(FloatType value) {
 
 		switch (std::fpclassify(value)) {
 			case FP_INFINITE: {
@@ -209,7 +209,7 @@ namespace detail { // breep::detail
 		return s;
 	}
 
-    serializer& left_shift_op_impl(serializer& s, const std::vector<bool>& vect) {
+    inline serializer& left_shift_op_impl(serializer& s, const std::vector<bool>& vect) {
         write_size(s, vect.size());
         for (std::vector<bool>::size_type i = 0 ; i < vect.size() ; i += std::numeric_limits<uint8_t>::digits) {
             uint8_t mask = 0;
