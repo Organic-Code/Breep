@@ -121,9 +121,18 @@ namespace detail { // namespace breep::detail
 	deserializer& right_shift_op_impl(deserializer&, float&);
 	deserializer& right_shift_op_impl(deserializer&, double&);
 
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_class, deserializer&>
+	right_shift_op_impl(deserializer&, T&);
+
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_plain, deserializer&>
+    right_shift_op_impl(deserializer&, T&);
+
 	// generic method deserializing containerd that support .push_back(value_type)
 	template <typename PushableContainer>
-	deserializer& right_shift_op_impl(deserializer&, PushableContainer&);
+	std::enable_if_t<!breep::type_traits<PushableContainer>::is_enum, deserializer&>
+	right_shift_op_impl(deserializer&, PushableContainer&);
 
 	// STL containers
 	template <typename T>
@@ -285,8 +294,27 @@ namespace detail { // namespace breep::detail
 		return d;
 	}
 
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_class, deserializer&>
+	right_shift_op_impl(deserializer& d, T& val) {
+		std::underlying_type_t<T> value;
+		d >> value;
+		val = static_cast<T>(value);
+		return d;
+	}
+
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_plain, deserializer&>
+	right_shift_op_impl(deserializer& d, T& val) {
+		int64_t value;
+		d >> value;
+		val = static_cast<T>(value);
+		return d;
+	}
+
 	template<typename PushableContainer>
-	deserializer& right_shift_op_impl(deserializer& d, PushableContainer& val) {
+	std::enable_if_t<!breep::type_traits<PushableContainer>::is_enum, deserializer&>
+	right_shift_op_impl(deserializer& d, PushableContainer& val) {
 		uint64_t size = 0;
 		read_size(d, size);
 		while (size--) {

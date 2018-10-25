@@ -128,11 +128,13 @@ namespace detail { // breep::detail
 	inline serializer& left_shift_op_impl(serializer&, bool);
 	inline serializer& left_shift_op_impl(serializer&, char);
 	inline serializer& left_shift_op_impl(serializer&, float);
+	template <typename T> std::enable_if_t<!breep::type_traits<T>::is_enum, serializer&> left_shift_op_impl(serializer&, const T&);
 	serializer& left_shift_op_impl(serializer&, const std::vector<bool>&);
-	template <typename T> serializer& left_shift_op_impl(serializer& s, const T&);
 	template <typename T> serializer& left_shift_op_impl(serializer&, const std::forward_list<T>&);
 	template <typename T, typename U> serializer& left_shift_op_impl(serializer&, const std::pair<T,U>&);
 	template <typename... T> serializer& left_shift_op_impl(serializer&, const std::tuple<T...>&);
+	template <typename T> std::enable_if_t<breep::type_traits<T>::is_enum_class, serializer&> left_shift_op_impl(serializer&, T);
+	template <typename T> std::enable_if_t<breep::type_traits<T>::is_enum_plain, serializer&> left_shift_op_impl(serializer&, T&&);
 
 	inline serializer& left_shift_op_impl(serializer& s, uint8_t val) {
 		s.m_os.put(val);
@@ -199,7 +201,8 @@ namespace detail { // breep::detail
 	}
 
 	template <typename IterableContainer>
-	serializer& left_shift_op_impl(serializer& s, const IterableContainer& val) {
+	std::enable_if_t<!breep::type_traits<IterableContainer>::is_enum, serializer&>
+	left_shift_op_impl(serializer& s, const IterableContainer& val) {
 		static_assert(!std::is_pointer<IterableContainer>::value, "failed to dereference IterableContainer");
 
 		write_size(s, val.size());
@@ -245,6 +248,20 @@ namespace detail { // breep::detail
                 });
 		return s;
 	}
+
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_class, serializer&>
+	left_shift_op_impl(serializer& s, T value) {
+		return s << static_cast<std::underlying_type_t<T>>(value);
+	}
+
+	template <typename T>
+	std::enable_if_t<breep::type_traits<T>::is_enum_plain, serializer&>
+    left_shift_op_impl(serializer& s, T&& value) {
+//    	 std::underlying_type is implementation defined for plain enums
+		return s << static_cast<int64_t>(value);
+    }
+
 
 } // namespace detail
 

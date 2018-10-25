@@ -90,6 +90,16 @@ namespace breep {
 #endif
 
 	namespace detail {
+
+		template <typename, typename S>
+		using second_type = S;
+
+		template <typename T>
+		auto enum_class_test(int) -> second_type<decltype(+T{}), std::false_type>;
+
+		template <typename T>
+		auto enum_class_test(...) -> std::true_type;
+
 		template <unsigned int N>
 		constexpr uint64_t hash(const char str[N]);
 
@@ -154,6 +164,9 @@ namespace breep {
 	template <typename T>
 	struct type_traits {
 		static constexpr bool is_any_ptr =  std::is_pointer<std::remove_cv_t<std::remove_reference_t<T>>>::value;
+		static constexpr bool is_enum = std::is_enum<T>::value;
+		static constexpr bool is_enum_class = is_enum && decltype(detail::enum_class_test<T>(0))::value;
+		static constexpr bool is_enum_plain = is_enum && !is_enum_class;
 
 		/**
 		 * holds the name of the template class (unmangled), including namespace and template parameters.
