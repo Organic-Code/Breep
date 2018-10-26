@@ -53,6 +53,14 @@ namespace breep {
 	 * @note A \em const \em basic_peer_manager is a basic_peer_manager with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
 	 *
+	 *
+	 * @note Upon (connection)/(disconnection)/(data input) events, the corresponding detail::peer_manager_attorney
+	 *       method should be called (see a the end of this file). Upon "successful" connection, the peer_manager
+	 *       still has the authority on whether or not to keep the connection. If the connection is dropped, nothing will
+	 *       be called for the io_manager. If the connection is kept, the callback io_manager::process_connected_peer
+	 *       will be called
+	 *
+	 * @sa breep::io_manager_base
 	 * @sa breep::tcp_network
 	 * @sa breep::udp_network
 	 *
