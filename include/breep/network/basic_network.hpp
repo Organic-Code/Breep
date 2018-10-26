@@ -634,6 +634,36 @@ namespace breep {
 			m_manager.join();
 		}
 
+		/**
+		 * @brief Sets the predicate called on incomming connections
+		 *
+		 * @details the predicate is called with the new peer candidate as parameter. If it returns true,
+		 *          the peer is accepted and marked as connected. Otherwise it is disconnected.
+		 *
+		 * @param pred should be noexcept
+		 *
+		 * @note You should not attempt to communicate with the peer before it is marked as connected (ie: when
+		 *       the connection handler is called)
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_network::remove_connection_predicate()
+		 */
+		void set_connection_predicate(std::function<bool(const peer&)> pred) {
+			m_manager.set_connection_predicate(pred);
+		}
+
+		/**
+		 * @brief removes previously set connection predicate and goes back to default: accepting any connection
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_network::set_connection_predicate(std::function<bool(const peer&)> pred)
+		 */
+		void remove_connection_predicate() {
+			m_manager.remove_connection_predicate();
+		}
+
 	private:
 
 		void network_data_listener(const peer& source, cuint8_random_iterator data, size_t data_size, bool sent_to_all) {

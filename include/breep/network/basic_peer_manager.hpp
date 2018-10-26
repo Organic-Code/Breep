@@ -401,6 +401,37 @@ namespace breep {
 			}
 		}
 
+		/**
+		 * @brief Sets the predicate called on incomming connections
+		 *
+		 * @details the predicate is called with the new peer candidate as parameter. If it returns true,
+		 *          the peer is accepted and marked as connected. Otherwise it is disconnected.
+		 *
+		 * @param pred should be noexcept
+		 *
+		 * @note You should not attempt to communicate with the peer before it is marked as connected (ie: when
+		 *       the connection handler is called)
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_peer_manager::remove_connection_predicate()
+		 */
+		void set_connection_predicate(std::function<bool(const peer&)> pred) {
+			m_predicate = std::move(pred);
+		}
+
+
+		/**
+		 * @brief removes previously set connection predicate and goes back to default: accepting any connection
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_peer_manager::set_connection_predicate(std::function<bool(const peer&)> pred)
+		 */
+		void remove_connection_predicate() {
+			m_predicate = [](const auto&){return true;};
+		}
+
 	private:
 
 		bool try_connect(const boost::asio::ip::address& address, unsigned short port);
@@ -441,6 +472,9 @@ namespace breep {
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
+
+		// predicate telling wether a peer should be accepted or not
+		std::function<bool(const peer&)> m_predicate;
 
 		local_peer<io_manager> m_me;
 		std::vector<std::unique_ptr<peer>> m_failed_connections;

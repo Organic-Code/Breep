@@ -32,6 +32,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short por
 	, m_co_listener{}
 	, m_data_r_listener{}
 	, m_dc_listener{}
+	, m_predicate{[](const auto&){return true;}}
 	, m_me{}
 	, m_failed_connections{}
 	, m_manager{std::move(manager)}
@@ -225,44 +226,51 @@ bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address& a
 
 template <typename T>
 inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
-	boost::uuids::uuid id = p.id();
-	m_peers.emplace(std::make_pair(id, std::move(p)));
+	if (m_predicate(p)) {
 
-	std::pair<boost::uuids::uuid, const peer*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
-	m_me.path_to_passing_by().insert(pair_wptr);
+		boost::uuids::uuid id = p.id();
+		m_peers.emplace(std::make_pair(id, std::move(p)));
 
-	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer*>{}));
+		std::pair<boost::uuids::uuid, const peer*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
+		m_me.path_to_passing_by().insert(pair_wptr);
+
+		m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer*>{}));
 
 
-	peer& new_peer = m_peers.at(id);
-	new_peer.distance(0);
-	m_manager.process_connected_peer(new_peer);
+		peer& new_peer = m_peers.at(id);
+		new_peer.distance(0);
+		m_manager.process_connected_peer(new_peer);
 
-	breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(id) + " connected");
+		breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(id) + " connected");
 
-	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
-	for(auto& l : m_co_listener) {
-		try {
-			breep::logger<peer_manager>.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
-			l.second(*this, p);
-		} catch (const std::exception& e) {
-			std::cerr << e.what() << std::endl;
-		} catch (const std::exception* e) {
-			std::cerr << e->what() << std::endl;
-			delete e;
+		std::lock_guard<std::mutex> lock_guard(m_co_mutex);
+		for(auto& l : m_co_listener) {
+			try {
+				breep::logger<peer_manager>.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
+				l.second(*this, p);
+
+			} catch (const std::exception& e) {
+				breep::logger<peer_manager>.warning("Exception thrown while calling connection listener " + l.first);
+				breep::logger<peer_manager>.warning(e.what());
+			} catch (const std::exception* e) {
+				breep::logger<peer_manager>.warning("Exception thrown while calling connection listener " + l.first);
+				breep::logger<peer_manager>.warning(e->what());
+				delete e;
+			}
 		}
+	} else {
+		breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(p.id()) + ": refused incomming connection");
 	}
 }
 
 template <typename T>
 inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char distance, peer& bridge) {
-
 	boost::uuids::uuid id = p.id();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
 
-	std::pair<boost::uuids::uuid, const peer*> pair_wptr = std::make_pair(id, &bridge);
+	std::pair<boost::uuids::uuid, const peer *> pair_wptr = std::make_pair(id, &bridge);
 	m_me.path_to_passing_by().insert(pair_wptr);
-	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer*>{}));
+	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer *>{}));
 
 	peer& new_peer = m_peers.at(id);
 	new_peer.distance(distance);
