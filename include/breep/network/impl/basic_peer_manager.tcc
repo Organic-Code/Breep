@@ -279,14 +279,17 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 	breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(id) + " connected");
 
 	std::lock_guard<std::mutex> lock_guard(m_co_mutex);
-	for(auto& l : m_co_listener) {
+	for (auto& l : m_co_listener) {
 		try {
 			breep::logger<peer_manager>.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, p);
+
 		} catch (const std::exception& e) {
-			std::cerr << e.what() << std::endl;
-		} catch (const std::exception* e) {
-			std::cerr << e->what() << std::endl;
+			breep::logger<peer_manager>.warning("Exception thrown while calling connection listener " + l.first);
+			breep::logger<peer_manager>.warning(e.what());
+		} catch (const std::exception * e) {
+			breep::logger<peer_manager>.warning("Exception thrown while calling connection listener " + l.first);
+			breep::logger<peer_manager>.warning(e->what());
 			delete e;
 		}
 	}
@@ -305,10 +308,13 @@ inline void breep::basic_peer_manager<T>::peer_disconnected(peer& p) {
 		try {
 			breep::logger<peer_manager>.trace("Calling disconnection listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, p);
+
 		} catch (const std::exception& e) {
-			std::cerr << e.what() << std::endl;
+			breep::logger<peer_manager>.warning("Exception thrown while calling disconnection listener " + l.first);
+			breep::logger<peer_manager>.warning(e.what());
 		} catch (const std::exception* e) {
-			std::cerr << e->what() << std::endl;
+			breep::logger<peer_manager>.warning("Exception thrown while calling disconnection listener " + l.first);
+			breep::logger<peer_manager>.warning(e->what());
 			delete e;
 		}
 	}
@@ -372,10 +378,13 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& /*source*/, const
 			try {
 				breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
 				l.second(*this, sender, processed_data.data() + 1 + 2 * id_size, processed_data.size() - 1 - 2 * id_size, false);
-			}  catch (const std::exception& e) {
-				std::cerr << e.what() << '\n';
+
+			} catch (const std::exception& e) {
+				breep::logger<peer_manager>.warning("Exception thrown while calling data listener " + l.first);
+				breep::logger<peer_manager>.warning(e.what());
 			} catch (const std::exception* e) {
-				std::cerr << e->what() << '\n';
+				breep::logger<peer_manager>.warning("Exception thrown while calling data listener " + l.first);
+				breep::logger<peer_manager>.warning(e->what());
 				delete e;
 			}
 		}
@@ -402,10 +411,13 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 		try {
 			breep::logger<peer_manager>.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
 			l.second(*this, source, processed_data.data(), processed_data.size(), true);
+
 		} catch (const std::exception& e) {
-			std::cerr << e.what() << '\n';
+			breep::logger<peer_manager>.warning("Exception thrown while calling data listener " + l.first);
+			breep::logger<peer_manager>.warning(e.what());
 		} catch (const std::exception* e) {
-			std::cerr << e->what() << '\n';
+			breep::logger<peer_manager>.warning("Exception thrown while calling data listener " + l.first);
+			breep::logger<peer_manager>.warning(e->what());
 			delete e;
 		}
 	}

@@ -127,7 +127,7 @@ namespace breep {
 		 *                        is to be defined by \em network_manager::send_to
 		 * @param data Data to be sent
 		 *
-		 * @sa network::send_to(const peer&, const data_container&) const
+		 * @sa basic_peer_manager::send_to(const peer&, const data_container&) const
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -141,7 +141,7 @@ namespace breep {
 		 * @param p Target peer
 		 * @param data Data to be sent
 		 *
-		 * @sa network::send_to_all(const data_container&) const
+		 * @sa basic_peer_manager::send_to_all(const data_container&) const
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -186,7 +186,7 @@ namespace breep {
 		 * @attention if the network was previously started, shot down, and that ::connect() is called before ensuring
 		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 *
-		 * @sa network::connect_sync(const boost::asio::ip::address&)
+		 * @sa basic_peer_manager::connect_sync(const boost::asio::ip::address&)
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -204,7 +204,7 @@ namespace breep {
 		 *
 		 * @throws invalid_state if the peer_manager is already running.
 		 *
-		 * @sa network::connect(const boost::asio::ip::address& address)
+		 * @sa basic_peer_manager::connect(const boost::asio::ip::address& address)
 		 *
 		 * @since 0.1.0
 		 */
@@ -228,8 +228,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::connection_listener
-		 * @sa network::remove_connection_listener(listener_id)
+		 * @sa basic_peer_manager::connection_listener
+		 * @sa basic_peer_manager::remove_connection_listener(listener_id)
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -243,8 +243,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::data_received_listener
-		 * @sa network::remove_data_listener(listener_id)
+		 * @sa basic_peer_manager::data_received_listener
+		 * @sa basic_peer_manager::remove_data_listener(listener_id)
 		 *
 		 * @since 0.1.0
 		 */
@@ -258,8 +258,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::data_received_listener
-		 * @sa network::remove_disconnection_listener(listener_id)
+		 * @sa basic_peer_manager::data_received_listener
+		 * @sa basic_peer_manager::remove_disconnection_listener(listener_id)
 		 *
 		 * @since 0.1.0
 		 */

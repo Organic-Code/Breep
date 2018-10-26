@@ -689,7 +689,7 @@ namespace breep {
 			auto associated_listener = m_data_listeners.find(hash_code);
 			if (associated_listener != m_data_listeners.end()) {
 				if (!std::get<detail::network_cst::caller>(associated_listener->second)(*this, source, d, sent_to_all) && m_unlistened_listener) {
-					breep::logger<network>.trace("calling default listener.");
+					breep::logger<network>.warning("Calling default listener.");
 					m_unlistened_listener(*this, source, d, sent_to_all, hash_code);
 				}
 				m_object_builder_mutex.unlock();
@@ -699,10 +699,13 @@ namespace breep {
 
 				try {
 					m_unlistened_listener(*this, source, d, sent_to_all, hash_code);
+
 				} catch (const std::exception& e) {
-					std::cerr << e.what();
+					breep::logger<network>.warning("Exception thrown while calling default data listener");
+					breep::logger<network>.warning(e.what());
 				} catch (const std::exception* e) {
-					std::cerr << e->what();
+					breep::logger<network>.warning("Exception thrown while calling default data listener");
+					breep::logger<network>.warning(e->what());
 					delete e;
 				}
 
