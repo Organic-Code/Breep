@@ -243,8 +243,17 @@ bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address& a
 		boost::uuids::uuid uuid = new_peer->id();
 		peer_connected(std::move(new_peer.get()));
 
-		m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
-		return true;
+		try {
+			m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
+			return true;
+
+		} catch(const std::out_of_range&) {
+			breep::logger<peer_manager>.warning("Requested connection to [" + address.to_string() + "]:" + std::to_string(port_)
+					+ "was successful, but peer was not recorded.");
+			breep::logger<peer_manager>.warning("Did you refuse your own connection attempt with your connection_predicate?");
+			return false;
+		}
+
 	} else {
 		breep::logger<peer_manager>.warning
 				("Connection to [" + address.to_string() + "]:" + std::to_string(port_) + " failed");
@@ -294,7 +303,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
 			}
 		}
 	} else {
-		breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(p.id()) + ": refused incomming connection");
+		breep::logger<peer_manager>.info("Peer " + boost::uuids::to_string(p.id()) + ": local connection_predicate rejected the connection");
 		m_manager.process_connection_denial(p);
 	}
 }
