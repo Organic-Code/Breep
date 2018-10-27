@@ -181,11 +181,11 @@ namespace detail { // breep::detail
 	}
 
 	inline serializer& left_shift_op_impl(serializer& s, char val) {
-		if (std::numeric_limits<char>::min() < 0) {
-			auto unsigned_value = static_cast<unsigned char>(val);
+		if (std::numeric_limits<char>::is_signed) {
+			auto unsigned_value = static_cast<signed char>(val);
 			left_shift_op_impl(s, unsigned_value);
 		} else {
-			auto signed_value = static_cast<signed char>(val);
+			auto signed_value = static_cast<unsigned char>(val);
 			left_shift_op_impl(s, signed_value);
 		}
 		return s;
