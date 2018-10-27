@@ -19,12 +19,22 @@
 
 template <typename T>
 inline const breep::basic_peer<T>*& breep::local_peer<T>::path_to(const basic_peer<T>& p) {
-	return m_path_to_passing_by.at(p.id());
+	try {
+		return m_path_to_passing_by.at(p.id());
+	} catch (const std::out_of_range&) {
+		breep::logger<basic_peer<T>>.error("Peer " + p.id_as_string() + " disconnected unexpectedly while reading distances");
+		throw;
+	}
 }
 
 template <typename T>
 inline breep::basic_peer<T> const * const & breep::local_peer<T>::path_to(const basic_peer<T>& p) const {
-	return m_path_to_passing_by.at(p.id());
+	try {
+		return m_path_to_passing_by.at(p.id());
+	} catch (const std::out_of_range&) {
+		breep::logger<basic_peer<T>>.error("Peer " + p.id_as_string() + " disconnected unexpectedly while reading distances");
+		throw;
+	}
 }
 
 template <typename T>

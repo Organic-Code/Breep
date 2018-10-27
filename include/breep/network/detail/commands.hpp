@@ -23,8 +23,9 @@
 namespace breep {
 
 	/**
-	 * @enum List of available commands
-	 *       for the network
+	 * @enum List of available commands for the network
+	 *
+	 * @note When updating this table, update the jump table on basic_peer_manager.
 	 *
 	 * @since 0.1.0
 	 */
@@ -137,6 +138,14 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		keep_alive,
+		/**
+		 * @brief Accepting or refusing incomming connection, used by io_managers for process_connected_peer and process_connection_denial.
+		 *
+		 * @since 1.0.0
+		 */
+		connection_accepted,
+		connection_refused,
+
 		/**
 		 * @brief never sent
 		 * @since 0.1.0

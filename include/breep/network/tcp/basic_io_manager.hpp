@@ -48,22 +48,14 @@ namespace breep { namespace tcp {
 
 		io_manager_data() = delete;
 
-		explicit io_manager_data(boost::asio::ip::tcp::socket&& socket_)
+		explicit io_manager_data(boost::asio::ip::tcp::socket&& socket_, bool waiting_acceptance_ans = false)
 				: socket(std::move(socket_))
-				, fixed_buffer()
-				, dynamic_buffer()
-				, last_read()
-				, last_command(commands::null_command)
-				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
+				, waiting_acceptance_answer(waiting_acceptance_ans)
 		{}
 
-		explicit io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>& socket_ptr)
+		explicit io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>& socket_ptr, bool waiting_acceptance_ans = false)
 				: socket(std::move(*socket_ptr.get()))
-				, fixed_buffer()
-				, dynamic_buffer()
-				, last_read()
-				, last_command(commands::null_command)
-				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
+				, waiting_acceptance_answer(waiting_acceptance_ans)
 		{}
 
 		~io_manager_data() = default;
@@ -72,13 +64,15 @@ namespace breep { namespace tcp {
 		io_manager_data& operator=(const io_manager_data&) = delete;
 
 		boost::asio::ip::tcp::socket socket;
-		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer;
-		std::vector<uint8_t> dynamic_buffer;
+		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer{};
+		std::vector<uint8_t> dynamic_buffer{};
 
-		std::size_t last_read;
-		commands last_command;
+		std::size_t last_read{};
+		commands last_command{commands::null_command};
 
-		std::chrono::milliseconds timestamp;
+		bool waiting_acceptance_answer;
+
+		std::chrono::milliseconds timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())};
 	};
 
 	/**
@@ -96,7 +90,7 @@ namespace breep { namespace tcp {
 
 		// The protocol ID should be changed at each compatibility break.
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960664; // UPDATE THIS TOGETHER WITH THE HASHING FUNCTION +1 [util/type_traits.hpp]
-		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
+		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390697; // +3
 
 		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
 		using peer = basic_peer<io_manager>;
@@ -121,7 +115,11 @@ namespace breep { namespace tcp {
 
 		void process_connected_peer(peer& connected) final;
 
+		void process_connection_denial(peer& peer) final;
+
 		void disconnect() final;
+
+		void disconnect(peer& peer) final;
 
 		void run() final;
 

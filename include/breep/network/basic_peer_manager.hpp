@@ -56,9 +56,9 @@ namespace breep {
 	 *
 	 * @note Upon (connection)/(disconnection)/(data input) events, the corresponding detail::peer_manager_attorney
 	 *       method should be called (see a the end of this file). Upon "successful" connection, the peer_manager
-	 *       still has the authority on whether or not to keep the connection. If the connection is dropped, nothing will
-	 *       be called for the io_manager. If the connection is kept, the callback io_manager::process_connected_peer
-	 *       will be called
+	 *       still has the authority on whether or not to keep the connection. If the connection is dropped, the callback
+	 *       io_manager::process_connection_denial will be called. If the connection is kept,
+	 *       the callback io_manager::process_connected_peer will be called
 	 *
 	 * @sa breep::io_manager_base
 	 * @sa breep::tcp_network
@@ -471,6 +471,9 @@ namespace breep {
 		void retrieve_peers_handler(const peer& source, const std::vector<uint8_t>& data);
 		void peers_list_handler(const peer& source, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peer& source, const std::vector<uint8_t>& data);
+		void empty_handler(const peer&, const std::vector<uint8_t>&) {
+			breep::logger<peer_manager>.warning("Call to empty_handler was made. This is not supposed to happen in normal circonstances.\n");
+		}
 
 		void keep_alive_handler(const peer& p, const std::vector<uint8_t>& /* unused */) {
 			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
