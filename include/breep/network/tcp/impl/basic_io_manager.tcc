@@ -386,8 +386,9 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 	} else {
 		// error
 		if (sender.io_data->socket.is_open()) {
-			sender.io_data->socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-			sender.io_data->socket.close();
+			boost::system::error_code ec;
+			sender.io_data->socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+			sender.io_data->socket.close(ec);
 			detail::peer_manager_attorney<io_manager>::peer_disconnected(*m_owner, sender);
 		}
 	}
