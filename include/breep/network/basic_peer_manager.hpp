@@ -420,6 +420,9 @@ namespace breep {
 		 * @note You should not attempt to communicate with the peer before it is marked as connected (ie: when
 		 *       the connection handler is called)
 		 *
+		 * @note Keep in mind the connection predicate is applied when other peers connect to you, but also when you
+		 *       attempt to connect to other peers.
+		 *
 		 * @since 1.0.0
 		 *
 		 * @sa basic_peer_manager::remove_connection_predicate()
