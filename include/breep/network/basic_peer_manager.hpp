@@ -420,9 +420,6 @@ namespace breep {
 		 * @note You should not attempt to communicate with the peer before it is marked as connected (ie: when
 		 *       the connection handler is called)
 		 *
-		 * @note Keep in mind the connection predicate is applied when other peers connect to you, but also when you
-		 *       attempt to connect to other peers.
-		 *
 		 * @since 1.0.0
 		 *
 		 * @sa basic_peer_manager::remove_connection_predicate()
@@ -487,8 +484,10 @@ namespace breep {
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
 
-		// predicate telling wether a peer should be accepted or not
+		// predicate telling whether a peer should be accepted or not
+		// Is ignored when connecting to someone
 		std::function<bool(const peer&)> m_predicate;
+		bool m_ignore_predicate{false};
 
 		local_peer<io_manager> m_me;
 		std::vector<std::unique_ptr<peer>> m_failed_connections;

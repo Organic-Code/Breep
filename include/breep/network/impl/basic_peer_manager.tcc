@@ -241,22 +241,17 @@ bool breep::basic_peer_manager<T>::try_connect(const boost::asio::ip::address& a
 		breep::logger<peer_manager>.info
 				("Successfully connected to " + new_peer->id_as_string() + "@" + address.to_string() + ":" + std::to_string(port_));
 		boost::uuids::uuid uuid = new_peer->id();
+		m_ignore_predicate = true;
 		peer_connected(std::move(new_peer.get()));
+		m_ignore_predicate = false;
 
-		try {
-			m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
-			return true;
-
-		} catch(const std::out_of_range&) {
-			breep::logger<peer_manager>.warning("Requested connection to [" + address.to_string() + "]:" + std::to_string(port_)
-					+ "was successful, but peer was not recorded.");
-			breep::logger<peer_manager>.warning("Did you refuse your own connection attempt with your connection_predicate?");
-			return false;
-		}
+		m_manager.send(commands::retrieve_peers, constant::unused_param, m_peers.at(uuid));
+		return true;
 
 	} else {
 		breep::logger<peer_manager>.warning
 				("Connection to [" + address.to_string() + "]:" + std::to_string(port_) + " failed");
+		m_manager.disconnect();
 		return false;
 	}
 }
@@ -270,7 +265,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
 		return;
 	}
 
-	if (m_predicate(p)) {
+	if (m_ignore_predicate || m_predicate(p)) {
 
 		boost::uuids::uuid id = p.id();
 		m_peers.emplace(std::make_pair(id, std::move(p)));
