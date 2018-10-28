@@ -18,6 +18,7 @@
  * @since 0.1.0
  */
 
+#include <atomic>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -497,10 +498,11 @@ namespace breep {
 		listener_id m_id_count;
 
 		unsigned short m_port;
-		bool m_running;
+        std::atomic<bool> m_running;
 
 		network_command_handler m_command_handlers[static_cast<uint8_t>(commands::null_command)];
 
+        std::mutex m_waitfor_run;
 		mutable std::mutex m_co_mutex;
 		mutable std::mutex m_dc_mutex;
 		mutable std::mutex m_data_mutex;

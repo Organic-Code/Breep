@@ -8,8 +8,6 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "breep/network/basic_peer_manager.hpp" // allows my IDE to work
-
 #include <thread>
 #include <iostream>
 #include <functional>
@@ -39,6 +37,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short por
 	, m_id_count{0}
 	, m_port{port}
 	, m_running(false)
+    , m_waitfor_run{}
 	, m_co_mutex{}
 	, m_dc_mutex{}
 	, m_data_mutex{}
@@ -47,6 +46,8 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short por
 {
 	static_assert(std::is_base_of<breep::io_manager_base<T>, T>::value, "Specified type not derived from breep::io_manager_base");
 	static_cast<io_manager_base<T>*>(&m_manager)->owner(this);
+
+    m_waitfor_run.lock();
 
 	m_command_handlers[static_cast<uint8_t>(commands::send_to)]                = &breep::basic_peer_manager<T>::send_to_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::send_to_all)]            = &breep::basic_peer_manager<T>::send_to_all_handler;
@@ -116,6 +117,7 @@ inline void breep::basic_peer_manager<T>::run() {
 		m_thread->join();
 	}
 	m_thread = std::make_unique<std::thread>(&peer_manager::sync_run, this);
+    m_waitfor_run.lock();
 }
 
 template <typename T>
@@ -123,6 +125,7 @@ inline void breep::basic_peer_manager<T>::sync_run() {
 	require_non_running();
 	breep::logger<peer_manager>.info("Starting the network.");
 	m_running = true;
+    m_waitfor_run.unlock();
 	m_manager.run();
 	m_running = false;
 }
