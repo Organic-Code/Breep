@@ -407,6 +407,7 @@ namespace breep {
 		void join() {
 			if (m_thread && m_thread->joinable()) {
 				m_thread->join();
+				m_thread.reset(nullptr);
 			}
 		}
 
