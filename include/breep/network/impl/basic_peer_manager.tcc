@@ -587,7 +587,9 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 
 	if (p && p->id() == id) {
 		breep::logger<peer_manager>.trace("Connection successful");
+        m_ignore_predicate = true;
 		peer_connected(std::move(p.get()));
+        m_ignore_predicate = true;
 	} else {
 		breep::logger<peer_manager>.trace("Connection failed. Requesting a forwarding.");
 		m_manager.send(commands::forward_to, ldata, source);
@@ -772,9 +774,11 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 		}
 	}
 
+    m_ignore_predicate = true;
 	for (auto& peer_ptr : peers_list) {
 		peer_connected(std::move(peer_ptr));
 	}
+    m_ignore_predicate = false;
 
 	std::vector<uint8_t> sendable_uuid;
 	for (std::unique_ptr<peer>& peer_ptr : m_failed_connections) {
