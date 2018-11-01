@@ -260,14 +260,14 @@ namespace detail { // namespace breep::detail
 		return d;
 	}
 
-	inline deserializer& operator>>(deserializer& d, bool& val) {
+	inline deserializer& right_shift_op_impl(deserializer& d, bool& val) {
 		uint8_t c;
 		right_shift_op_impl(d, c);
 		val = (c == static_cast<uint8_t>('1'));
 		return d;
 	}
 
-	inline deserializer& operator>>(deserializer& d, char& val) {
+	inline deserializer& right_shift_op_impl(deserializer& d, char& val) {
 		if (std::numeric_limits<char>::min() < 0) {
 			unsigned char unsigned_value(0);
 			right_shift_op_impl(d, unsigned_value);
