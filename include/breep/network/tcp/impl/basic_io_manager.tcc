@@ -306,6 +306,8 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 		std::vector<uint8_t>& dyn_buff = sender.io_data->dynamic_buffer;
 		std::array<uint8_t, T>& fixed_buff = sender.io_data->fixed_buffer;
 
+		read += sender.io_data->last_read;
+
 		typename std::array<uint8_t, T>::size_type current_index{0};
 		if (sender.io_data->last_command == commands::null_command) {
 			sender.io_data->last_command = static_cast<commands>(fixed_buff[current_index++]);
@@ -320,26 +322,25 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 
 		uint8_t to_be_read;
 		bool has_work = true;
-		std::size_t max_idx = read + sender.io_data->last_read;
 
 		// Reads part of the packet
 		auto process_partial_read = [&] {
-			uint8_t count{0};
 			--current_index;
 
 			if (current_index == 1) {
 				sender.io_data->last_command = commands::null_command;
-				sender.io_data->last_read = 0;
+				sender.io_data->last_read = read;
 				sender.io_data->socket.async_read_some(
-						boost::asio::buffer(fixed_buff.data() + 1, fixed_buff.size() - 1),
+						boost::asio::buffer(fixed_buff.data() + read, fixed_buff.size() - read),
 						boost::bind(&io_manager::process_read, this, sender, _1, _2)
 				);
 			} else {
 				// shifting the buffer so we can use the end of it to store the up coming bits
+				uint8_t count{0};
 				while (read > current_index) {
 					fixed_buff[count++] = fixed_buff[current_index++];
 				}
-				sender.io_data->last_read += count;
+				sender.io_data->last_read = count;
 
 				sender.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data() + count, fixed_buff.size() - count),
@@ -355,13 +356,6 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 				dyn_buff.push_back(fixed_buff[current_index++]);
 			}
 			sender.io_data->last_read = 0;
-			if (current_index == fixed_buff.size()) {
-				sender.io_data->socket.async_read_some(
-						boost::asio::buffer(fixed_buff.data(), fixed_buff.size()),
-						boost::bind(&io_manager::process_read, this, sender, _1, _2)
-				);
-				has_work = false;
-			}
 		};
 
 		// Ends the full packet read process
@@ -372,14 +366,14 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 			sender.io_data->last_command = commands::null_command;
 			sender.io_data->last_read = 0;
 
-			if (current_index < max_idx) {
+			if (current_index < read) {
 				// we still have some extra data in the buffer
-				for (auto j = 0u ; j < max_idx - current_index ; ++j) {
+				for (auto j = 0u ; j < read - current_index ; ++j) {
 					fixed_buff[j] = fixed_buff[current_index + j];
 				}
-				process_read(sender, error, max_idx - current_index);
+				process_read(sender, error, read - current_index);
 
-			} else if (has_work) {
+			} else {
 				sender.io_data->socket.async_read_some(
 						boost::asio::buffer(fixed_buff.data(), fixed_buff.size()),
 						boost::bind(&io_manager::process_read, this, sender, _1, _2)
@@ -393,7 +387,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 
 			if (to_be_read) {
 
-				if (to_be_read + current_index <= max_idx) {
+				if (to_be_read + current_index <= read) {
 					// We can reach the end of the packet.
 					process_read_all();
 					packet_processed();
@@ -405,7 +399,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::process_read(peer& sender, boost::sy
 			} else {
 				// to_be_red == 0 <=> more than std::numeric_limits octets to process.
 				to_be_read = std::numeric_limits<uint8_t>::max();
-				if (to_be_read + current_index <= max_idx) {
+				if (to_be_read + current_index <= read) {
 					// We can reach the end of the sub packet
 					process_read_all();
 
