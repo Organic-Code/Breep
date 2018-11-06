@@ -237,19 +237,14 @@ namespace breep {
 
 		template<>
 		struct identifier_from_tuple<std::tuple<>> {
-			static const std::string value;
+			const std::string value{};
 		};
-		inline const std::string identifier_from_tuple<std::tuple<>>::value{};
 
 		template<typename... T>
 		struct identifier_from_tuple<std::tuple<T...>> {
-			static const std::string value;
+			const std::string value{"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
+			                        identifier_from_tuple<remove_type<0, T...>>{}.value}; // if you have an error here, you probably forgot to declare the type T<template...> (breep::type_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
 		};
-		template<typename... T>
-		const std::string identifier_from_tuple<std::tuple<T...>>::value =
-				"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
-				identifier_from_tuple<remove_type<0, T...>>::value; // if you have an error here, you probably forgot to declare the type T<template...> (breep::type_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
-
 
         // This struct is not technically required, but is
         // here to help gcc5 to understand what's happening

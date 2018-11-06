@@ -3,7 +3,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -22,20 +22,53 @@
 #include <vector>
 #include <string>
 #include <array>
+
+#if __cplusplus >= 201703L
+#include <optional>
+#include <any>
+#else
 #include <boost/optional.hpp>
 #include <boost/any.hpp>
+#endif
 
 namespace breep { namespace detail {
 
+#if __cplusplus >= 201703L
+	template <typename T>
+	using optional = std::optional<T>;
+
+	using any = std::any;
+	template <typename T>
+	decltype(auto) any_cast(any& lany) {
+		return std::any_cast<T>(lany);
+	}
+	template <typename T>
+	decltype(auto) any_cast(const any& lany) {
+		return std::any_cast<T>(lany);
+	}
+	template <typename T>
+	decltype(auto) any_cast(any&& lany) {
+		return std::any_cast<T>(std::move(lany));
+	}
+
+#else
 	template <typename T>
 	using optional = boost::optional<T>;
 
 	using any = boost::any;
-
 	template <typename T>
-	auto any_cast(any& lany) {
+	decltype(auto) any_cast(any& lany) {
 		return boost::any_cast<T>(lany);
 	}
+	template <typename T>
+	decltype(auto) any_cast(const any& lany) {
+		return boost::any_cast<T>(lany);
+	}
+	template <typename T>
+	decltype(auto) any_cast(any&& lany) {
+		return boost::any_cast<T>(std::move(lany));
+	}
+#endif
 
 	struct unowning_linear_container;
 

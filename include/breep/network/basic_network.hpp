@@ -192,7 +192,7 @@ namespace breep {
 			breep::serializer s;
 			s << type_traits<Serialiseable>::hash_code();
 			s << data;
-			breep::logger<network>.debug("Sending " + type_traits<Serialiseable>::universal_name());
+			m_log.debug("Sending " + type_traits<Serialiseable>::universal_name());
 			m_manager.send_to_all(s.str());
 		}
 
@@ -214,7 +214,7 @@ namespace breep {
 			breep::serializer s;
 			s << type_traits<Serialiseable>::hash_code();
 			s << data;
-			breep::logger<network>.debug("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
+			m_log.debug("Sending private " + type_traits<Serialiseable>::universal_name() + " to " + p.id_as_string());
 			m_manager.send_to(p, s.str());
 		}
 
@@ -234,11 +234,11 @@ namespace breep {
 			auto associated_listener = m_data_listeners.find(breep::type_traits<T>::hash_code());
 			if (associated_listener != m_data_listeners.end()) {
 				auto ob = detail::any_cast<detail::object_builder<io_manager, T>*>(std::get<detail::network_cst::object_builder_idx>(associated_listener->second));
-				breep::logger<network>.debug("Self sending " + breep::type_traits<T>::universal_name() + ".");
+				m_log.debug("Self sending " + breep::type_traits<T>::universal_name() + ".");
 				ob->flush_listeners();
 				ob->fire(breep::basic_netdata_wrapper<io_manager, T>(*this, m_manager.self(), data, is_private));
 			} else {
-				breep::logger<network>.warning("Unregistered type self-sent: " + breep::type_traits<T>::universal_name());
+				m_log.warning("Unregistered type self-sent: " + breep::type_traits<T>::universal_name());
 			}
 		}
 
@@ -252,7 +252,7 @@ namespace breep {
 		 * @since 1.0.0
 		 */
 		void send_packet(const packet& pack) const {
-			breep::logger<network>.debug("Sending a packet");
+			m_log.debug("Sending a packet");
 			m_manager.send_to_all(pack.m_s.str());
 		}
 
@@ -267,7 +267,7 @@ namespace breep {
 		 * @since 1.0.0
 		 */
 		void send_packet_to(const peer& target, const packet& pack) const {
-			breep::logger<network>.debug("Sending a private packet");
+			m_log.debug("Sending a private packet");
 			m_manager.send_to(target, pack.m_s.str());
 		}
 
@@ -374,7 +374,7 @@ namespace breep {
 		 */
 		listener_id add_connection_listener(connection_listener listener) {
 			std::lock_guard<std::mutex> lock_guard(m_connection_mutex);
-			breep::logger<network>.debug("Adding connection listener (id: " + std::to_string(m_id_count) + ")");
+			m_log.debug("Adding connection listener (id: " + std::to_string(m_id_count) + ")");
 			m_co_listeners.emplace(m_id_count, listener);
 			return m_id_count++;
 		}
@@ -396,7 +396,7 @@ namespace breep {
 		 */
 		listener_id add_disconnection_listener(disconnection_listener listener) {
 			std::lock_guard<std::mutex> lock_guard(m_disconnection_mutex);
-			breep::logger<network>.debug("Adding disconnection listener (id: " + std::to_string(m_id_count) + ")");
+			m_log.debug("Adding disconnection listener (id: " + std::to_string(m_id_count) + ")");
 			m_dc_listeners.emplace(m_id_count, listener);
 			return m_id_count++;
 		}
@@ -413,7 +413,7 @@ namespace breep {
 		 */
 		bool remove_connection_listener(listener_id id) {
 			std::lock_guard<std::mutex> lock_guard(m_connection_mutex);
-			breep::logger<network>.debug("Removing connection listener (id: " + std::to_string(m_id_count) + ")");
+			m_log.debug("Removing connection listener (id: " + std::to_string(m_id_count) + ")");
 			return m_co_listeners.erase(id) > 0;
 		}
 
@@ -429,7 +429,7 @@ namespace breep {
 		 */
 		bool remove_disconnection_listener(listener_id id) {
 			std::lock_guard<std::mutex> lock_guard(m_disconnection_mutex);
-			breep::logger<network>.debug("Removing disconnection listener (id: " + std::to_string(m_id_count) + ")");
+			m_log.debug("Removing disconnection listener (id: " + std::to_string(m_id_count) + ")");
 			return m_dc_listeners.erase(id) > 0;
 		}
 
@@ -502,10 +502,10 @@ namespace breep {
 			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
 				std::lock_guard<std::mutex> lock_guard(m_object_builder_mutex);
-				breep::logger<network>.debug("New type being registered for listening: " + type_traits<T>::universal_name());
+				m_log.debug("New type being registered for listening: " + type_traits<T>::universal_name());
 				std::shared_ptr<detail::object_builder<io_manager,T>> builder_ptr = std::make_shared<detail::object_builder<io_manager, T>>();
 				m_data_listeners.emplace(type_traits<T>::hash_code(), detail::make_obj_tuple(builder_ptr));
-				builder_ptr->set_log_level(logger<network>.level());
+				builder_ptr->set_log_level(m_log.level());
 				return builder_ptr->add_listener(m_id_count++, listener);
 			} else {
 				auto builder_ptr = detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<detail::network_cst::object_builder_idx>(associated_listener->second));
@@ -531,7 +531,7 @@ namespace breep {
 		bool remove_data_listener(listener_id id) {
 			auto associated_listener = m_data_listeners.find(type_traits<T>::hash_code());
 			if (associated_listener == m_data_listeners.end()) {
-				breep::logger<network>.warning
+				m_log.warning
 						("Trying to remove a listener of type " + type_traits<T>::universal_name() + " that was not registered. (listener id: " + std::to_string(id) + ")");
 				return false;
 			} else {
@@ -558,7 +558,7 @@ namespace breep {
 		bool remove_data_listener(const type_listener_id& id) {
 			auto associated_listener = m_data_listeners.find(id.type_hash());
 			if (associated_listener == m_data_listeners.end()) {
-				breep::logger<network>.warning
+				m_log.warning
 						("Trying to remove a listener for an unknown type (hash: " + std::to_string(id.type_hash())
 						 + ") that was not registered. (listener id: " + std::to_string(id.id()) + ")");
 				return false;
@@ -583,7 +583,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		void set_log_level(log_level ll) const {
-			breep::logger<network>.level(ll);
+			m_log.level(ll);
 			m_manager.set_log_level(ll);
 			for (auto& pair : m_data_listeners) {
 				std::get<detail::network_cst::log_setter>(pair.second)(ll);
@@ -601,7 +601,7 @@ namespace breep {
 			if (object_builder != m_data_listeners.end()) {
 				detail::any_cast<detail::object_builder<io_manager,T>*>(std::get<detail::network_cst::object_builder_idx>(object_builder->second))->clear_any();
 			} else {
-				breep::logger<network>.warning("Trying to clean an listener list for a type that was not registered (" + type_traits<T>::universal_name() + ")");
+				m_log.warning("Trying to clean an listener list for a type that was not registered (" + type_traits<T>::universal_name() + ")");
 			}
 		}
 
@@ -613,7 +613,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		void clear_any() {
-			breep::logger<network>.debug("Cleaning any listeners");
+			m_log.debug("Cleaning any listeners");
 
 			m_connection_mutex.lock();
 			m_co_listeners.clear();
@@ -674,7 +674,7 @@ namespace breep {
 
 			breep::deserializer d(std::basic_string<uint8_t>(data, data + data_size - sizeof(uint64_t)));
 			if (hash_code == type_traits<packet>::hash_code()) {
-				breep::logger<network>.trace("Received a packet. Unwrapping it.");
+				m_log.trace("Received a packet. Unwrapping it.");
 				while(!d.empty()) {
 					d >> hash_code;
 					class_received(hash_code, source, d, sent_to_all);
@@ -689,29 +689,29 @@ namespace breep {
 			auto associated_listener = m_data_listeners.find(hash_code);
 			if (associated_listener != m_data_listeners.end()) {
 				if (!std::get<detail::network_cst::caller>(associated_listener->second)(*this, source, d, sent_to_all) && m_unlistened_listener) {
-					breep::logger<network>.warning("Calling default listener.");
+					m_log.warning("Calling default listener.");
 					m_unlistened_listener(*this, source, d, sent_to_all, hash_code);
 				}
 				m_object_builder_mutex.unlock();
 			} else if (m_unlistened_listener){
 				m_object_builder_mutex.unlock();
-				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code) + ". Calling default listener.");
+				m_log.warning("Unregistered type received: " + std::to_string(hash_code) + ". Calling default listener.");
 
 				try {
 					m_unlistened_listener(*this, source, d, sent_to_all, hash_code);
 
 				} catch (const std::exception& e) {
-					breep::logger<network>.warning("Exception thrown while calling default data listener");
-					breep::logger<network>.warning(e.what());
+					m_log.warning("Exception thrown while calling default data listener");
+					m_log.warning(e.what());
 				} catch (const std::exception* e) {
-					breep::logger<network>.warning("Exception thrown while calling default data listener");
-					breep::logger<network>.warning(e->what());
+					m_log.warning("Exception thrown while calling default data listener");
+					m_log.warning(e->what());
 					delete e;
 				}
 
 			} else {
 				m_object_builder_mutex.unlock();
-				breep::logger<network>.warning("Unregistered type received: " + std::to_string(hash_code));
+				m_log.warning("Unregistered type received: " + std::to_string(hash_code));
 			}
 		}
 
@@ -728,6 +728,8 @@ namespace breep {
 		std::mutex m_connection_mutex;
 		std::mutex m_disconnection_mutex;
 		std::mutex m_object_builder_mutex;
+
+		mutable breep::logger m_log{logger::from_class<network>()};
 	};
 
 	template <typename T, typename U>

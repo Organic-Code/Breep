@@ -353,7 +353,7 @@ namespace breep {
 		}
 
 		void set_log_level(log_level ll) const {
-			breep::logger<peer_manager>.level(ll);
+			m_log.level(ll);
 			m_manager.set_log_level(ll);
 		}
 
@@ -474,11 +474,11 @@ namespace breep {
 		void peers_list_handler(const peer& source, const std::vector<uint8_t>& data);
 		void peer_disconnection_handler(const peer& source, const std::vector<uint8_t>& data);
 		void empty_handler(const peer&, const std::vector<uint8_t>&) {
-			breep::logger<peer_manager>.warning("Call to empty_handler was made. This is not supposed to happen in normal circonstances.\n");
+			m_log.warning("Call to empty_handler was made. This is not supposed to happen in normal circonstances.\n");
 		}
 
 		void keep_alive_handler(const peer& p, const std::vector<uint8_t>& /* unused */) {
-			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
+			m_log.trace("Received keep_alive from " + p.id_as_string());
 		}
 
 		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_peers;
@@ -511,6 +511,8 @@ namespace breep {
 		friend class detail::peer_manager_attorney<io_manager>;
 
 		std::unique_ptr<std::thread> m_thread;
+
+		mutable breep::logger m_log{logger::from_class<peer_manager>()};
 	};
 
 

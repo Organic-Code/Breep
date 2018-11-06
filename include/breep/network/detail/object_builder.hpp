@@ -58,30 +58,30 @@ namespace breep { namespace detail {
 
 		bool build_and_call(network& lnetwork, const typename network::peer& received_from, breep::deserializer& data, bool is_private) {
 			if (is_private) {
-				breep::logger<object_builder<io_manager, T>>.info("Received " + type_traits<T>::universal_name());
+				m_log.info("Received " + type_traits<T>::universal_name());
 			} else {
-				breep::logger<object_builder<io_manager, T>>.info("Received private " + type_traits<T>::universal_name() + " from " + received_from.id_as_string());
+				m_log.info("Received private " + type_traits<T>::universal_name() + " from " + received_from.id_as_string());
 			}
 
 			flush_listeners();
 
 			if (m_listeners.empty()) {
-				breep::logger<object_builder<io_manager,T>>.debug("No listener for received " + type_traits<T>::universal_name());
+				m_log.debug("No listener for received " + type_traits<T>::universal_name());
 				return false;
 			} else {
-				breep::logger<object_builder<io_manager,T>>.debug("Building object of type " + type_traits<T>::universal_name());
+				m_log.debug("Building object of type " + type_traits<T>::universal_name());
 				try {
 					T object;
 					data >> object;
 					fire(breep::basic_netdata_wrapper<io_manager, T>(lnetwork, received_from, object, is_private));
 
 				} catch (const std::exception& e) {
-					breep::logger<object_builder<io_manager,T>>.warning("Exception thrown while deserializing object of type " + type_traits<T>::universal_name());
-					breep::logger<object_builder<io_manager,T>>.warning(e.what());
+					m_log.warning("Exception thrown while deserializing object of type " + type_traits<T>::universal_name());
+					m_log.warning(e.what());
 					return false;
 				} catch (const std::exception* e) {
-					breep::logger<object_builder<io_manager,T>>.warning("Exception thrown while deserializing object of type " + type_traits<T>::universal_name());
-					breep::logger<object_builder<io_manager,T>>.warning(e->what());
+					m_log.warning("Exception thrown while deserializing object of type " + type_traits<T>::universal_name());
+					m_log.warning(e->what());
 					delete e;
 					return false;
 				}
@@ -93,7 +93,7 @@ namespace breep { namespace detail {
 
 		type_listener_id add_listener(listener_id id, data_received_listener<T> l) {
 			std::lock_guard<std::mutex> lock_guard(m_mutex);
-			breep::logger<object_builder<io_manager,T>>.debug
+			m_log.debug
 					("Adding listener for type " + type_traits<T>::universal_name () + ". (id: " + std::to_string(id) + ")");
 			m_to_add.push_back(std::pair<listener_id, data_received_listener<T>>(id, l));
 			return type_listener_id(id, type_traits<T>::hash_code());
@@ -103,7 +103,7 @@ namespace breep { namespace detail {
 	        std::lock_guard<std::mutex> lock_guard(m_mutex);
 			if (m_listeners.count(id)) {
 				if (std::find_if(m_to_remove.cbegin(), m_to_remove.cend(), [id](auto l_id) -> bool { return l_id == id; }) == m_to_remove.cend()) {
-					breep::logger<object_builder<io_manager,T>>.debug
+					m_log.debug
 							("Removing listener for type " + type_traits<T>::universal_name () + ". (id: " + std::to_string(id) + ")");
 					m_to_remove.push_back(id);
 					return true;
@@ -111,25 +111,25 @@ namespace breep { namespace detail {
 			} else {
 				auto it = std::find_if(m_to_add.begin(), m_to_add.end(), [id](auto l_it) -> bool { return l_it.first == id; });
 				if (it != m_to_add.cend()) {
-					breep::logger<object_builder<io_manager,T>>.debug
+					m_log.debug
 							("Removing listener for type " + type_traits<T>::universal_name () + ". (id: " + std::to_string(id) + ")");
 					*it = m_to_add.back();
 					m_to_add.pop_back();
 					return true;
 				}
 			}
-			breep::logger<object_builder<io_manager,T>>.debug
+			m_log.debug
 					("Listener with id " + std::to_string(id) + " not found when trying to remove from listeners of type " + type_traits<T>::universal_name());
 			return false;
 		}
 
 		void set_log_level(log_level ll) {
-			breep::logger<object_builder<io_manager, T>>.level(ll);
+			m_log.level(ll);
 		}
 
 		void clear_any() {
 			std::lock_guard<std::mutex> lock_guard(m_mutex);
-			breep::logger<object_builder<io_manager, T>>.debug("Cleaning listeners list for type " + type_traits<T>::universal_name());
+			m_log.debug("Cleaning listeners list for type " + type_traits<T>::universal_name());
 			m_listeners.clear();
 			m_to_add.clear();
 			m_to_remove.clear();
@@ -137,19 +137,19 @@ namespace breep { namespace detail {
 
 		void fire(basic_netdata_wrapper<io_manager, T>&& wrapper) {
 			for (auto& listeners_pair : m_listeners) {
-				breep::logger<object_builder<io_manager,T>>.debug("Calling listener with id " + std::to_string(listeners_pair.first));
+				m_log.debug("Calling listener with id " + std::to_string(listeners_pair.first));
 				wrapper.listener_id = listeners_pair.first;
 				try {
 					listeners_pair.second(wrapper);
 
 				} catch (const std::exception& e) {
-					breep::logger<object_builder<io_manager, T>>.warning("Exception thrown while calling listener "
+					m_log.warning("Exception thrown while calling listener "
 										+ std::to_string(wrapper.listener_id) + " for type " + type_traits<T>::universal_name());
-					breep::logger<object_builder<io_manager, T>>.warning(e.what());
+					m_log.warning(e.what());
 				} catch (const std::exception* e) {
-					breep::logger<object_builder<io_manager, T>>.warning("Exception thrown while calling listener "
+					m_log.warning("Exception thrown while calling listener "
 										+ std::to_string(wrapper.listener_id) + " for type " + type_traits<T>::universal_name());
-					breep::logger<object_builder<io_manager, T>>.warning(e->what());
+					m_log.warning(e->what());
 					delete e;
 				}
 			}
@@ -158,17 +158,19 @@ namespace breep { namespace detail {
 		void flush_listeners() {
 			std::lock_guard<std::mutex> lock_guard(m_mutex);
 			for (auto& pair : m_to_add) {
-				breep::logger<object_builder<io_manager,T>>.trace("Effectively adding listener (id: " + std::to_string(pair.first) + ")");
+				m_log.trace("Effectively adding listener (id: " + std::to_string(pair.first) + ")");
 				m_listeners.emplace(std::move(pair));
 			}
 			for (auto& id : m_to_remove) {
-				breep::logger<object_builder<io_manager,T>>.trace("Effectively removing listener (id: " + std::to_string(id) + ")");
+				m_log.trace("Effectively removing listener (id: " + std::to_string(id) + ")");
 				m_listeners.erase(id);
 			}
 		}
 
 
 	private:
+		breep::logger m_log{logger::from_class<object_builder<io_manager,T>>()};
+
 		std::unordered_map<listener_id, data_received_listener<T>> m_listeners{};
 		std::vector<std::pair<listener_id, data_received_listener<T>>> m_to_add{};
 		std::vector<listener_id> m_to_remove{};

@@ -3,7 +3,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -124,7 +124,7 @@ namespace breep { namespace tcp {
 		void run() final;
 
 		void set_log_level(log_level ll) const final {
-			breep::logger<io_manager>.level(ll);
+			m_log.level(ll);
 		}
 
 	private:
@@ -144,7 +144,7 @@ namespace breep { namespace tcp {
 		}
 
 		void keep_alive_impl() {
-			breep::logger<io_manager>.trace("Sending keep_alives");
+			m_log.trace("Sending keep_alives");
 			for (const auto& peers_pair : m_owner->peers()) {
 				send(commands::keep_alive, constant::unused_param, peers_pair.second);
 			}
@@ -156,7 +156,7 @@ namespace breep { namespace tcp {
 			std::chrono::milliseconds time_now =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 			for (const auto& peers_pair : m_owner->peers()) {
 				if (time_now - peers_pair.second.io_data->timestamp > std::chrono::milliseconds(timeout_millis)) {
-					breep::logger<io_manager>.trace(peers_pair.second.id_as_string() + " timed out");
+					m_log.trace(peers_pair.second.id_as_string() + " timed out");
 					peers_pair.second.io_data->socket.close();
 				}
 			}
@@ -194,6 +194,8 @@ namespace breep { namespace tcp {
 
 		boost::asio::deadline_timer m_timeout_dlt;
 		boost::asio::deadline_timer m_keepalive_dlt;
+
+		mutable breep::logger m_log{logger::from_class<io_manager>()};
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};

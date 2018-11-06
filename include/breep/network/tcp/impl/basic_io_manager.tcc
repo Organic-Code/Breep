@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -57,7 +57,7 @@ breep::tcp::basic_io_manager<BUFFER_LENGTH,keep_alive_millis,U,timeout_chk_inter
 	boost::system::error_code ec;
 	m_acceptor.set_option(boost::asio::ip::v6_only(false), ec);
 	if (ec) {
-		breep::logger<io_manager>.debug("IP dual stack is unsupported on your system. Adding ipv4 listener.");
+		m_log.debug("IP dual stack is unsupported on your system. Adding ipv4 listener.");
 	}
 
 }
@@ -140,7 +140,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::send(commands command, data_iterator
 						write(target);
 					}
 				} catch (const std::out_of_range&) {
-					breep::logger<io_manager>.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
+					m_log.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
 				}
 			}
 	);
@@ -168,15 +168,15 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 	boost::system::error_code error;
 	size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 	if (error || len != 8) {
-		breep::logger<io_manager>.warning("Target peer has not the same protocol ID format than us! (peer at "
+		m_log.warning("Target peer has not the same protocol ID format than us! (peer at "
 		                                  + address.to_string() + "@" + std::to_string(port) + ").");
 		return {};
 	}
 	while (len--) {
 		if (buffer[len] != io_protocol[len]) {
-			breep::logger<io_manager>.warning("Target peer has not the same io_manager protocol ID than us (["
+			m_log.warning("Target peer has not the same io_manager protocol ID than us (["
 			                                  + address.to_string() + "]:" + std::to_string(port) + ").");
-			breep::logger<io_manager>.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
+			m_log.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
 			                                  std::to_string(IO_PROTOCOL_ID_2) + ". Their protocol ID: "
 			                                  + std::to_string(detail::read_uint32(buffer)) + " "
 			                                  + std::to_string(detail::read_uint32(buffer, sizeof(uint32_t))) + ".");
@@ -205,11 +205,11 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 		return detail::optional<peer>();
 	}
 	if (static_cast<commands>(command[0]) == commands::connection_refused) {
-		breep::logger<io_manager>.info("Connection refused ([" + address.to_string() + "]:" + std::to_string(port) + ")");
+		m_log.info("Connection refused ([" + address.to_string() + "]:" + std::to_string(port) + ")");
 		return {};
 	}
 	if (static_cast<commands>(command[0]) != commands::connection_accepted) {
-		breep::logger<io_manager>.warning("Incompatible protocol, but protocol id match."
+		m_log.warning("Incompatible protocol, but protocol id match."
 		                                  "(when connecting to [" + address.to_string() + "]:" + std::to_string(port) + ")");
 		return {};
 	}
@@ -268,9 +268,9 @@ void breep::tcp::basic_io_manager<T,U,V,W>::disconnect(peer& p) {
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 void breep::tcp::basic_io_manager<T,U,V,W>::run() {
 	m_io_service.reset();
-	breep::logger<io_manager>.info("The network is now online.");
+	m_log.info("The network is now online.");
 	m_io_service.run();
-	breep::logger<io_manager>.info("The network is now offline.");
+	m_log.info("The network is now offline.");
 }
 
 /* PRIVATE */
@@ -433,7 +433,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::write(const peer& target) const {
 				boost::bind(&io_manager::write_done, this, target)
 		);
 	} catch (const std::out_of_range&) {
-		breep::logger<io_manager>.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
+		m_log.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
 	}
 }
 
@@ -446,7 +446,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::write_done(const peer& target) const
 			write(target);
 		}
 	} catch (const std::out_of_range&) {
-		breep::logger<io_manager>.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
+		m_log.warning("Peer " + target.id_as_string() + " disconnected unexpectedly while data was being sent");
 	}
 }
 
@@ -458,7 +458,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_code ec)
 		size_t len = m_socket->read_some(boost::asio::buffer(buffer), ec);
 
 		if (ec) {
-			breep::logger<io_manager>.warning("Failed to read data from incomming connection: ["
+			m_log.warning("Failed to read data from incomming connection: ["
 			                                  + m_socket->remote_endpoint().address().to_string() + "].");
 			m_socket->close();
 		} else {
@@ -470,7 +470,7 @@ void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_code ec)
 
 			// Reading the protocol ID
 			if (len != 8) {
-				breep::logger<io_manager>.warning("Incomming connection from [" + m_socket->remote_endpoint().address().to_string()
+				m_log.warning("Incomming connection from [" + m_socket->remote_endpoint().address().to_string()
 				                                  + "]: they don't have the same protocol ID format than us!");
 				m_socket = std::make_shared<boost::asio::ip::tcp::socket>(m_io_service);
 				m_acceptor.async_accept(*m_socket, boost::bind(&io_manager::accept, this, _1));
@@ -478,9 +478,9 @@ void breep::tcp::basic_io_manager<T,U,V,W>::accept(boost::system::error_code ec)
 			}
 			while(len--) {
 				if (buffer[len] != protocol_id[len]) {
-					breep::logger<io_manager>.warning("Incomming peer has not the same io_manager protocol ID than us (["
+					m_log.warning("Incomming peer has not the same io_manager protocol ID than us (["
 					                                  + m_socket->remote_endpoint().address().to_string() + "]).");
-					breep::logger<io_manager>.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
+					m_log.warning("Our protocol ID: " + std::to_string(IO_PROTOCOL_ID_1) + " " +
 					                                  std::to_string(IO_PROTOCOL_ID_2) + ". Their protocol ID: "
 					                                  + std::to_string(detail::read_uint32(buffer)) + " "
 					                                  + std::to_string(detail::read_uint32(buffer, sizeof(uint32_t))) + ".");
