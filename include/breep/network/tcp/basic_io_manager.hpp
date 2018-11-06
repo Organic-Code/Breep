@@ -48,34 +48,31 @@ namespace breep { namespace tcp {
 
 		io_manager_data() = delete;
 
-		explicit io_manager_data(boost::asio::ip::tcp::socket&& socket_)
+		explicit io_manager_data(boost::asio::ip::tcp::socket&& socket_, bool waiting_acceptance_ans = false)
 				: socket(std::move(socket_))
-				, fixed_buffer()
-				, dynamic_buffer()
-				, last_command(commands::null_command)
-				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
+				, waiting_acceptance_answer(waiting_acceptance_ans)
 		{}
 
-		explicit io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>& socket_ptr)
+		explicit io_manager_data(std::shared_ptr<boost::asio::ip::tcp::socket>& socket_ptr, bool waiting_acceptance_ans = false)
 				: socket(std::move(*socket_ptr.get()))
-				, fixed_buffer()
-				, dynamic_buffer()
-				, last_command(commands::null_command)
-				, timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()))
+				, waiting_acceptance_answer(waiting_acceptance_ans)
 		{}
 
-		~io_manager_data() {}
+		~io_manager_data() = default;
 
 		io_manager_data(const io_manager_data&) = delete;
 		io_manager_data& operator=(const io_manager_data&) = delete;
 
 		boost::asio::ip::tcp::socket socket;
-		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer;
-		std::vector<uint8_t> dynamic_buffer;
+		std::array<uint8_t, BUFFER_LENGTH> fixed_buffer{};
+		std::vector<uint8_t> dynamic_buffer{};
 
-		commands last_command;
+		std::size_t last_read{};
+		commands last_command{commands::null_command};
 
-		std::chrono::milliseconds timestamp;
+		bool waiting_acceptance_answer;
+
+		std::chrono::milliseconds timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())};
 	};
 
 	/**
@@ -92,8 +89,8 @@ namespace breep { namespace tcp {
 	public:
 
 		// The protocol ID should be changed at each compatibility break.
-		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960663;
-		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390694;
+		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960664; // UPDATE THIS TOGETHER WITH THE HASHING FUNCTION +1 [util/type_traits.hpp]
+		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390697; // +3
 
 		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
 		using peer = basic_peer<io_manager>;
@@ -101,34 +98,38 @@ namespace breep { namespace tcp {
 
 		explicit basic_io_manager(unsigned short port);
 
-		basic_io_manager(io_manager&& other);
+		basic_io_manager(io_manager&& other) noexcept;
 
-		~basic_io_manager();
+		~basic_io_manager() final;
 
 		basic_io_manager(const io_manager&) = delete;
 		io_manager& operator=(const io_manager&) = delete;
 
 		template <typename Container>
-		void send(commands command, const Container& data, const peer& peer) const;
+		void send(commands command, const Container& data, const peer& target) const;
 
 		template <typename InputIterator, typename size_type>
-		void send(commands command, InputIterator begin, size_type size, const peer& peer) const;
+		void send(commands command, InputIterator it, size_type size, const peer& target) const;
 
-		detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port) override;
+		detail::optional<peer> connect(const boost::asio::ip::address& address, unsigned short port) override;
 
-		void process_connected_peer(peer& peer) override;
+		void process_connected_peer(peer& connected) final;
 
-		void disconnect() override;
+		void process_connection_denial(peer& peer) final;
 
-		void run() override;
+		void disconnect() final;
 
-		void set_log_level(log_level ll) const override{
+		void disconnect(peer& peer) final;
+
+		void run() final;
+
+		void set_log_level(log_level ll) const final {
 			breep::logger<io_manager>.level(ll);
 		}
 
 	private:
 
-		void port(unsigned short port) {
+		void port(unsigned short port) final {
 			make_id_packet();
 
 			m_acceptor.close();
@@ -165,11 +166,11 @@ namespace breep { namespace tcp {
 
 		void owner(basic_peer_manager<io_manager>* owner) override;
 
-		void process_read(peer& peer, boost::system::error_code error, std::size_t read);
+		void process_read(peer& sender, boost::system::error_code error, std::size_t read);
 
-		void write(const peer& peer) const;
+		void write(const peer& target) const;
 
-		void write_done(const peer& peer) const;
+		void write_done(const peer& target) const;
 
 		void accept(boost::system::error_code ec);
 
@@ -196,7 +197,7 @@ namespace breep { namespace tcp {
 
 		mutable std::unordered_map<boost::uuids::uuid, std::queue<std::vector<uint8_t>>, boost::hash<boost::uuids::uuid>> m_data_queues;
 	};
-}}
+}} // namespace breep::tcp
 
 #include "breep/network/tcp/impl/basic_io_manager.tcc"
 

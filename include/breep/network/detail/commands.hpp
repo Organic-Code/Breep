@@ -3,7 +3,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -23,8 +23,9 @@
 namespace breep {
 
 	/**
-	 * @enum List of available commands
-	 *       for the network
+	 * @enum List of available commands for the network
+	 *
+	 * @note When updating this table, update the jump table on basic_peer_manager.
 	 *
 	 * @since 0.1.0
 	 */
@@ -66,7 +67,7 @@ namespace breep {
 		stop_forwarding,
 		/**
 		 * @brief     Command to tell a peer you are bridging for him
-		 * @details   Must be followed your own distance to the peer (1 octet) + by a peer (id)
+		 * @details   Must be followed by your own distance to the peer (1 octet) + by a peer (id)
 		 * @sa        commands::forward_to
 		 * @sa        commands::stop_forwarding
 		 *
@@ -137,6 +138,14 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		keep_alive,
+		/**
+		 * @brief Accepting or refusing incomming connection, used by io_managers for process_connected_peer and process_connection_denial.
+		 *
+		 * @since 1.0.0
+		 */
+		connection_accepted,
+		connection_refused,
+
 		/**
 		 * @brief never sent
 		 * @since 0.1.0

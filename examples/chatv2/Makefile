@@ -45,7 +45,7 @@ INCLUDEDIR      = -I ../../include
 #Libraries paths' flags
 LIBSDIR         = -L ../../bin
 #Libraries links' flags
-LINKS           = -lboost_system -lboost_serialization -pthread
+LINKS           = -lboost_system -pthread
 #Extra compiler flags
 DEFINES         =
 #Compiler argument to name the output file
@@ -202,7 +202,7 @@ ifeq ($(INHIBITLINKING),0)
 ifeq ($(wildcard $(BUILDDIR)/.),)
 	@$(MKDIR) $(BUILDDIR)
 endif
-	$(COMPILER) $(LIBSDIR) $(LINKS) $(COMPOUTPUTNAME) $(OUTFINAL) $(COMPFINALIZE) $(OBJECTS)
+	$(COMPILER) $(LIBSDIR) $(COMPOUTPUTNAME) $(OUTFINAL) $(COMPFINALIZE) $(OBJECTS) $(LINKS) 
 	@$(DISPLAY) "$(POST)\n\n"
 endif
 ifneq ($(strip $(POSTBUILDMSG)),)

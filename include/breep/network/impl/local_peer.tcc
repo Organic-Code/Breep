@@ -1,14 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
 // https://joinup.ec.europa.eu/community/eupl/og_page/european-union-public-licence-eupl-v11     //
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#include "breep/network/local_peer.hpp" // allows my IDE to work
 
 /**
  * @file local_peer.tcc
@@ -19,12 +17,22 @@
 
 template <typename T>
 inline const breep::basic_peer<T>*& breep::local_peer<T>::path_to(const basic_peer<T>& p) {
-	return m_path_to_passing_by.at(p.id());
+	try {
+		return m_path_to_passing_by.at(p.id());
+	} catch (const std::out_of_range&) {
+		breep::logger<basic_peer<T>>.error("Peer " + p.id_as_string() + " disconnected unexpectedly while reading distances");
+		throw;
+	}
 }
 
 template <typename T>
 inline breep::basic_peer<T> const * const & breep::local_peer<T>::path_to(const basic_peer<T>& p) const {
-	return m_path_to_passing_by.at(p.id());
+	try {
+		return m_path_to_passing_by.at(p.id());
+	} catch (const std::out_of_range&) {
+		breep::logger<basic_peer<T>>.error("Peer " + p.id_as_string() + " disconnected unexpectedly while reading distances");
+		throw;
+	}
 }
 
 template <typename T>

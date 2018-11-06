@@ -3,7 +3,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <tuple>
+#include <cstddef>
 
 /**
  * @brief Used to declare an untemplatized class, so that it can be sent through the network. Must be called from the global namespace
@@ -56,17 +57,17 @@
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
 	namespace breep { namespace detail { \
-		/* If you have an error here, should probably declared you type with\
+		/* If you have an error here, should probably declare your type with\
             BREEP_DECLARE_TYPE instead of BREEP_DECLARE_TEMPLATE \
-            Note that types that have litterals as template parameters cannot be declared \
-            through this macro. use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
+            Note that types that have literals as template parameters cannot be declared \
+            through this macro; use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
 	    template <typename... T> \
 	    struct networking_traits_impl<TType<T...>> { \
 			networking_traits_impl(); \
-	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + detail::identifier_from_tuple<detail::remove_type<0, T...>>().value + ">"; \
+	        const std::string universal_name = std::string(#TType"<") + ::breep::detail::template_param<T...>().name + ">"; \
 	    }; \
 		template <typename... T> /* it's ok if this constructor is not inline */ \
-		networking_traits_impl<TType<T...>>::networking_traits_impl() {}\
+		networking_traits_impl<TType<T...>>::networking_traits_impl() = default;\
 	}}
 
 namespace breep {
@@ -89,6 +90,19 @@ namespace breep {
 #endif
 
 	namespace detail {
+
+		template <typename, typename S>
+		using second_type = S;
+
+		template <typename T>
+		auto enum_class_test(int) -> second_type<decltype(+T{}), std::false_type>;
+
+		template <typename T>
+		auto enum_class_test(...) -> std::true_type;
+
+		template <unsigned int N>
+		constexpr uint64_t hash(const char str[N]);
+
 		uint64_t hash(const std::string& str);
 
 		template <typename>
@@ -140,7 +154,7 @@ namespace breep {
 	 * @details If a call to BREEP_DECLARE_TYPE or BREEP_DECLARE_TEMPLATE has been previously made for the template type,
 	 *          the static const variables ::universal_name (std::string) and ::hash_code (uint64_t) are available.
 	 *
-	 * @note When computing hash_code ':' '>' ',' and '<' are all ignored.
+	 * @note When computing hash_code, '>' and ',' are ignored.
 	 *
 	 * @sa BREEP_DECLARE_TYPE
 	 * @sa BREEP_DECLARE_TEMPLATE
@@ -149,6 +163,11 @@ namespace breep {
 	 */
 	template <typename T>
 	struct type_traits {
+		static constexpr bool is_any_ptr =  std::is_pointer<std::remove_cv_t<std::remove_reference_t<T>>>::value;
+		static constexpr bool is_enum = std::is_enum<T>::value;
+		static constexpr bool is_enum_class = is_enum && decltype(detail::enum_class_test<T>(0))::value;
+		static constexpr bool is_enum_plain = is_enum && !is_enum_class;
+
 		/**
 		 * holds the name of the template class (unmangled), including namespace and template parameters.
 		 *
@@ -162,7 +181,7 @@ namespace breep {
 		}
 
 		/**
-		 * holds an hash of the class universal_name (ignoring '>' '<' ',' ':').
+		 * holds an hash of the class universal_name (ignoring '>' and ',' ).
 		 * It is guaranteed that networking_traits<T>::hash_code == networking_traits<U>::hash_code if T == U
 		 * It is however not guaranteed that they differ if T != U, even though it is very unlikely.
 		 *       The hashing function was choosen because of its good performance regarding collision avoidance.
@@ -178,12 +197,25 @@ namespace breep {
 	namespace detail {
 
 		// sdbm's hash algorithm, gawk's implementation.
-		uint64_t hash(const std::string& str) {
+		// when modified, basic_io_manager::IO_PROTOCOL_ID_1 should be updated aswell
+		template <size_t N>
+		constexpr uint64_t hash(const char str[N]) {
 			uint64_t hash_code = 0;
 
-			for (auto c : str) {
-				if (c != '>' && c != '<' && c != ',' && c != ':') {
-					hash_code = c + (hash_code << 6) + (hash_code << 16) - hash_code;
+			for (std::string::size_type i = N ; i-- ;) {
+				if (str[i] != '>' && str[i] != ' ' && (str[i] != ':' || str[i+1] != ':')) {
+					hash_code = str[i] + (hash_code << 6u) + (hash_code << 16u) - hash_code;
+				}
+			}
+			return hash_code;
+		}
+
+		inline uint64_t hash(const std::string& str) {
+			uint64_t hash_code = 0;
+
+			for (std::string::size_type i = str.size() ; i-- ;) {
+				if (str[i] != '>' && str[i] != ' ' && (str[i] != ':' || str[i+1] != ':')) {
+					hash_code = str[i] + (hash_code << 6u) + (hash_code << 16u) - hash_code;
 				}
 			}
 			return hash_code;
@@ -207,7 +239,7 @@ namespace breep {
 		struct identifier_from_tuple<std::tuple<>> {
 			static const std::string value;
 		};
-		const std::string identifier_from_tuple<std::tuple<>>::value = "";
+		inline const std::string identifier_from_tuple<std::tuple<>>::value{};
 
 		template<typename... T>
 		struct identifier_from_tuple<std::tuple<T...>> {
@@ -217,8 +249,18 @@ namespace breep {
 		const std::string identifier_from_tuple<std::tuple<T...>>::value =
 				"," + networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name +
 				identifier_from_tuple<remove_type<0, T...>>::value; // if you have an error here, you probably forgot to declare the type T<template...> (breep::type_traits<T<template...>>) with BREEP_DECLARE_TEMPLATE(T).
+
+
+        // This struct is not technically required, but is
+        // here to help gcc5 to understand what's happening
+        template <typename... T>
+        struct template_param {
+            const std::string name{networking_traits_impl<typename std::tuple_element<0, std::tuple<T...>>::type>().universal_name + identifier_from_tuple<detail::remove_type<0, T...>>().value};
+        };
+
 	}
-}
+
+}  // namespace breep
 
 // fundamental types
 BREEP_DECLARE_TYPE(void)

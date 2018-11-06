@@ -4,7 +4,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -14,7 +14,7 @@
 
 
 /**
- * @file invalid_state.hpp
+ * @file io_manager_base.hpp
  * @author Lucas Lazare
  *
  * @since 0.1.0
@@ -41,9 +41,9 @@ namespace breep {
 	class basic_peer;
 
 	/**
-	 * @class network_manager_base network_manager_base.hpp
+	 * @class io_manager_base io_manager_base.hpp
 	 * @brief base class for network managers, used by \em network<typename network_manager>.
-	 * @details Classes inheriting from network_manager_base should specify a data_type type, for its personal use via the peer<>.io_data member.
+	 * @details Classes inheriting from io_manager_base should specify a data_type type, for its personal use via the peer<>.io_data member.
 	 * The object should open ports and start listening for incoming connections as soon as they get an owner.
 	 * The constructor should take an unsigned short [port] as parameter if instantiated from the class breep::network.
 	 *
@@ -55,9 +55,7 @@ namespace breep {
 	class io_manager_base {
 	public:
 
-		virtual ~io_manager_base() {
-
-		}
+		virtual ~io_manager_base() = default;
 
 		/**
 		 * @brief Sends data to a peer
@@ -73,7 +71,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send(commands command, const data_container& data, const basic_peer<io_manager>& peer) const {
+		void send(commands /*command*/, const data_container& /*data*/, const basic_peer<io_manager>& /*peer*/) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_container>::value, "Send called without specialisation.");
 		}
 
@@ -93,14 +91,14 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_iterator, typename  size_type>
-		void send(commands command, data_iterator begin, size_type size, const basic_peer<io_manager>& peer) const {
+		void send(commands command, data_iterator /*begin*/, size_type /*size*/, const basic_peer<io_manager>& /*peer*/) const {
 			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_iterator>::value, "Send called without specialisation.");
 		}
 
 		/**
 		 * @brief connects to a peer
 		 *
-		 * @return the newly connected peer or peer::bad_peer if the connection wasn't successful.
+		 * @return the newly connected peer or an empty optional if the connection wasn't successful.
 		 *
 		 * @since 0.1.0
 		 */
@@ -114,11 +112,23 @@ namespace breep {
 		virtual void process_connected_peer(basic_peer<io_manager>& peer) = 0;
 
 		/**
+		 * @brief performs any required action when a peer connection was denied.
+		 *
+		 * @since 1.0.0
+		 */
+		 virtual void process_connection_denial(basic_peer<io_manager>& peer) = 0;
+
+		/**
 		 * @brief disconnects from the network
 		 *
 		 * @since 0.1.0
 		 */
 		virtual void disconnect() = 0;
+
+		/**
+		 * @brief disconnects a peer
+		 */
+		virtual void disconnect(basic_peer<io_manager>& peer) = 0;
 
 		/**
 		 * @brief Network's main thread entry point
@@ -154,7 +164,8 @@ namespace breep {
 
 		friend class basic_peer_manager<io_manager>;
 	};
-}
+}  // namespace breep
+
 BREEP_DECLARE_TEMPLATE(breep::io_manager_base)
 
 #endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP

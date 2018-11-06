@@ -3,7 +3,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
-// Copyright 2017 Lucas Lazare.                                                                  //
+// Copyright 2017-2018 Lucas Lazare.                                                             //
 // This file is part of Breep project which is released under the                                //
 // European Union Public License v1.1. If a copy of the EUPL was                                 //
 // not distributed with this software, you can obtain one at :                                   //
@@ -18,6 +18,7 @@
  * @since 0.1.0
  */
 
+#include <atomic>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -40,8 +41,6 @@ namespace breep {
 	namespace detail {
 		template<typename T>
 		class peer_manager_attorney;
-		template<typename T>
-		class peer_manager_master_listener;
 	}
 
 	/**
@@ -55,6 +54,14 @@ namespace breep {
 	 * @note A \em const \em basic_peer_manager is a basic_peer_manager with whom you can only send datas,
 	 *       and you can't proceed to a connection / disconnection.
 	 *
+	 *
+	 * @note Upon (connection)/(disconnection)/(data input) events, the corresponding detail::peer_manager_attorney
+	 *       method should be called (see a the end of this file). Upon "successful" connection, the peer_manager
+	 *       still has the authority on whether or not to keep the connection. If the connection is dropped, the callback
+	 *       io_manager::process_connection_denial will be called. If the connection is kept,
+	 *       the callback io_manager::process_connected_peer will be called
+	 *
+	 * @sa breep::io_manager_base
 	 * @sa breep::tcp_network
 	 * @sa breep::udp_network
 	 *
@@ -129,7 +136,7 @@ namespace breep {
 		 *                        is to be defined by \em network_manager::send_to
 		 * @param data Data to be sent
 		 *
-		 * @sa network::send_to(const peer&, const data_container&) const
+		 * @sa basic_peer_manager::send_to(const peer&, const data_container&) const
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -143,7 +150,7 @@ namespace breep {
 		 * @param p Target peer
 		 * @param data Data to be sent
 		 *
-		 * @sa network::send_to_all(const data_container&) const
+		 * @sa basic_peer_manager::send_to_all(const data_container&) const
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -188,11 +195,11 @@ namespace breep {
 		 * @attention if the network was previously started, shot down, and that ::connect() is called before ensuring
 		 *            the thread terminated (via ::join(), for example), the behaviour is undefined.
 		 *
-		 * @sa network::connect_sync(const boost::asio::ip::address&)
+		 * @sa basic_peer_manager::connect_sync(const boost::asio::ip::address&)
 		 *
 	 	 * @since 0.1.0
 		 */
-		bool connect(boost::asio::ip::address address, unsigned short port);
+		bool connect(const boost::asio::ip::address& address, unsigned short port);
 		bool connect(const boost::asio::ip::address& address) {
 			return connect(address, m_port);
 		}
@@ -206,7 +213,7 @@ namespace breep {
 		 *
 		 * @throws invalid_state if the peer_manager is already running.
 		 *
-		 * @sa network::connect(const boost::asio::ip::address& address)
+		 * @sa basic_peer_manager::connect(const boost::asio::ip::address& address)
 		 *
 		 * @since 0.1.0
 		 */
@@ -230,8 +237,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::connection_listener
-		 * @sa network::remove_connection_listener(listener_id)
+		 * @sa basic_peer_manager::connection_listener
+		 * @sa basic_peer_manager::remove_connection_listener(listener_id)
 		 *
 	 	 * @since 0.1.0
 		 */
@@ -245,8 +252,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::data_received_listener
-		 * @sa network::remove_data_listener(listener_id)
+		 * @sa basic_peer_manager::data_received_listener
+		 * @sa basic_peer_manager::remove_data_listener(listener_id)
 		 *
 		 * @since 0.1.0
 		 */
@@ -260,8 +267,8 @@ namespace breep {
 		 * @param listener The new listener
 		 * @return An id used to remove the listener
 		 *
-		 * @sa network::data_received_listener
-		 * @sa network::remove_disconnection_listener(listener_id)
+		 * @sa basic_peer_manager::data_received_listener
+		 * @sa basic_peer_manager::remove_disconnection_listener(listener_id)
 		 *
 		 * @since 0.1.0
 		 */
@@ -301,6 +308,15 @@ namespace breep {
 		 */
 		const std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>>& peers() const {
 			return m_peers;
+		}
+
+		/**
+		 * @return true if the network is launched, false otherwise
+		 *
+		 * @since 1.0.0
+		 */
+		bool is_running() const {
+			return m_running;
 		}
 
 		/**
@@ -389,14 +405,46 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		void join() {
-			if (m_thread.get() != nullptr && m_thread->joinable()) {
+			if (m_thread && m_thread->joinable()) {
 				m_thread->join();
+				m_thread.reset(nullptr);
 			}
+		}
+
+		/**
+		 * @brief Sets the predicate called on incomming connections
+		 *
+		 * @details the predicate is called with the new peer candidate as parameter. If it returns true,
+		 *          the peer is accepted and marked as connected. Otherwise it is disconnected.
+		 *
+		 * @param pred should be noexcept
+		 *
+		 * @note You should not attempt to communicate with the peer before it is marked as connected (ie: when
+		 *       the connection handler is called)
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_peer_manager::remove_connection_predicate()
+		 */
+		void set_connection_predicate(std::function<bool(const peer&)> pred) {
+			m_predicate = std::move(pred);
+		}
+
+
+		/**
+		 * @brief removes previously set connection predicate and goes back to default: accepting any connection
+		 *
+		 * @since 1.0.0
+		 *
+		 * @sa basic_peer_manager::set_connection_predicate(std::function<bool(const peer&)> pred)
+		 */
+		void remove_connection_predicate() {
+			m_predicate = [](const auto&){return true;};
 		}
 
 	private:
 
-		bool try_connect(const boost::asio::ip::address address, unsigned short port);
+		bool try_connect(const boost::asio::ip::address& address, unsigned short port);
 
 		void peer_connected(peer&& p);
 		void peer_connected(peer&& p, unsigned char distance, peer& bridge);
@@ -407,36 +455,41 @@ namespace breep {
 
 		void forward_if_needed(const peer& source, commands command, const std::vector<uint8_t>& data);
 		void require_non_running() {
-			if (m_running)
+			if (m_running) {
 				invalid_state("Already running.");
+			}
 		}
 
 		/* command handlers */
-		void send_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void send_to_all_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void forward_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void stop_forwarding_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void forwarding_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void connect_to_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void cant_connect_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void update_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void retrieve_distance_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void retrieve_peers_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void peers_list_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void peer_disconnection_handler(const peer& peer, const std::vector<uint8_t>& data);
-		void keep_alive_handler(const peer& p, const std::vector<uint8_t>&) {
-			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
+		void send_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void send_to_all_handler(const peer& source, const std::vector<uint8_t>& data);
+		void forward_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void stop_forwarding_handler(const peer& source, const std::vector<uint8_t>& data);
+		void forwarding_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void connect_to_handler(const peer& source, const std::vector<uint8_t>& data);
+		void cant_connect_handler(const peer& source, const std::vector<uint8_t>& data);
+		void update_distance_handler(const peer& source, const std::vector<uint8_t>& data);
+		void retrieve_distance_handler(const peer& source, const std::vector<uint8_t>& data);
+		void retrieve_peers_handler(const peer& source, const std::vector<uint8_t>& data);
+		void peers_list_handler(const peer& source, const std::vector<uint8_t>& data);
+		void peer_disconnection_handler(const peer& source, const std::vector<uint8_t>& data);
+		void empty_handler(const peer&, const std::vector<uint8_t>&) {
+			breep::logger<peer_manager>.warning("Call to empty_handler was made. This is not supposed to happen in normal circonstances.\n");
 		}
 
-		void set_master_listener(std::function<void(peer_manager&, const peer&, char*, size_t, bool)> listener) {
-			m_master_listener = listener;
+		void keep_alive_handler(const peer& p, const std::vector<uint8_t>& /* unused */) {
+			breep::logger<peer_manager>.trace("Received keep_alive from " + p.id_as_string());
 		}
 
 		std::unordered_map<boost::uuids::uuid, peer, boost::hash<boost::uuids::uuid>> m_peers;
 		std::unordered_map<listener_id, connection_listener> m_co_listener;
 		std::unordered_map<listener_id, data_received_listener> m_data_r_listener;
 		std::unordered_map<listener_id, disconnection_listener> m_dc_listener;
-		std::function<void(peer_manager&, const peer&, char*, size_t, bool)> m_master_listener;
+
+		// predicate telling whether a peer should be accepted or not
+		// Is ignored when connecting to someone
+		std::function<bool(const peer&)> m_predicate;
+		bool m_ignore_predicate{false};
 
 		local_peer<io_manager> m_me;
 		std::vector<std::unique_ptr<peer>> m_failed_connections;
@@ -446,16 +499,16 @@ namespace breep {
 		listener_id m_id_count;
 
 		unsigned short m_port;
-		bool m_running;
+        std::atomic<bool> m_running;
 
 		network_command_handler m_command_handlers[static_cast<uint8_t>(commands::null_command)];
 
+        std::mutex m_waitfor_run;
 		mutable std::mutex m_co_mutex;
 		mutable std::mutex m_dc_mutex;
 		mutable std::mutex m_data_mutex;
 
 		friend class detail::peer_manager_attorney<io_manager>;
-		friend class detail::peer_manager_master_listener<io_manager>;
 
 		std::unique_ptr<std::thread> m_thread;
 	};
@@ -466,23 +519,13 @@ namespace breep {
 
 	namespace detail {
 
-	template<typename T>
-	class peer_manager_master_listener {
-
-		peer_manager_master_listener() = delete;
-
-		inline static void set_master_listener(basic_peer_manager<T>& object, std::function<void(breep::basic_peer_manager<T>&, const basic_peer<T>&, char*, size_t, bool)> listener) {
-			object.set_master_listener(listener);
-		}
-
-		friend basic_network<T>;
-	};
-
 	template <typename T>
 	class peer_manager_attorney {
 
+	public:
 		peer_manager_attorney() = delete;
 
+	private:
 		inline static void peer_connected(basic_peer_manager<T>& object, basic_peer<T>&& p) {
 			object.peer_connected(std::move(p));
 		}

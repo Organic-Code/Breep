@@ -66,19 +66,22 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		basic_peer(const basic_peer<io_manager>& p)
-			: m_id(p.m_id)
-			, m_address(p.m_address)
-			, m_port(p.m_port)
-			, m_distance(p.m_distance)
-			, m_id_as_string(p.m_id_as_string)
-			, io_data(p.io_data)
-		{}
+		basic_peer(const basic_peer<io_manager>& p) = default;
 
 		/**
 		 * @since 0.1.0
 		 */
 		basic_peer(basic_peer<io_manager>&&) = default;
+
+		/**
+		 * @since 1.0.0
+		 */
+		basic_peer<io_manager>& operator=(const basic_peer<io_manager>&) = default;
+
+		/**
+		 * @since 1.0.0
+		 */
+		basic_peer<io_manager>& operator=(basic_peer<io_manager>&&) = default;
 
 		/**
 		 * @return the id of the peer
@@ -158,7 +161,8 @@ namespace breep {
 	};
 
 #include "impl/basic_peer.tcc"
-}
+} // namespace breep
 
+BREEP_DECLARE_TEMPLATE(breep::basic_peer)
 
 #endif //BREEP_NETWORK_BASIC_PEER_HPP

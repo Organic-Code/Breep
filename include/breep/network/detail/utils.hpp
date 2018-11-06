@@ -1,5 +1,5 @@
-#ifndef BREEP_UTILS_HPP
-#define BREEP_UTILS_HPP
+#ifndef BREEP_NETWORK_DETAIL_UTILS_HPP
+#define BREEP_NETWORK_DETAIL_UTILS_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -93,6 +93,16 @@ namespace breep { namespace detail {
 		insert_uint16(container, static_cast<uint16_t>(uint32 & std::numeric_limits<uint16_t>::max()));
 	}
 
+	template <typename Container>
+	inline uint16_t read_uint16(const Container& container, typename Container::size_type idx = 0) {
+		return static_cast<uint16_t>(container[idx] << 8 | container[idx + 1]);
+	}
+
+	template <typename Container>
+	inline uint32_t read_uint32(const Container& container, typename Container::size_type idx = 0) {
+		return read_uint16(container, idx) << 16 | read_uint16(container, idx + sizeof(uint16_t));
+	}
+
 
 
 	template <typename... T>
@@ -101,7 +111,7 @@ namespace breep { namespace detail {
 	using unused = std::array<uint8_t, 1>;
 
 	struct unowning_linear_container {
-		typedef uint8_t value_type;
+		using value_type = uint8_t;
 
 		unowning_linear_container(const uint8_t* data, size_t size)
 				: data_(data)

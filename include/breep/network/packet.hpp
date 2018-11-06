@@ -1,5 +1,5 @@
-#ifndef BREEP_NETWORK_TCP_HPP
-#define BREEP_NETWORK_TCP_HPP
+#ifndef BREEP_NETWORK_PACKET_HPP
+#define BREEP_NETWORK_PACKET_HPP
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                               //
@@ -11,33 +11,46 @@
 //                                                                                               //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 /**
- * @file tcp.hpp
+ * @file serializer.cpp
  * @author Lucas Lazare
- * @brief convenience header for breep::tcp.
+ * @since 1.0.0
  */
 
-#include <breep/util/type_traits.hpp>
-#include <breep/network/basic_netdata_wrapper.hpp>
-#include <breep/network/basic_peer.hpp>
-#include <breep/network/basic_network.hpp>
-#include <breep/network/basic_peer.hpp>
-#include <breep/network/tcp/basic_io_manager.hpp>
+#include "breep/util/serializer.hpp"
+#include "breep/util/type_traits.hpp"
 
-namespace breep { namespace tcp {
-		using io_manager = basic_io_manager<1024, 5000, 120000, 54000>;
-		using peer = basic_peer<io_manager>;
-		using network = basic_network<io_manager>;
-		using peer_manager = basic_peer_manager<io_manager>;
+namespace breep {
+
+	/**
+	 * Class used to send several classes at once, using basic_network::send_packet or basic_network::send_packet_to
+	 */
+	class packet {
+	public:
+		packet();
+
+	private:
+		serializer m_s;
 
 		template <typename T>
-		using netdata_wrapper = basic_netdata_wrapper<io_manager, T>;
-}}
+		friend packet& operator<<(packet& p, const T& val);
 
-BREEP_DECLARE_TYPE(breep::tcp::io_manager)
-BREEP_DECLARE_TYPE(breep::tcp::peer)
-BREEP_DECLARE_TYPE(breep::tcp::peer_manager)
-BREEP_DECLARE_TYPE(breep::tcp::network)
+		template <typename T>
+		friend class basic_network;
+	};
 
-#endif //BREEP_NETWORK_TCP_HPP
+	template <typename T>
+	packet& operator<<(packet& p, const T& val) {
+		p.m_s << type_traits<T>::hash_code();
+		p.m_s << val;
+		return p;
+	}
+}
+
+BREEP_DECLARE_TYPE(breep::packet)
+
+inline breep::packet::packet() : m_s() {
+	m_s << type_traits<packet>::hash_code();
+}
+
+#endif //BREEP_NETWORK_PACKET_HPP
