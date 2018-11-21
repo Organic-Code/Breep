@@ -712,7 +712,7 @@ void breep::basic_peer_manager<T>::retrieve_peers_handler(const peer& source, co
 }
 
 template <typename T>
-void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, const std::vector<uint8_t>& data) {
+void breep::basic_peer_manager<T>::peers_list_handler(const peer& source, const std::vector<uint8_t>& data) {
 
 	m_log.trace("Received a list of peers. Scanning through it.");
 
@@ -742,15 +742,16 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 		boost::asio::ip::address address(boost::asio::ip::address::from_string(addr_str));
 		index += address_size;
 
-		if (uuid != m_me.id() && m_peers.count(uuid) == 0) {
-			bool not_found = true;
-			for (auto it = peers_list.cbegin(), end = peers_list.cend() ; it != end && not_found ; ++it) {
-				if (it->address() == address && it->connection_port() == remote_port) {
-					not_found = false;
-				}
-			}
+		if (address.is_loopback()) {
+			address = source.address();
+		}
 
-			if (not_found) {
+		if (uuid != m_me.id() && m_peers.count(uuid) == 0) {
+			auto eq_peer = std::find_if(peers_list.cbegin(), peers_list.cend(), [&address, &remote_port](const peer& p) {
+				return p.address() == address && p.connection_port() == remote_port;
+			});
+
+			if (eq_peer == peers_list.cend()) {
 				detail::optional<peer> new_peer(m_manager.connect(address, remote_port));
 				if (new_peer) {
 					if (new_peer->id() != uuid) {
@@ -761,13 +762,11 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& /*source*/, co
 					m_failed_connections.push_back(std::make_unique<peer>(uuid, address, remote_port));
 				}
 			} else {
-				not_found = true;
-				for (auto it = peers_list.cbegin(), end = peers_list.cend() ; it != end && not_found ; ++it) {
-					if (it->id() == uuid) {
-						not_found = false;
-					}
-				}
-				if (not_found) {
+				eq_peer == std::find_if(peers_list.cbegin(), peers_list.cend(), [&uuid](const peer& p) {
+					return p.id() == uuid;
+				});
+
+				if (eq_peer == peers_list.cend()) {
 					m_failed_connections.push_back(std::make_unique<peer>(uuid, address, remote_port));
 				}
 			}
