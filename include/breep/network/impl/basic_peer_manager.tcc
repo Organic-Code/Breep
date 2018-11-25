@@ -87,8 +87,7 @@ inline void breep::basic_peer_manager<T>::send_to_all(const data_container& data
 			m_log.trace("Sending to " + pair.second.id_as_string());
 			m_manager.send(commands::send_to_all, sendable_data, pair.second);
 		} else {
-			m_log.trace
-					("Expecting another peer to forward to " + pair.second.id_as_string() + " (no direct connection)");
+			m_log.trace("Expecting another peer to forward to " + pair.second.id_as_string() + " (no direct connection)");
 		}
 	}
 }
@@ -99,10 +98,11 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 
 	std::vector<uint8_t> processed_data;
 	processed_data.reserve(data.size() + m_me.id().size() * 2 + 1);
+
 	processed_data.push_back(static_cast<uint8_t>(m_me.id().size()));
-	std::copy(m_me.id().data, m_me.id().data + m_me.id().size(), std::back_inserter(processed_data));
-	std::copy(p.id().data, p.id().data + p.id().size(), std::back_inserter(processed_data));
-	std::copy(data.cbegin(), data.cend(), std::back_inserter(processed_data));
+	std::copy(m_me.id().begin(), m_me.id().end(), std::back_inserter(processed_data));
+	std::copy(p.id().begin(),    p.id().end(),    std::back_inserter(processed_data));
+	std::copy(data.cbegin(),     data.cend(),     std::back_inserter(processed_data));
 
 	std::vector<uint8_t> sendable_data;
 	detail::make_little_endian(processed_data, sendable_data);
@@ -110,11 +110,12 @@ inline void breep::basic_peer_manager<T>::send_to(const peer& p, const data_cont
 	m_log.debug("Sending private data to " + p.id_as_string());
 	m_log.debug("(" + std::to_string(data.size()) + " octets)");
 
+	auto path = m_me.path_to(p);
 	if (p.distance() != 0) {
-		m_log.trace("Passing through " + m_me.path_to(p)->id_as_string() + " (no direct connection)");
+		m_log.trace("Passing through " + path->id_as_string() + " (no direct connection)");
 	}
+	m_manager.send(commands::send_to, sendable_data, *path);
 
-	m_manager.send(commands::send_to, sendable_data, *m_me.path_to(p));
 }
 
 template <typename T>
@@ -280,9 +281,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p) {
 		boost::uuids::uuid id = p.id();
 		m_peers.emplace(std::make_pair(id, std::move(p)));
 
-		std::pair<boost::uuids::uuid, const peer*> pair_wptr = std::make_pair(id, &(m_peers.at(id)));
-		m_me.path_to_passing_by().insert(pair_wptr);
-
+		m_me.path_to_passing_by()[id] = &m_peers.at(id);
 		m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer*>{}));
 
 
@@ -318,8 +317,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 	boost::uuids::uuid id = p.id();
 	m_peers.emplace(std::make_pair(id, std::move(p)));
 
-	std::pair<boost::uuids::uuid, const peer *> pair_wptr = std::make_pair(id, &bridge);
-	m_me.path_to_passing_by().insert(pair_wptr);
+	m_me.path_to_passing_by()[id] = &bridge;
 	m_me.bridging_from_to().insert(std::make_pair(id, std::vector<const peer *>{}));
 
 	peer& new_peer = m_peers.at(id);
@@ -413,10 +411,20 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 	detail::unmake_little_endian(data, processed_data);
 
 	size_t id_size = processed_data[0];
+	// todo: check if vector is empty before hand
 
 	boost::uuids::uuid sender_id, target_id;
-	std::copy(processed_data.data() + 1, processed_data.data() + 1 + id_size, sender_id.data);
-	std::copy(processed_data.data() + 1 + id_size, processed_data.data() + 1 + 2 * id_size, target_id.data);
+	if (id_size != sender_id.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+
+	if (processed_data.size() < 1 + 2 * id_size) {
+		m_log.error("Unexpectedly small amount of data received.");
+		return;
+	}
+	std::copy(processed_data.begin() + 1, processed_data.begin() + 1 + id_size, sender_id.begin());
+	std::copy(processed_data.begin() + 1 + id_size, processed_data.begin() + 1 + 2 * id_size, target_id.begin());
 
 	if (!m_peers.count(sender_id)) {
 		m_log.error("Received data from peer " + boost::uuids::to_string(sender_id)
@@ -516,7 +524,11 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 	std::string id;
 	detail::unmake_little_endian(data, id);
 	boost::uuids::uuid uuid;
-	std::copy(id.data(), id.data() + id.size(), uuid.data);
+	if (id.size() != uuid.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(id.begin(), id.end(), uuid.data);
 
 	try {
 		peer& target = m_peers.at(uuid);
@@ -554,9 +566,22 @@ void breep::basic_peer_manager<T>::stop_forwarding_handler(const peer& source, c
 	std::string data_str;
 	detail::unmake_little_endian(data, data_str);
 	boost::uuids::uuid id;
-	std::copy(data_str.data(), data_str.data() + data_str.size(), id.data);
+	if (data_str.size() != id.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(data_str.begin(), data_str.end(), id.data);
 
-	peer& target = m_peers.at(id);
+
+	auto target_it = m_peers.find(id);
+	// TODO: this check every time
+	// vvvvvvvv
+	if (target_it == m_peers.end()) {
+		m_log.info("Ignoring invalid bridge stopping request from " + source.id_as_string() + " [requested unknown id " + boost::uuids::to_string(id) + "].");
+		return;
+	}
+
+	peer& target = target_it->second;
 
 	m_log.trace("Stopping to forward from " + source.id_as_string() + " to " + target.id_as_string());
 
@@ -660,8 +685,13 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 	for (; --id_size; ++i) {
 		buff.push_back(ldata[i]);
 	}
+
 	boost::uuids::uuid id;
-	std::copy(buff.data(), buff.data() + buff.size(), id.data);
+	if (buff.size() != id.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(buff.begin(), buff.end(), id.data);
 	id_size = buff.size();
 
 	std::string buff2;
@@ -703,7 +733,11 @@ void breep::basic_peer_manager<T>::cant_connect_handler(const peer& source, cons
 	detail::unmake_little_endian(data, id_vect);
 
 	boost::uuids::uuid target_id;
-	std::copy(id_vect.data(), id_vect.data() + id_vect.size(), target_id.data);
+	if (id_vect.size() != target_id.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(id_vect.begin(), id_vect.end(), target_id.data);
 
 	std::vector<uint8_t> data_to_send;
 	const boost::uuids::uuid& source_id = source.id();
@@ -772,11 +806,15 @@ void breep::basic_peer_manager<T>::retrieve_distance_handler(const peer& source,
 	std::string id;
 	detail::unmake_little_endian(data, id);
 	boost::uuids::uuid uuid;
-	std::copy(id.data(), id.data() + id.size(), uuid.data);
+	if (id.size() != uuid.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(id.begin(), id.end(), uuid.data);
 
 	unsigned char dist = m_peers.at(uuid).distance();
 	std::vector<uint8_t> ldata;
-	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(uuid.data, uuid.data + uuid.size()), ldata);
+	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(uuid.begin(), uuid.end()), ldata);
 	m_log.trace("Sending distances to " + source.id_as_string());
 	m_manager.send(commands::update_distance, ldata, source);
 }
@@ -831,7 +869,11 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& source, const 
 		index += 3;
 		std::copy(ldata.cbegin() + index, ldata.cbegin() + index + id_size, std::back_inserter(id));
 		boost::uuids::uuid uuid;
-		std::copy(id.data(), id.data() + id.size(), uuid.data);
+		if (id.size() != uuid.size()) {
+			m_log.error("Received an id with incorrect size. Skipping.");
+			continue;
+		}
+		std::copy(id.begin(), id.end(), uuid.data);
 		index += id_size;
 
 		uint8_t address_size = ldata[index++];
@@ -879,6 +921,9 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& source, const 
     m_ignore_predicate = false;
 
 	std::vector<uint8_t> sendable_uuid;
+	if (!m_failed_connections.empty()) {
+		m_log.debug("There were unsuccessful connections. Asking for distances>bridging.");
+	}
 	for (std::unique_ptr<peer>& peer_ptr : m_failed_connections) {
 		peer_ptr->distance(std::numeric_limits<unsigned char>::max());
 		detail::make_little_endian(detail::unowning_linear_container(peer_ptr->id().data), sendable_uuid);
@@ -899,6 +944,10 @@ void breep::basic_peer_manager<T>::peer_disconnection_handler(const peer& source
 	detail::unmake_little_endian(data, local_data);
 
 	boost::uuids::uuid uuid;
-	std::copy(local_data.data(), local_data.data() + local_data.size(), uuid.data);
+	if (local_data.size() != uuid.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(local_data.begin(), local_data.end(), uuid.data);
 	peer_disconnected(m_peers.at(uuid));
 }

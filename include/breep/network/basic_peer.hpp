@@ -24,6 +24,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 
 #include "breep/network/detail/commands.hpp"
+#include "breep/util/type_traits.hpp"
 
 namespace breep {
 
@@ -76,12 +77,12 @@ namespace breep {
 		/**
 		 * @since 1.0.0
 		 */
-		basic_peer<io_manager>& operator=(const basic_peer<io_manager>&) = default;
+		basic_peer<io_manager>& operator=(const basic_peer<io_manager>&) = delete;
 
 		/**
 		 * @since 1.0.0
 		 */
-		basic_peer<io_manager>& operator=(basic_peer<io_manager>&&) = default;
+		basic_peer<io_manager>& operator=(basic_peer<io_manager>&&) = delete;
 
 		/**
 		 * @return the id of the peer
