@@ -110,6 +110,9 @@ void breep::tcp::basic_io_manager<T,U,V,W>::send(commands command, const data_co
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 template <typename data_iterator, typename size_type>
 void breep::tcp::basic_io_manager<T,U,V,W>::send(commands command, data_iterator it, size_type size, const peer& target) const {
+	if (target.io_data == nullptr) {
+		m_log.warning("Attempting to direct-send data to a peer with no direct connection.");
+	}
 
 	std::vector<uint8_t> buff;
 	buff.reserve(2 + size + size / std::numeric_limits<uint8_t>::max());
@@ -224,6 +227,12 @@ auto breep::tcp::basic_io_manager<T,U,V,W>::connect(const boost::asio::ip::addre
 
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 void breep::tcp::basic_io_manager<T,U,V,W>::process_connected_peer(peer& connected) {
+
+	if (connected.io_data == nullptr) {
+		// It's a connection through a tunnel, ignored by basic_io_manager.
+		return;
+	}
+
 	m_data_queues.insert(std::make_pair(connected.id(), std::queue<std::vector<uint8_t>>()));
 
 	if (connected.io_data->waiting_acceptance_answer) {
@@ -258,6 +267,10 @@ void breep::tcp::basic_io_manager<T,U,V,W>::disconnect() {
 
 template <unsigned int T, unsigned long U, unsigned long V, unsigned long W>
 void breep::tcp::basic_io_manager<T,U,V,W>::disconnect(peer& p) {
+	if (p.io_data == nullptr) {
+		return; // bridged peers are ignored.
+	}
+
 	boost::system::error_code error;
 	p.io_data->socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
 	p.io_data->socket.close(error);

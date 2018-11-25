@@ -53,6 +53,7 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short por
 	m_command_handlers[static_cast<uint8_t>(commands::send_to_all)]            = &breep::basic_peer_manager<T>::send_to_all_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::forward_to)]             = &breep::basic_peer_manager<T>::forward_to_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::stop_forwarding)]        = &breep::basic_peer_manager<T>::stop_forwarding_handler;
+	m_command_handlers[static_cast<uint8_t>(commands::stopped_forwarding)]     = &breep::basic_peer_manager<T>::stopped_forwarding_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::forwarding_to)]          = &breep::basic_peer_manager<T>::forwarding_to_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::connect_to)]             = &breep::basic_peer_manager<T>::connect_to_handler;
 	m_command_handlers[static_cast<uint8_t>(commands::cant_connect)]           = &breep::basic_peer_manager<T>::cant_connect_handler;
@@ -325,7 +326,7 @@ inline void breep::basic_peer_manager<T>::peer_connected(peer&& p, unsigned char
 	for (auto& l : m_co_listener) {
 		try {
 			m_log.trace("Calling connection listener (id: " + std::to_string(l.first) + ")");
-			l.second(*this, p);
+			l.second(*this, new_peer);
 
 		} catch (const std::exception& e) {
 			m_log.warning("Exception thrown while calling connection listener " + l.first);
@@ -438,8 +439,18 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& /*source*/, const
 			}
 		}
 	} else {
-		m_log.trace("Forwarding private message to " + boost::uuids::to_string(sender_id));
-		m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(sender_id)));
+		auto& vect = m_me.bridging_from_to().at(source.id());
+		if (std::find_if(vect.begin(), vect.end(), [target_id](const peer* p) { return p->id() == target_id; }) != vect.end()) {
+			try {
+				m_manager.send(commands::send_to, data, *m_me.path_to(m_peers.at(target_id)));
+				m_log.trace("Forwarding private message to " + boost::uuids::to_string(target_id));
+			} catch (const std::out_of_range&) {
+				m_log.warning("Received message to forward to " + boost::uuids::to_string(target_id) + " which is unknown");
+			}
+		} else {
+			m_log.warning("Received private message that local peer was not meant to receive...");
+			m_log.warning("(target was " + boost::uuids::to_string(target_id) + ", local peer is " + m_me.id_as_string() + ").");
+		}
 	}
 }
 
@@ -480,23 +491,34 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 	boost::uuids::uuid uuid;
 	std::copy(id.data(), id.data() + id.size(), uuid.data);
 
-	peer& target = m_peers.at(uuid);
-	m_me.bridging_from_to().at(uuid).push_back(&source);
-	m_me.bridging_from_to().at(source.id()).push_back(&target);
+	try {
+		peer& target = m_peers.at(uuid);
+		m_me.bridging_from_to().at(uuid).push_back(&m_peers.at(source.id()));
+		m_me.bridging_from_to().at(source.id()).push_back(&target);
 
-	m_log.trace("Now forwarding between " + boost::uuids::to_string(uuid) + " and " + source.id_as_string());
+		m_log.trace("Now bridging from " + source.id_as_string() + " to " + boost::uuids::to_string(uuid));
 
-	std::vector<uint8_t> ldata;
-	unsigned char dist = source.distance();
-	const boost::uuids::uuid& source_id = source.id();
-	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(source_id.data, source_id.data + source_id.size()), ldata);
-	m_manager.send(commands::forwarding_to, ldata, target);
+		std::vector<uint8_t> ldata;
+		std::uint8_t dist = target.distance();
+		const boost::uuids::uuid& target_id = target.id();
+		detail::make_little_endian(
+				std::string(&dist, &dist + 1) + std::string(target_id.begin(), target_id.end())
+				, ldata
+		);
+		m_manager.send(commands::forwarding_to, ldata, source);
 
-	ldata.clear();
-	dist = target.distance();
-	const boost::uuids::uuid& target_id = target.id();
-	detail::make_little_endian(std::string(&dist, &dist + 1) + std::string(target_id.data, target_id.data + target_id.size()), ldata);
-	m_manager.send(commands::forwarding_to, ldata, source);
+		ldata.clear();
+		dist = source.distance();
+		const boost::uuids::uuid& source_id = source.id();
+		detail::make_little_endian(
+				std::string(&dist, &dist + 1) + std::string(source_id.begin(), source_id.end())
+				, ldata
+		);
+		m_manager.send(commands::forwarding_to, ldata, target);
+
+	} catch (const std::out_of_range&) {
+		m_log.warning("Received untreatable forwarding request: from " + source.id_as_string() + " to " + boost::uuids::to_string(uuid));
+	}
 }
 
 template <typename T>
@@ -511,19 +533,50 @@ void breep::basic_peer_manager<T>::stop_forwarding_handler(const peer& source, c
 
 	m_log.trace("Stopping to forward from " + source.id_as_string() + " to " + target.id_as_string());
 
-	std::vector<const peer*>& v = m_me.bridging_from_to().at(id);
-	auto it = std::find(v.begin(), v.end(), &source); // keeping a vector because this code is unlikely to be called.
+	std::vector<const peer*>& v = m_me.bridging_from_to().at(target.id());
+	auto it = std::find_if(v.begin(), v.end(), [&source](const peer* p) { return p->id() == source.id(); });
 	if (it != v.end()) {
 		*it = v.back();
 		v.pop_back();
 	}
 
 	std::vector<const peer*>& v2 = m_me.bridging_from_to().at(source.id());
-	it = std::find(v2.begin(), v2.end(), &target); // keeping a vector because this code is unlikely to be called.
+	it = std::find_if(v2.begin(), v2.end(), [&target](const peer* p) { return p->id() == target.id(); });
 	if (it != v2.end()) {
 		*it = v2.back();
 		v2.pop_back();
 	}
+
+	std::vector<uint8_t> sendable_id;
+	detail::make_little_endian(detail::unowning_linear_container(source.id().data), sendable_id);
+	m_manager.send(commands::stopped_forwarding, sendable_id, target);
+}
+
+template <typename T>
+void breep::basic_peer_manager<T>::stopped_forwarding_handler(const peer& source, const std::vector<uint8_t>& data) {
+	std::string data_str;
+	detail::unmake_little_endian(data, data_str);
+	boost::uuids::uuid id;
+	if (data_str.size() != id.size()) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(data_str.begin(), data_str.end(), id.data);
+
+	auto target_it = m_peers.find(id);
+	if (target_it == m_peers.end()) {
+		m_log.warning("Ignoring invalid bridge stop acknowledgement from " + source.id_as_string() + " [requested unknown id " + boost::uuids::to_string(id) + "].");
+		return;
+	}
+
+	peer& target = target_it->second;
+	if (m_me.path_to(target)->id() != source.id()) {
+		m_log.warning("Received an unused bridge stop acknowledgement from " + source.id_as_string());
+		return;
+	}
+
+	m_log.info(source.id_as_string() + " stopped bridging to " + target.id_as_string());
+	peer_disconnected(target);
 }
 
 template <typename T>
@@ -531,27 +584,38 @@ void breep::basic_peer_manager<T>::forwarding_to_handler(const peer& source, con
 	std::string str;
 	detail::unmake_little_endian(data, str);
 	boost::uuids::uuid uuid;
-	std::copy(str.data() + 1, str.data() + str.size() - 1, uuid.data);
+	if (str.size() != uuid.size() + 1) {
+		m_log.error("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(str.begin() + 1, str.end(), uuid.data);
 
 	unsigned char distance = static_cast<unsigned char>(str[0]);
-	try {
-		peer& target = m_peers.at(uuid);
-		m_me.path_to(target) = &source;
-		m_me.path_to(source) = &target;
-		target.distance(static_cast<unsigned char>(distance + 1));
-	} catch (std::out_of_range&) {
-		std::unique_ptr<peer>* p = nullptr;
-		size_t i{m_failed_connections.size()};
-		while (p == nullptr && i--) {
-			if (m_failed_connections[i]->id() == uuid) {
-				p = &m_failed_connections[i];
-			}
-		}
 
-		if (p != nullptr) {
+	auto target = m_peers.find(uuid);
+	if (target != m_peers.end()) {
+		m_me.path_to(target->second) = &source;
+		target->second.distance(static_cast<unsigned char>(distance + 1));
+		m_log.trace("Peer " + source.id_as_string() + " is now bridging local peer to " + boost::uuids::to_string(uuid)
+					+ " (distance: " + std::to_string(target->second.distance()) + ")");
+	} else {
+		auto p = std::find_if(m_failed_connections.begin(), m_failed_connections.end(), [&uuid](const std::unique_ptr<peer>& p_) {
+			return p_ && p_->id() == uuid;
+		});
+
+		if (p != m_failed_connections.end()) {
+			m_log.debug("Peer " + boost::uuids::to_string(uuid) + " connected through bridging.");
+
 			p->swap(m_failed_connections.back());
 			peer_connected(std::move(*p->get()), static_cast<unsigned char>(distance + 1), m_peers.at(source.id()));
 			m_failed_connections.pop_back();
+		} else {
+
+			m_log.warning("Peer " + source.id_as_string() + " attempted to bridge to " + boost::uuids::to_string(uuid) + ", but the latter is not known.");
+			m_log.warning("Maybe its connection was refused.");
+			std::vector<uint8_t> sendable_id;
+			detail::make_little_endian(detail::unowning_linear_container(uuid.data), sendable_id);
+			m_manager.send(commands::stop_forwarding, sendable_id, source);
 		}
 	}
 }
@@ -579,20 +643,30 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 		buff2.push_back(ldata[i++]);
 	}
 
-	m_log.debug("Connecting to " + boost::uuids::to_string(id) + "@" + buff2 + ":" + std::to_string(remote_port));
-	detail::optional<peer> p(m_manager.connect(boost::asio::ip::address::from_string(buff2), remote_port));
+	boost::asio::ip::address addr = boost::asio::ip::address::from_string(buff2);
 
-	ldata.clear();
-	detail::make_little_endian(buff, ldata);
+	peer attempted_peer(id, addr, remote_port);
+	if (m_predicate(attempted_peer)) {
 
-	if (p && p->id() == id) {
-		m_log.trace("Connection successful");
-        m_ignore_predicate = true;
-		peer_connected(std::move(*p));
-        m_ignore_predicate = true;
+		m_log.debug("Connecting to " + boost::uuids::to_string(id) + "@" + addr.to_string() + ":" +
+		            std::to_string(remote_port));
+		detail::optional<peer> p(m_manager.connect(addr, remote_port));
+
+		ldata.clear();
+		detail::make_little_endian(buff, ldata);
+
+		if (p && p->id() == id) {
+			m_log.trace("Connection successful");
+			m_ignore_predicate = true;
+			peer_connected(std::move(*p));
+			m_ignore_predicate = false;
+		} else {
+			m_log.trace("Connection failed. Requesting a forwarding.");
+			m_failed_connections.push_back(std::make_unique<peer>(attempted_peer));
+			m_manager.send(commands::forward_to, ldata, source);
+		}
 	} else {
-		m_log.trace("Connection failed. Requesting a forwarding.");
-		m_manager.send(commands::forward_to, ldata, source);
+		m_log.info("Peer " + attempted_peer.id_as_string() + ": local connection_predicate rejected the outgoing connection");
 	}
 }
 
@@ -625,36 +699,34 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 	std::string ldata;
 	detail::unmake_little_endian(data, ldata);
 	boost::uuids::uuid uuid;
-	std::copy(ldata.data() + 1, ldata.data() + ldata.size() - 1, uuid.data);
-	auto distance = static_cast<unsigned char>(ldata[0] + 1);
-
-	try {
-		peer& p = m_peers.at(uuid);
+	std::copy(++ldata.begin(), ldata.end(), uuid.data);
+	auto distance = static_cast<uint8_t>(ldata[0] + 1);
+	auto item = m_peers.find(uuid);
+	if (item != m_peers.end()) {
+		peer& p = item->second;
 		if (p.distance() > distance) {
 			m_log.trace("Found a better path for " + p.id_as_string() + " (through " + source.id_as_string() + ")");
 			std::vector<uint8_t> peer_id;
 			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
+
 			std::vector<uint8_t> sendable;
-			detail::make_little_endian(std::string(&distance, &distance + 1) + std::string(uuid.data, uuid.data + uuid.size()), sendable);
+			detail::make_little_endian(std::string(&distance, &distance + 1) + std::string(uuid.begin(), uuid.end()), sendable);
 			for (const auto& peer_p : m_peers) {
 				if (peer_p.second.distance() == 0) {
 					m_manager.send(commands::update_distance, sendable, peer_p.second);
 				}
 			}
 		}
-	} catch (std::out_of_range&) {
-		std::unique_ptr<peer>* p(nullptr);
-		size_t i{m_failed_connections.size()};
-		while (p == nullptr && i--) {
-			if (m_failed_connections[i]->id() == uuid) {
-				p = &m_failed_connections[i];
-			}
-		}
 
-		if (p != nullptr) {
+	} else {
+		auto p = std::find_if(m_failed_connections.begin(), m_failed_connections.end(), [&uuid](const std::unique_ptr<peer>& p_) {
+			return p_ && p_->id() == uuid;
+		});
+
+		if (p != m_failed_connections.end()) {
 			std::vector<uint8_t> peer_id;
-			m_log.trace("Path to " + (*p)->id_as_string() + " found (through " + source.id_as_string() + ")");
+			m_log.trace("Path to " + (*p)->id_as_string() + " found (through " + source.id_as_string() + "). Requesting bridge");
 			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
 			std::vector<uint8_t> sendable;

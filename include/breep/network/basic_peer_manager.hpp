@@ -465,6 +465,7 @@ namespace breep {
 		void send_to_all_handler(const peer& source, const std::vector<uint8_t>& data);
 		void forward_to_handler(const peer& source, const std::vector<uint8_t>& data);
 		void stop_forwarding_handler(const peer& source, const std::vector<uint8_t>& data);
+		void stopped_forwarding_handler(const peer& source, const std::vector<uint8_t>& data);
 		void forwarding_to_handler(const peer& source, const std::vector<uint8_t>& data);
 		void connect_to_handler(const peer& source, const std::vector<uint8_t>& data);
 		void cant_connect_handler(const peer& source, const std::vector<uint8_t>& data);

@@ -61,17 +61,26 @@ namespace breep {
 		 * @details   Must be followed by a peer (id)
 		 * @sa        commands::forward_to
 		 * @sa        commands::forwarding_to
+		 * @sa        commands::stopped_forwarding
 		 *
 		 * @since 0.1.0
 		 */
 		stop_forwarding,
+		/**
+		 * @brief     Command to tell a peer you stopped bridging.
+		 * @details   Must be followed by a peer (id). This is sent only to the peer that didn't request the bridging halt.
+		 * @sa        commands::stop_forwarding
+		 *
+		 * @since 1.0.0
+		 */
+		stopped_forwarding,
 		/**
 		 * @brief     Command to tell a peer you are bridging for him
 		 * @details   Must be followed by your own distance to the peer (1 octet) + by a peer (id)
 		 * @sa        commands::forward_to
 		 * @sa        commands::stop_forwarding
 		 *
-		 * @since     0.1.0
+		 * @since 0.1.0
 		 */
 		forwarding_to,
 		/**

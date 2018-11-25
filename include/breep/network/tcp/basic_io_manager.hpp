@@ -94,7 +94,7 @@ namespace breep { namespace tcp {
 
 		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
 		using peer = basic_peer<io_manager>;
-		using data_type = std::shared_ptr<io_manager_data<BUFFER_LENGTH>>;
+		using data_type = std::shared_ptr<io_manager_data<BUFFER_LENGTH>>; // default constructed to 'nullptr' if it's a 'fake' connection (through bridging)
 
 		explicit basic_io_manager(unsigned short port);
 
@@ -146,7 +146,9 @@ namespace breep { namespace tcp {
 		void keep_alive_impl() {
 			m_log.trace("Sending keep_alives");
 			for (const auto& peers_pair : m_owner->peers()) {
-				send(commands::keep_alive, constant::unused_param, peers_pair.second);
+				if (peers_pair.second.distance() == 0) {
+					send(commands::keep_alive, constant::unused_param, peers_pair.second);
+				}
 			}
 			m_keepalive_dlt.expires_from_now(boost::posix_time::millisec(keep_alive_send_millis));
 			m_keepalive_dlt.async_wait(boost::bind(&io_manager::keep_alive_impl, this));
@@ -155,7 +157,9 @@ namespace breep { namespace tcp {
 		void timeout_impl() {
 			std::chrono::milliseconds time_now =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 			for (const auto& peers_pair : m_owner->peers()) {
-				if (time_now - peers_pair.second.io_data->timestamp > std::chrono::milliseconds(timeout_millis)) {
+				if (peers_pair.second.distance() == 0
+						&& time_now - peers_pair.second.io_data->timestamp > std::chrono::milliseconds(timeout_millis)) {
+
 					m_log.trace(peers_pair.second.id_as_string() + " timed out");
 					peers_pair.second.io_data->socket.close();
 				}
