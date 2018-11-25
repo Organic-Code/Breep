@@ -72,8 +72,14 @@ template <typename T>
 template <typename data_container>
 inline void breep::basic_peer_manager<T>::send_to_all(const data_container& data) const {
 
+	std::vector<uint8_t> transformed_data;
+	transformed_data.reserve(data.size() + m_me.id().size() + 1);
+	transformed_data.push_back(m_me.id().size());
+	std::copy(m_me.id().begin(), m_me.id().end(), std::back_inserter(transformed_data));
+	std::copy(data.begin(), data.end(), std::back_inserter(transformed_data));
+
 	std::vector<uint8_t> sendable_data;
-	detail::make_little_endian(data, sendable_data);
+	detail::make_little_endian(transformed_data, sendable_data);
 
 	m_log.debug("Sending " + std::to_string(sendable_data.size()) + " octets");
 	for (const std::pair<boost::uuids::uuid, peer>& pair : m_peers) {
@@ -402,7 +408,7 @@ inline void breep::basic_peer_manager<T>::forward_if_needed(const peer& source, 
 }
 
 template <typename T>
-void breep::basic_peer_manager<T>::send_to_handler(const peer& /*source*/, const std::vector<uint8_t>& data) {
+void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::vector<uint8_t> processed_data;
 	detail::unmake_little_endian(data, processed_data);
 
@@ -465,12 +471,33 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 	m_log.debug
 			("Received " + std::to_string(data.size()) + "octets from " + source.id_as_string());
 
+	uint8_t id_size = processed_data[0];
+	boost::uuids::uuid id;
+	if (id.size() != id_size) {
+		m_log.warning("Received an id with incorrect size.");
+		return;
+	}
+	std::copy(++processed_data.begin(), processed_data.begin() + id_size + 1, id.begin());
+
+	const peer* actual_source = &source;
+	if (id != source.id()) {
+		m_log.debug("Actual source: " + boost::uuids::to_string(id));
+		auto source_it = m_peers.find(id);
+		if (source_it != m_peers.end()) {
+			actual_source = &(source_it->second);
+		} else {
+			m_log.warning("Received data from unknown peer: " + boost::uuids::to_string(id) + ".");
+			m_log.warning("Maybe its connection was refused, but someone is bridging");
+			return;
+		}
+	}
+
 	std::lock_guard<std::mutex> lock_guard(m_data_mutex);
 
 	for (auto& l : m_data_r_listener) {
 		try {
 			m_log.trace("Calling data listener (id: " + std::to_string(l.first) + ")");
-			l.second(*this, source, processed_data.data(), processed_data.size(), true);
+			l.second(*this, *actual_source, processed_data.data() + id_size + 1, processed_data.size() - id_size - 1, true);
 
 		} catch (const std::exception& e) {
 			m_log.warning("Exception thrown while calling data listener " + l.first);

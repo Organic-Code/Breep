@@ -42,11 +42,11 @@ namespace breep {
 		send_to,
 		/**
 		 * @brief     Command for sending data to all peers.
-		 * @details   Must be followed by some data
+		 * @details   Must be followed by: size of 1 id (in octet, in one octet) + sender id + some data
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 */
-		send_to_all,
+		send_to_all, // modified in 1.0.0
 		/**
 		 * @brief     Command to indicate a peer he must bridge for you
 		 * @details   Must be followed by a target peer (id).
