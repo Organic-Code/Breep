@@ -883,7 +883,24 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& source, const 
 		boost::asio::ip::address address(boost::asio::ip::address::from_string(addr_str));
 		index += address_size;
 
-		if (address.is_loopback()) {
+		// boost::asio does not consider ipv4-mapped-to-ipv6-loopback-addresses as loopback addresses
+		// leading to this fix
+		auto is_loopback = [](const boost::asio::ip::address& addr) {
+			if (addr.is_v4()) {
+				return addr.is_loopback();
+			}
+
+			boost::asio::ip::address_v6 v6 = addr.to_v6();
+			if (!v6.is_v4_mapped()) {
+				return v6.is_loopback();
+			}
+
+			// ipv4 loopback addresses take the whole 127.0.0.0 -> 127.255.255.255 range
+			// ipv6 mapped to ipv4 store the ipv4 on the last 32bits (this is in network byte order)
+			return v6.to_bytes()[12] == 127;
+		};
+
+		if (is_loopback(address)) {
 			address = source.address();
 		}
 
