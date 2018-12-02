@@ -767,9 +767,16 @@ void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, c
 		peer& p = item->second;
 		if (p.distance() > distance) {
 			m_log.trace("Found a better path for " + p.id_as_string() + " (through " + source.id_as_string() + ")");
+			m_log.trace("Assuming immediate briding.");
 			std::vector<uint8_t> peer_id;
 			detail::make_little_endian(detail::unowning_linear_container(uuid.data), peer_id);
 			m_manager.send(commands::forward_to, peer_id, source);
+
+			const peer*& current_bridger = m_me.path_to(p);
+			m_manager.send(commands::stop_forwarding, peer_id, *current_bridger);
+
+			current_bridger = &source;
+			p.distance(static_cast<unsigned char>(distance + 1));
 
 			std::vector<uint8_t> sendable;
 			detail::make_little_endian(std::string(&distance, &distance + 1) + std::string(uuid.begin(), uuid.end()), sendable);
