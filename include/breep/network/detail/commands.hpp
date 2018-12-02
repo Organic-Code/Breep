@@ -50,6 +50,9 @@ namespace breep {
 		/**
 		 * @brief     Command to indicate a peer he must bridge for you
 		 * @details   Must be followed by a target peer (id).
+		 *            Caused by: update_distance, [or: upon connection]
+		 *            Expected answer: forwarding_to
+		 *
 		 * @sa        commands::stop_forwarding
 		 * @sa        commands::forwarding_to
 		 *
@@ -59,6 +62,8 @@ namespace breep {
 		/**
 		 * @brief     Command to tell a peer to stop bridging for you.
 		 * @details   Must be followed by a peer (id)
+		 *            Expected answer: none
+		 *
 		 * @sa        commands::forward_to
 		 * @sa        commands::forwarding_to
 		 * @sa        commands::stopped_forwarding
@@ -69,6 +74,9 @@ namespace breep {
 		/**
 		 * @brief     Command to tell a peer you stopped bridging.
 		 * @details   Must be followed by a peer (id). This is sent only to the peer that didn't request the bridging halt.
+		 *            Caused by: stop_forwarding
+		 *            Expected answer: none
+		 *
 		 * @sa        commands::stop_forwarding
 		 *
 		 * @since 1.0.0
@@ -77,6 +85,9 @@ namespace breep {
 		/**
 		 * @brief     Command to tell a peer you are bridging for him
 		 * @details   Must be followed by your own distance to the peer (1 octet) + by a peer (id)
+		 *            Caused by: forward_to
+		 *            Expected answer: none
+		 *
 		 * @sa        commands::forward_to
 		 * @sa        commands::stop_forwarding
 		 *
@@ -86,6 +97,8 @@ namespace breep {
 		/**
 		 * @brief     Command to tell a peer to connect to another buddy.
 		 * @details   Must be followed by a target peer (target port (2 octets) + size of id (in octets, on 1 octet) + id + ip).
+		 *            Caused by: cant_connect
+		 *            Expected answer: none
 		 *
 		 * @since 0.1.0
 		 */
@@ -93,6 +106,7 @@ namespace breep {
 		/**
 		 * @brief     Command to indicate a peer that a connection request failed.
 		 * @details   Must be followed by a peer (id).
+		 *            Expected answer: none
 		 *
 		 * @since 0.1.0
 		 */
@@ -100,6 +114,8 @@ namespace breep {
 		/**
 		 * @brief     Command to update its distances (number of links) between a peer.
 		 * @details   Format : [new distance (on 1 octet)],[peer id]
+		 *            Caused by: retrieve_distance
+		 *            Expected answer: none
 		 *
 		 * @since 0.1.0
 		 */
@@ -107,6 +123,8 @@ namespace breep {
 		/**
 		 * @brief     Command to ask a peer to send its distance from another peer.
 		 * @details   Must be followed by a peer (id).
+		 *            Expected answer: update_distance
+		 *
 		 * @sa        commands::update_distance
 		 *
 		 * @since 0.1.0
@@ -114,6 +132,8 @@ namespace breep {
 		retrieve_distance,
 		/**
 		 * @brief     Command to ask a peer to send the list of peers.
+		 *            Expected answer: peers_list
+		 *
 		 * @sa        commands::update_distance
 		 * @sa        commands::peers_list
 		 *
@@ -126,6 +146,8 @@ namespace breep {
 		 *            Format : [number of peers (2octets)],[peer1],[peer2],...<br>
 		 *            with: peerN = [peerN port (2octets)], [peerN id size (in octets, on 1 octet)], [peerN id],
 		 *                          [peerN address size (in octets, on 1 octet)], [peerN address]
+		 *            Caused by: retrieve_peers
+		 *            Expected answer: none
 		 *
 		 * @sa        commands::retrieve_peers.
 		 *
@@ -135,6 +157,7 @@ namespace breep {
 		/**
 		 * @brief     Command to indicate the disconnection of a peer
 		 * @details   Must be followed by the peer (id).
+		 *            Expected answer: none
 		 *
 		 * @sa        commands::peers_list
 		 *
@@ -143,12 +166,14 @@ namespace breep {
 		peer_disconnection,
 		/**
 		 * @brief ignored by basic_peer_manager [only logging it]
+		 *            Expected answer: none
 		 *
 		 * @since 0.1.0
 		 */
 		keep_alive,
 		/**
 		 * @brief Accepting or refusing incomming connection, used by io_managers for process_connected_peer and process_connection_denial.
+		 *        Should be ignored at peer_manager level
 		 *
 		 * @since 1.0.0
 		 */
