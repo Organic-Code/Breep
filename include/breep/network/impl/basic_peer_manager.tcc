@@ -413,7 +413,7 @@ void breep::basic_peer_manager<T>::send_to_handler(const peer& source, const std
 	size_t id_size = processed_data[0];
 	// todo: check if vector is empty before hand
 
-	boost::uuids::uuid sender_id, target_id;
+	boost::uuids::uuid sender_id{}, target_id{};
 	if (id_size != sender_id.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -480,7 +480,7 @@ void breep::basic_peer_manager<T>::send_to_all_handler(const peer& source, const
 			("Received " + std::to_string(data.size()) + "octets from " + source.id_as_string());
 
 	uint8_t id_size = processed_data[0];
-	boost::uuids::uuid id;
+	boost::uuids::uuid id{};
 	if (id.size() != id_size) {
 		m_log.warning("Received an id with incorrect size.");
 		return;
@@ -523,7 +523,7 @@ void breep::basic_peer_manager<T>::forward_to_handler(const peer& source, const 
 
 	std::string id;
 	detail::unmake_little_endian(data, id);
-	boost::uuids::uuid uuid;
+	boost::uuids::uuid uuid{};
 	if (id.size() != uuid.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -565,7 +565,7 @@ void breep::basic_peer_manager<T>::stop_forwarding_handler(const peer& source, c
 
 	std::string data_str;
 	detail::unmake_little_endian(data, data_str);
-	boost::uuids::uuid id;
+	boost::uuids::uuid id{};
 	if (data_str.size() != id.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -608,7 +608,7 @@ template <typename T>
 void breep::basic_peer_manager<T>::stopped_forwarding_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string data_str;
 	detail::unmake_little_endian(data, data_str);
-	boost::uuids::uuid id;
+	boost::uuids::uuid id{};
 	if (data_str.size() != id.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -635,7 +635,7 @@ template <typename T>
 void breep::basic_peer_manager<T>::forwarding_to_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string str;
 	detail::unmake_little_endian(data, str);
-	boost::uuids::uuid uuid;
+	boost::uuids::uuid uuid{};
 	if (str.size() != uuid.size() + 1) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -686,7 +686,7 @@ void breep::basic_peer_manager<T>::connect_to_handler(const peer& source, const 
 		buff.push_back(ldata[i]);
 	}
 
-	boost::uuids::uuid id;
+	boost::uuids::uuid id{};
 	if (buff.size() != id.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -732,7 +732,7 @@ void breep::basic_peer_manager<T>::cant_connect_handler(const peer& source, cons
 	std::vector<uint8_t> id_vect;
 	detail::unmake_little_endian(data, id_vect);
 
-	boost::uuids::uuid target_id;
+	boost::uuids::uuid target_id{};
 	if (id_vect.size() != target_id.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -759,7 +759,7 @@ template <typename T>
 void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string ldata;
 	detail::unmake_little_endian(data, ldata);
-	boost::uuids::uuid uuid;
+	boost::uuids::uuid uuid{};
 	std::copy(++ldata.begin(), ldata.end(), uuid.data);
 	auto distance = static_cast<uint8_t>(ldata[0] + 1);
 	auto item = m_peers.find(uuid);
@@ -812,7 +812,7 @@ template <typename T>
 void breep::basic_peer_manager<T>::retrieve_distance_handler(const peer& source, const std::vector<uint8_t>& data) {
 	std::string id;
 	detail::unmake_little_endian(data, id);
-	boost::uuids::uuid uuid;
+	boost::uuids::uuid uuid{};
 	if (id.size() != uuid.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
@@ -875,7 +875,7 @@ void breep::basic_peer_manager<T>::peers_list_handler(const peer& source, const 
 		id.reserve(id_size);
 		index += 3;
 		std::copy(ldata.cbegin() + index, ldata.cbegin() + index + id_size, std::back_inserter(id));
-		boost::uuids::uuid uuid;
+		boost::uuids::uuid uuid{};
 		if (id.size() != uuid.size()) {
 			m_log.error("Received an id with incorrect size. Skipping.");
 			continue;
@@ -967,7 +967,7 @@ void breep::basic_peer_manager<T>::peer_disconnection_handler(const peer& source
 	std::string local_data;
 	detail::unmake_little_endian(data, local_data);
 
-	boost::uuids::uuid uuid;
+	boost::uuids::uuid uuid{};
 	if (local_data.size() != uuid.size()) {
 		m_log.error("Received an id with incorrect size.");
 		return;
