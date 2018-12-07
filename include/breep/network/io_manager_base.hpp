@@ -37,7 +37,7 @@ namespace breep {
 	template <typename T>
 	class basic_peer_manager;
 
-	template <typename T>
+	template <typename, typename>
 	class basic_peer;
 
 	/**
@@ -51,7 +51,7 @@ namespace breep {
 	 *
 	 * @since 0.1.0
 	 */
-	template <typename io_manager>
+	template <typename io_manager, typename peer>
 	class io_manager_base {
 	public:
 
@@ -71,8 +71,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_container>
-		void send(commands /*command*/, const data_container& /*data*/, const basic_peer<io_manager>& /*peer*/) const {
-			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_container>::value, "Send called without specialisation.");
+		void send(commands /*command*/, const data_container& /*data*/, const peer& /*peer*/) const {
+			static_assert(detail::dependent_false<data_container>::value, "Send called without specialisation.");
 		}
 
 		/**
@@ -91,8 +91,8 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		template <typename data_iterator, typename  size_type>
-		void send(commands command, data_iterator /*begin*/, size_type /*size*/, const basic_peer<io_manager>& /*peer*/) const {
-			static_assert(detail::dependent_false<io_manager_base<io_manager>, data_iterator>::value, "Send called without specialisation.");
+		void send(commands command, data_iterator /*begin*/, size_type /*size*/, const peer& /*peer*/) const {
+			static_assert(detail::dependent_false<data_iterator>::value, "Send called without specialisation.");
 		}
 
 		/**
@@ -102,21 +102,21 @@ namespace breep {
 		 *
 		 * @since 0.1.0
 		 */
-		virtual detail::optional<basic_peer<io_manager>> connect(const boost::asio::ip::address&, unsigned short port) = 0;
+		virtual detail::optional<peer> connect(const boost::asio::ip::address&, unsigned short port) = 0;
 
 		/**
 		 * @brief performs any required action after a peer connection.
 		 *
 		 * @since 0.1.0
 		 */
-		virtual void process_connected_peer(basic_peer<io_manager>& peer) = 0;
+		virtual void process_connected_peer(peer& /*peer*/) = 0;
 
 		/**
 		 * @brief performs any required action when a peer connection was denied.
 		 *
 		 * @since 1.0.0
 		 */
-		 virtual void process_connection_denial(basic_peer<io_manager>& peer) = 0;
+		 virtual void process_connection_denial(peer& /*peer*/) = 0;
 
 		/**
 		 * @brief disconnects from the network
@@ -128,7 +128,7 @@ namespace breep {
 		/**
 		 * @brief disconnects a peer
 		 */
-		virtual void disconnect(basic_peer<io_manager>& peer) = 0;
+		virtual void disconnect(peer& /*peer*/) = 0;
 
 		/**
 		 * @brief Network's main thread entry point
@@ -165,7 +165,5 @@ namespace breep {
 		friend class basic_peer_manager<io_manager>;
 	};
 }  // namespace breep
-
-BREEP_DECLARE_TEMPLATE(breep::io_manager_base)
 
 #endif //BREEP_NETWORK_IO_MANAGER_BASE_HPP

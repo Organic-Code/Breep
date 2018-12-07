@@ -31,12 +31,15 @@ namespace breep {
 	/**
 	 * @class basic_peer basic_peer.hpp
 	 *
+	 * @tparam data_structure Data structure that can be used by end user to store any relevant information, accessible through ".data". Must be copyable & default constructible
+	 *
 	 * @brief This class represents a network's member
 	 * @since 0.1.0
 	 */
-	template <typename io_manager>
+	template <typename io_manager, typename data_structure>
 	class basic_peer {
 	public:
+		data_structure data;
 
 		/**
 	 	 * @since 0.1.0
@@ -67,22 +70,22 @@ namespace breep {
 		/**
 	 	 * @since 0.1.0
 		 */
-		basic_peer(const basic_peer<io_manager>& p) = default;
+		basic_peer(const basic_peer& p) = default;
 
 		/**
 		 * @since 0.1.0
 		 */
-		basic_peer(basic_peer<io_manager>&&) = default;
+		basic_peer(basic_peer&&) = default;
 
 		/**
 		 * @since 1.0.0
 		 */
-		basic_peer<io_manager>& operator=(const basic_peer<io_manager>&) = delete;
+		basic_peer& operator=(const basic_peer&) = delete;
 
 		/**
 		 * @since 1.0.0
 		 */
-		basic_peer<io_manager>& operator=(basic_peer<io_manager>&&) = delete;
+		basic_peer& operator=(basic_peer&&) = delete;
 
 		/**
 		 * @return the id of the peer
@@ -96,9 +99,9 @@ namespace breep {
 		 */
 		const boost::asio::ip::address& address() const noexcept;
 
-		bool operator==(const basic_peer<io_manager>& lhs) const;
+		bool operator==(const basic_peer& lhs) const;
 
-		bool operator!=(const basic_peer<io_manager>& lhs) const;
+		bool operator!=(const basic_peer& lhs) const;
 
 		/**
 		 * @return The distance from you to the peer.
@@ -164,6 +167,6 @@ namespace breep {
 #include "impl/basic_peer.tcc"
 } // namespace breep
 
-BREEP_DECLARE_TEMPLATE(breep::basic_peer)
+BREEP_DECLARE_VTEMPLATE(breep::basic_peer)
 
 #endif //BREEP_NETWORK_BASIC_PEER_HPP

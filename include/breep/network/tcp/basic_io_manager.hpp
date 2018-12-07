@@ -84,17 +84,19 @@ namespace breep { namespace tcp {
 	 *
 	 * @since 0.1.0
 	 */
-	template <unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis, unsigned long timeout_millis, unsigned long timeout_check_interval_millis>
-	class basic_io_manager final: public io_manager_base<basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>> {
+	template <typename data_structure, unsigned int BUFFER_LENGTH, unsigned long keep_alive_send_millis, unsigned long timeout_millis, unsigned long timeout_check_interval_millis>
+	class basic_io_manager final: public io_manager_base<basic_io_manager<data_structure, BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>,
+	        basic_peer<basic_io_manager<data_structure, BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>, data_structure>> {
 	public:
 
 		// The protocol ID should be changed at each compatibility break.
 		static constexpr uint32_t IO_PROTOCOL_ID_1 =  755960664; // UPDATE THIS TOGETHER WITH THE HASHING FUNCTION +1 [util/type_traits.hpp]
 		static constexpr uint32_t IO_PROTOCOL_ID_2 = 1683390697; // +3
 
-		using io_manager = basic_io_manager<BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
-		using peer = basic_peer<io_manager>;
+		using io_manager = basic_io_manager<data_structure, BUFFER_LENGTH,keep_alive_send_millis,timeout_millis,timeout_check_interval_millis>;
+		using peer = basic_peer<io_manager, data_structure>;
 		using data_type = std::shared_ptr<io_manager_data<BUFFER_LENGTH>>; // default constructed to 'nullptr' if it's a 'fake' connection (through bridging)
+		using user_data_type = data_structure;
 
 		explicit basic_io_manager(unsigned short port);
 

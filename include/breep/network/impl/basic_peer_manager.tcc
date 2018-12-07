@@ -44,8 +44,8 @@ breep::basic_peer_manager<T>::basic_peer_manager(T&& manager, unsigned short por
 	, m_thread{nullptr}
 
 {
-	static_assert(std::is_base_of<breep::io_manager_base<T>, T>::value, "Specified type not derived from breep::io_manager_base");
-	static_cast<io_manager_base<T>*>(&m_manager)->owner(this);
+	static_assert(std::is_base_of<breep::io_manager_base<T, typename T::peer>, T>::value, "Specified type not derived from breep::io_manager_base");
+	static_cast<io_manager_base<T, typename T::peer>*>(&m_manager)->owner(this);
 
     m_waitfor_run.lock();
 
@@ -757,6 +757,37 @@ void breep::basic_peer_manager<T>::cant_connect_handler(const peer& source, cons
 
 template <typename T>
 void breep::basic_peer_manager<T>::update_distance_handler(const peer& source, const std::vector<uint8_t>& data) {
+	m_log.trace("Received distance update notification.");
+
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+	//TODO: pourquoi donc 1 n'essaye pas de se connected à 3 ?;
+
 	std::string ldata;
 	detail::unmake_little_endian(data, ldata);
 	boost::uuids::uuid uuid{};

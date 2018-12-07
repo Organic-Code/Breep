@@ -26,14 +26,38 @@
 #include <breep/network/tcp/basic_io_manager.hpp>
 
 namespace breep { namespace tcp {
-		using io_manager = basic_io_manager<1024, 5000, 120000, 54000>;
-		using peer = basic_peer<io_manager>;
-		using network = basic_network<io_manager>;
-		using peer_manager = basic_peer_manager<io_manager>;
 
-		template <typename T>
-		using netdata_wrapper = basic_netdata_wrapper<io_manager, T>;
+	namespace details {
+		struct empty {};
+	}
+
+	template <typename data_structure>
+	using io_manager_ds = basic_io_manager<data_structure, 1024, 5000, 120000, 54000>;
+
+	template <typename data_structure>
+	using peer_ds = basic_peer<io_manager_ds<data_structure>, data_structure>;
+
+	template <typename data_structure>
+	using peer_manager_ds = basic_peer_manager<breep::tcp::io_manager_ds<data_structure>>;
+
+	template <typename data_structure>
+	using network_ds = basic_network<breep::tcp::io_manager_ds<data_structure>>;
+
+	template <typename T, typename data_structure>
+	using netdata_wrapper_ds = basic_netdata_wrapper<breep::tcp::io_manager_ds<data_structure>, T>;
+
+	using io_manager = io_manager_ds<details::empty>;
+	using peer = peer_ds<details::empty>;
+	using peer_manager = peer_manager_ds<details::empty>;
+	using network = network_ds<details::empty>;
+	template <typename T>
+	using netdata_wrapper = netdata_wrapper_ds<T, details::empty>;
 }}
+
+BREEP_DECLARE_TEMPLATE(breep::tcp::io_manager_ds)
+BREEP_DECLARE_TEMPLATE(breep::tcp::peer_ds)
+BREEP_DECLARE_TEMPLATE(breep::tcp::peer_manager_ds)
+BREEP_DECLARE_TEMPLATE(breep::tcp::network_ds)
 
 BREEP_DECLARE_TYPE(breep::tcp::io_manager)
 BREEP_DECLARE_TYPE(breep::tcp::peer)

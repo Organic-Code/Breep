@@ -33,6 +33,7 @@
  *  Please use BREEP_DECLARE_TEMPLATE instead.
  *
  *  @sa BREEP_DECLARE_TEMPLATE
+ *  @sa BREEP_DECLARE_VTEMPLATE
  *  @sa breep::networking_traits
  *
  *  @since 0.1.0
@@ -51,11 +52,38 @@
  *
  *  @attention When using BREEP_DECLARE_TEMPLATE, no template parameter of the passed class must be a value.
  *  @sa BREEP_DECLARE_TYPE
+ *  @sa BREEP_DECLARE_VTEMPLATE
  *  @sa breep::networking_traits
  *
  *  @since 0.1.0
  */
 #define BREEP_DECLARE_TEMPLATE(TType) \
+	namespace breep { namespace detail { \
+		/* If you have an error here, should probably declare your type with\
+            BREEP_DECLARE_TYPE instead of BREEP_DECLARE_TEMPLATE \
+            Note that types that have literals as template parameters cannot be declared \
+            through this macro; use BREEP_DECLARE_TYPE instead. (ie: BREEP_DECLARE_TYPE(std::array<int,8>)*/ \
+	    template <typename T> \
+	    struct networking_traits_impl<TType<T>> { \
+			networking_traits_impl(); \
+	        const std::string universal_name = std::string(#TType"<") + networking_traits_impl<T>().universal_name + ">"; \
+	    }; \
+		template <typename T> /* it's ok if this constructor is not inline */ \
+		networking_traits_impl<TType<T>>::networking_traits_impl() = default;\
+	}}
+
+/**
+ *  @brief Used to declare a variadically templatized class, so that it can be sent through the network. Must be called from the global namespace
+ *  @details Specialises networking_traits<T>, giving access to ::universal_name (unmangled) and ::hash_code
+ *
+ *  @attention When using BREEP_DECLARE_VTEMPLATE, no template parameter of the passed class must be a value.
+ *  @sa BREEP_DECLARE_TYPE
+ *  @sa BREEP_DECLARE_TEMPLATE
+ *  @sa breep::networking_traits
+ *
+ *  @since 1.0.0
+ */
+#define BREEP_DECLARE_VTEMPLATE(TType) \
 	namespace breep { namespace detail { \
 		/* If you have an error here, should probably declare your type with\
             BREEP_DECLARE_TYPE instead of BREEP_DECLARE_TEMPLATE \

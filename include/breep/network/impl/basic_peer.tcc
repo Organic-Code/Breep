@@ -16,22 +16,22 @@
  * @since 0.1.0
  */
 
-template <typename T>
-inline const boost::uuids::uuid& breep::basic_peer<T>::id() const noexcept {
+template <typename T, typename U>
+inline const boost::uuids::uuid& basic_peer<T, U>::id() const noexcept {
 	return m_id;
 }
 
-template <typename T>
-inline const boost::asio::ip::address& breep::basic_peer<T>::address() const noexcept {
+template <typename T, typename U>
+inline const boost::asio::ip::address& basic_peer<T, U>::address() const noexcept {
 	return m_address;
 }
 
-template <typename T>
-inline bool breep::basic_peer<T>::operator==(const basic_peer<T>& lhs) const {
+template <typename T, typename U>
+inline bool basic_peer<T, U>::operator==(const basic_peer<T, U>& lhs) const {
 	return this->m_address == lhs.m_address && this->m_id == lhs.m_id;
 }
 
-template <typename T>
-inline bool breep::basic_peer<T>::operator!=(const basic_peer<T>& lhs) const {
+template <typename T, typename U>
+inline bool basic_peer<T, U>::operator!=(const basic_peer<T, U>& lhs) const {
 	return this->m_address != lhs.m_address || this->m_id != lhs.m_id;
 }

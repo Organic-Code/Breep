@@ -74,7 +74,7 @@ namespace breep {
 		 * @since 0.1.0
 		 */
 		using inner_io_manager = io_manager;
-		using peer = basic_peer<io_manager>;
+		using peer = typename inner_io_manager::peer;
 		using peer_manager = basic_peer_manager<io_manager>;
 		using network = basic_network<io_manager>;
 

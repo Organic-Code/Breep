@@ -16,31 +16,31 @@
 
 
 template <typename T>
-inline const breep::basic_peer<T>*& breep::local_peer<T>::path_to(const basic_peer<T>& p) {
+inline const typename T::peer*& breep::local_peer<T>::path_to(const typename T::peer& p) {
 	return m_path_to_passing_by.at(p.id());
 }
 
 template <typename T>
-inline breep::basic_peer<T> const * const & breep::local_peer<T>::path_to(const basic_peer<T>& p) const {
+inline typename T::peer const * const & breep::local_peer<T>::path_to(const typename T::peer& p) const {
 	return m_path_to_passing_by.at(p.id());
 }
 
 template <typename T>
-inline std::unordered_map<boost::uuids::uuid, const breep::basic_peer<T>*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() noexcept {
+inline std::unordered_map<boost::uuids::uuid, const typename T::peer*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() noexcept {
 	return m_path_to_passing_by;
 }
 
 template <typename T>
-inline const std::unordered_map<boost::uuids::uuid, const breep::basic_peer<T>*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() const noexcept {
+inline const std::unordered_map<boost::uuids::uuid, const typename T::peer*, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::path_to_passing_by() const noexcept {
 	return m_path_to_passing_by;
 }
 
 template <typename T>
-inline std::unordered_map<boost::uuids::uuid, std::vector<const breep::basic_peer<T>*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() noexcept {
+inline std::unordered_map<boost::uuids::uuid, std::vector<const typename T::peer*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() noexcept {
 	return m_bridging_from_to;
 }
 
 template <typename T>
-const std::unordered_map<boost::uuids::uuid, std::vector<const breep::basic_peer<T>*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() const noexcept {
+const std::unordered_map<boost::uuids::uuid, std::vector<const typename T::peer*>, boost::hash<boost::uuids::uuid>>& breep::local_peer<T>::bridging_from_to() const noexcept {
 	return m_bridging_from_to;
 }

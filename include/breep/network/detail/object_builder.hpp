@@ -178,6 +178,6 @@ namespace breep { namespace detail {
 	};
 }} // namespace breep::detail
 
-BREEP_DECLARE_TEMPLATE(breep::detail::object_builder)
+BREEP_DECLARE_VTEMPLATE(breep::detail::object_builder)
 
 #endif //BREEP_NETWORK_DETAIL_OBJECT_BUILDER_HPP

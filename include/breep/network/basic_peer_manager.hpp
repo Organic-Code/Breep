@@ -339,7 +339,7 @@ namespace breep {
 			if (m_port != port) {
 				require_non_running();
 				m_port = port;
-				static_cast<io_manager_base<io_manager>*>(&m_manager)->port(port);
+				static_cast<io_manager_base<io_manager, typename io_manager::peer>*>(&m_manager)->port(port);
 			}
 		}
 
@@ -529,15 +529,15 @@ namespace breep {
 		peer_manager_attorney() = delete;
 
 	private:
-		inline static void peer_connected(basic_peer_manager<T>& object, basic_peer<T>&& p) {
+		inline static void peer_connected(basic_peer_manager<T>& object, typename T::peer&& p) {
 			object.peer_connected(std::move(p));
 		}
 
-		inline static void peer_disconnected(basic_peer_manager<T>& object, basic_peer<T>& p) {
+		inline static void peer_disconnected(basic_peer_manager<T>& object, typename T::peer& p) {
 			object.peer_disconnected(p);
 		}
 
-		inline static void data_received(basic_peer_manager<T>& object, const basic_peer<T>& source, commands command, const std::vector<uint8_t>& data) {
+		inline static void data_received(basic_peer_manager<T>& object, const typename T::peer& source, commands command, const std::vector<uint8_t>& data) {
 			object.data_received(source, command, data);
 		}
 
